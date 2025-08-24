@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, MessageSquare, Settings, Users, BarChart3, Calendar, Archive, HelpCircle, Bell, Type } from 'lucide-react'
+import { Logo } from './Logo'
 
 interface MenuItem {
   icon: React.ComponentType<{ className?: string }>
@@ -38,8 +39,8 @@ export function CustomSidebar({ className }: CustomSidebarProps) {
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="flex items-center h-16 px-4 border-b border-sidebar-border">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-primary-foreground font-bold text-sm">H</span>
+          <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+            <Logo variant="primary" size="md" />
           </div>
           <span className="ml-3 text-sidebar-foreground font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap font-poppins">
             Homa

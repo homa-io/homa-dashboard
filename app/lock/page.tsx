@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Lock, User } from "lucide-react"
 import { RandomVantaBackground } from "@/components/RandomVantaBackground"
+import { Logo } from "@/components/Logo"
 
 export default function LockScreen() {
   const [pin, setPin] = useState(["", "", "", "", "", ""])
@@ -93,7 +94,7 @@ export default function LockScreen() {
           <div className="text-center space-y-6">
             {/* Avatar */}
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
-              <User className="w-8 h-8 text-white" />
+              <Logo variant="white" size="lg" />
             </div>
             
             {/* User Info */}

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Lock, Mail, User } from "lucide-react"
 import { RandomVantaBackground } from "@/components/RandomVantaBackground"
+import { Logo } from "@/components/Logo"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -38,7 +39,7 @@ export default function LoginPage() {
         <CardHeader className="relative space-y-1 text-center pb-4 pt-6">
           <div className="flex items-center justify-center gap-4 mb-3">
             <div className="w-16 h-16 bg-gradient-to-br from-primary/90 to-primary/70 rounded-xl flex items-center justify-center shadow-xl transform hover:scale-105 transition-transform backdrop-blur-sm">
-              <span className="text-primary-foreground font-bold text-2xl">H</span>
+              <Logo variant="white" size="lg" />
             </div>
             <div>
               <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
