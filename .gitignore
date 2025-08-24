@@ -39,3 +39,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+*storybook.log
+storybook-static
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Playwright
+.playwright-mcp/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# OS files
+Thumbs.db
+.directory
