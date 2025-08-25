@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, MessageSquare, Settings, Users, BarChart3, Calendar, Archive, HelpCircle, Type, User, LogOut, BookOpen } from 'lucide-react'
+import { Logo } from './Logo'
 
 interface MenuItem {
   icon: React.ComponentType<{ className?: string }>
