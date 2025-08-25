@@ -70,15 +70,13 @@ interface TicketModalProps {
 export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketModalProps) {
   const [isActionsExpanded, setIsActionsExpanded] = useState(false)
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
-  
-  // Return early if no ticket is provided
-  if (!ticket) {
-    return null
-  }
-  const [replyText, setReplyText] = useState("Hi " + (ticket.customer.split(' ')[0] || "there") + ",\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue. Let me look into this matter immediately and provide you with a solution.\n\nPlease let me know if you need any additional information.")
+  const [replyText, setReplyText] = useState(() => {
+    if (!ticket?.customer) return "Hi there,\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue. Let me look into this matter immediately and provide you with a solution.\n\nPlease let me know if you need any additional information."
+    return "Hi " + (ticket.customer.split(' ')[0] || "there") + ",\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue. Let me look into this matter immediately and provide you with a solution.\n\nPlease let me know if you need any additional information."
+  })
   const [ticketActions, setTicketActions] = useState({
-    priority: ticket.priority || "medium",
-    status: ticket.status || "new", 
+    priority: ticket?.priority || "medium",
+    status: ticket?.status || "new", 
     department: "Support Department",
     assignees: ["1", "2"],
     tags: ["support", "customer-inquiry"]
@@ -86,9 +84,9 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
 
   // Ticket header state (same as tickets page)
   const [ticketHeader, setTicketHeader] = useState({
-    priority: ticket.priority || "medium",
-    status: ticket.status || "new",
-    department: ticket.department || "Support Department"
+    priority: ticket?.priority || "medium",
+    status: ticket?.status || "new",
+    department: ticket?.department || "Support Department"
   })
 
   // Loading states for ticket header changes
@@ -97,6 +95,11 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
     priority: false,
     department: false
   })
+  
+  // Return early if no ticket is provided (after all hooks)
+  if (!ticket) {
+    return null
+  }
 
   // Available options (same as tickets page)
   const availableStatuses = [
