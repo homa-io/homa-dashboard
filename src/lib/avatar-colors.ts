@@ -35,6 +35,7 @@ function hashString(str: string): number {
 
 // Get consistent color for a given name/text with dark mode support
 export function getAvatarColor(text: string, isDarkMode: boolean = false): string {
+  if (!text) return isDarkMode ? AVATAR_COLORS_DARK[0] : AVATAR_COLORS_LIGHT[0]
   const hash = hashString(text.toLowerCase().trim())
   const colors = isDarkMode ? AVATAR_COLORS_DARK : AVATAR_COLORS_LIGHT
   return colors[hash % colors.length]

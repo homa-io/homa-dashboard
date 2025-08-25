@@ -1472,7 +1472,7 @@ export default function TicketsPage() {
         
         {/* Ticket Modal */}
         <TicketModal
-          ticket={selectedTicketId ? filteredTickets.find(t => t.id === selectedTicketId) : null}
+          ticket={selectedTicketId ? filteredTickets.find(t => t.id === selectedTicketId) || null : null}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onStatusChange={handleStatusChange}

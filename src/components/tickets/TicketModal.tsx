@@ -215,8 +215,8 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
   const mockMessages = [
     {
       id: 1,
-      author: ticket.customer,
-      initials: getInitials(ticket.customer),
+      author: ticket.customer || "Customer",
+      initials: getInitials(ticket.customer || "Customer"),
       time: ticket.time,
       message: ticket.title + "\n\nThis is the detailed description of the issue. The customer is experiencing problems and needs assistance with resolving this matter."
     },
