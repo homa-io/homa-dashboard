@@ -1,8 +1,9 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import {
   BadgeCheck,
-  Bell,
+  User,
   ChevronsUpDown,
   CreditCard,
   LogOut,
@@ -40,6 +41,26 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+
+  const handleLogout = () => {
+    // Clear all cookies
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+    })
+    
+    // Clear localStorage
+    localStorage.removeItem("userSession")
+    localStorage.removeItem("authToken")
+    
+    // Clear sessionStorage
+    sessionStorage.clear()
+    
+    // Redirect to login page
+    router.push("/login")
+  }
 
   return (
     <SidebarMenu>
@@ -81,28 +102,17 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
+              <DropdownMenuItem onClick={() => router.push("/profile")}>
+                <User />
+                Profile
               </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>

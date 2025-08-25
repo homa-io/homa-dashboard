@@ -42,6 +42,7 @@ export function getAvatarColor(text: string, isDarkMode: boolean = false): strin
 
 // Get initials from a name
 export function getInitials(name: string): string {
+  if (!name) return 'NA'
   return name
     .split(' ')
     .map(word => word.charAt(0))

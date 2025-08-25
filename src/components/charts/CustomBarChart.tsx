@@ -29,7 +29,7 @@ export function CustomBarChart({
   showGrid = true 
 }: CustomBarChartProps) {
   
-  const CustomLegend = ({ payload }: any) => (
+  const CustomLegend = ({ payload }: { payload?: Array<{ value: string; color: string }> }) => (
     <div className="flex flex-wrap gap-4 justify-center mt-4">
       {legends.map((legend, index) => (
         <div key={legend.key} className="flex items-center gap-2">

@@ -50,7 +50,7 @@ function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }
 
   return (
     <div 
-      className="group relative bg-card rounded-lg border border-border p-3 cursor-pointer hover:shadow-lg hover:border-accent transition-all duration-200 hover:-translate-y-0.5"
+      className="group relative bg-card rounded-lg border border-border p-2 sm:p-3 cursor-pointer hover:shadow-lg hover:border-accent transition-all duration-200 hover:-translate-y-0.5"
       onClick={onClick}
     >
       {/* Priority indicator stripe */}
@@ -58,52 +58,52 @@ function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }
       
       {/* Header row */}
       <div className="flex items-start justify-between mb-2 ml-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
           <CustomBadge 
             variant={
               ticket.priority === "urgent" ? "red-dot" : 
               ticket.priority === "high" ? "red" :
               ticket.priority === "medium" ? "yellow" : "gray"
             }
-            className="text-xs font-medium"
+            className="text-[10px] sm:text-xs font-medium"
           >
             {ticket.priority.toUpperCase()}
           </CustomBadge>
-          <CustomBadge variant="outline" className="text-xs">
+          <CustomBadge variant="outline" className="text-[10px] sm:text-xs hidden sm:inline-flex">
             {ticket.department || "Support"}
           </CustomBadge>
         </div>
         <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-          {getSourceIcon(ticket.source || 'email')}
-          <span className="text-xs text-muted-foreground">{ticket.time}</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">{getSourceIcon(ticket.source || 'email')}</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground">{ticket.time}</span>
         </div>
       </div>
       
       {/* Sender name */}
-      <h4 className="text-sm font-semibold text-card-foreground leading-tight line-clamp-2 mb-2 ml-2">
+      <h4 className="text-xs sm:text-sm font-semibold text-card-foreground leading-tight line-clamp-1 sm:line-clamp-2 mb-2 ml-2">
         {ticket.customer}
       </h4>
       
       {/* Preview with subtle background */}
-      <div className="bg-muted rounded-md p-2 mb-2 ml-2 mr-0">
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+      <div className="bg-muted rounded-md p-1.5 sm:p-2 mb-2 ml-2 mr-0">
+        <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed">
           {ticket.preview || "Customer needs assistance with account-related issues..."}
         </p>
       </div>
       
-      {/* Footer */}
+      {/* Footer - Tags */}
       <div className="ml-2">
         {/* Tags */}
         {ticket.tags && ticket.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {ticket.tags.slice(0, 3).map((tag: string, index: number) => (
-              <span key={index} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+            {ticket.tags.slice(0, 1).map((tag: string, index: number) => (
+              <span key={index} className="inline-flex items-center px-1 py-0.5 rounded text-[9px] sm:text-[10px] bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
                 #{tag}
               </span>
             ))}
-            {ticket.tags.length > 3 && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-muted text-muted-foreground border border-border">
-                +{ticket.tags.length - 3}
+            {ticket.tags.length > 1 && (
+              <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] sm:text-[10px] bg-muted text-muted-foreground border border-border">
+                +{ticket.tags.length - 1}
               </span>
             )}
           </div>
@@ -186,34 +186,34 @@ export default function Dashboard() {
   const getTicketsByStatus = (status: string) => tickets.filter(ticket => ticket.status === status)
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Support Tickets</h2>
-          <p className="text-muted-foreground">Manage customer support requests by status</p>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Support Tickets</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage customer support requests by status</p>
         </div>
       </div>
 
-      {/* Clean Kanban Board */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+      {/* Mobile-Responsive Kanban Board */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {statuses.map((status) => {
           const statusTickets = getTicketsByStatus(status.key)
           const StatusIcon = status.icon
           
           return (
-            <div key={status.key} className="space-y-4">
+            <div key={status.key} className="space-y-3">
               {/* Kanban Header */}
-              <div className="bg-muted rounded-lg p-4 flex items-center justify-center h-16">
-                <div className="flex items-center gap-3 w-full justify-center">
-                  <StatusIcon className={`h-5 w-5 ${
+              <div className="bg-muted rounded-lg p-3 flex items-center justify-center h-14">
+                <div className="flex items-center gap-2 w-full justify-center">
+                  <StatusIcon className={`h-4 w-4 ${
                     status.key === 'new' ? 'text-blue-600' :
                     status.key === 'open' ? 'text-orange-600' :
                     status.key === 'pending' ? 'text-yellow-600' :
                     status.key === 'resolved' ? 'text-green-600' :
                     'text-gray-600'
                   }`} />
-                  <h3 className="text-lg font-semibold text-foreground flex-1 text-center">{status.label}</h3>
-                  <CustomBadge variant="secondary" className="text-sm">
+                  <h3 className="text-base font-semibold text-foreground flex-1 text-center">{status.label}</h3>
+                  <CustomBadge variant="secondary" className="text-xs">
                     {statusTickets.length}
                   </CustomBadge>
                 </div>

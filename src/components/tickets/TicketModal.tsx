@@ -44,8 +44,24 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { getAvatarColor, getInitials } from "@/lib/avatar-colors"
 
+// Use the correct ticket interface that matches the data from the main page
+interface Ticket {
+  id: number;
+  title: string;
+  customer: string;
+  email: string;
+  priority: string;
+  status: string;
+  time: string;
+  preview?: string;
+  tags?: string[];
+  department?: string;
+  assignees?: string[];
+  source?: string;
+}
+
 interface TicketModalProps {
-  ticket: any // Using the same ticket structure from the main page
+  ticket: Ticket | null
   isOpen: boolean
   onClose: () => void
   onStatusChange?: (ticketId: number, newStatus: string) => void
@@ -54,10 +70,15 @@ interface TicketModalProps {
 export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketModalProps) {
   const [isActionsExpanded, setIsActionsExpanded] = useState(false)
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
-  const [replyText, setReplyText] = useState("Hi " + ticket?.customer?.split(' ')[0] + ",\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue. Let me look into this matter immediately and provide you with a solution.\n\nPlease let me know if you need any additional information.")
+  
+  // Return early if no ticket is provided
+  if (!ticket) {
+    return null
+  }
+  const [replyText, setReplyText] = useState("Hi " + (ticket.customer.split(' ')[0] || "there") + ",\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue. Let me look into this matter immediately and provide you with a solution.\n\nPlease let me know if you need any additional information.")
   const [ticketActions, setTicketActions] = useState({
-    priority: ticket?.priority || "medium",
-    status: ticket?.status || "new", 
+    priority: ticket.priority || "medium",
+    status: ticket.status || "new", 
     department: "Support Department",
     assignees: ["1", "2"],
     tags: ["support", "customer-inquiry"]
@@ -65,9 +86,9 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
 
   // Ticket header state (same as tickets page)
   const [ticketHeader, setTicketHeader] = useState({
-    priority: ticket?.priority || "medium",
-    status: ticket?.status || "new",
-    department: ticket?.department || "Support Department"
+    priority: ticket.priority || "medium",
+    status: ticket.status || "new",
+    department: ticket.department || "Support Department"
   })
 
   // Loading states for ticket header changes
@@ -207,13 +228,21 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0">
-        <div className="flex flex-col h-full">
-          {/* Ticket Header - Same as /tickets page */}
-          <div className="p-4 border-b border-border bg-card">
-            <DialogTitle className="text-xl font-semibold mb-3">{ticket.title}</DialogTitle>
-            <div className="flex gap-2">
-              <CustomBadge variant={getSourceColor(ticket.source || 'email') as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-xs h-6 px-3">
+      <DialogContent className="max-w-[98vw] sm:max-w-[95vw] max-h-[90vh] sm:max-h-[95vh] w-full p-0 rounded-lg sm:rounded-xl overflow-hidden [&>button]:hidden mt-4 sm:mt-0">
+        <div className="flex flex-col h-full max-h-[90vh] sm:max-h-[95vh]">
+          {/* Ticket Header - Mobile Responsive */}
+          <div className="p-3 sm:p-4 border-b border-border bg-card relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-2 top-2 sm:right-4 sm:top-4 p-1 h-7 w-7 sm:h-8 sm:w-8"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+            <DialogTitle className="text-base sm:text-xl font-semibold mb-2 sm:mb-3 pr-10 sm:pr-12">{ticket.title}</DialogTitle>
+            <div className="flex flex-wrap gap-1 sm:gap-2">
+              <CustomBadge variant={getSourceColor(ticket.source || 'email') as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-[10px] sm:text-xs h-5 sm:h-6 px-2 sm:px-3">
                 {getSourceIcon(ticket.source || 'email')}
                 <span className="ml-1 capitalize">{(ticket.source || 'email').replace('_', ' ')}</span>
               </CustomBadge>
@@ -222,7 +251,7 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="focus:outline-none" disabled={loadingStates.status}>
-                    <CustomBadge variant={getStatusColor(ticketHeader.status) as "blue" | "green" | "yellow" | "gray"} className="text-xs h-6 cursor-pointer hover:opacity-80 disabled:opacity-60">
+                    <CustomBadge variant={getStatusColor(ticketHeader.status) as "blue" | "green" | "yellow" | "gray"} className="text-[10px] sm:text-xs h-5 sm:h-6 cursor-pointer hover:opacity-80 disabled:opacity-60">
                       {loadingStates.status ? (
                         <Loader className="w-3 h-3 mr-1 animate-spin" />
                       ) : (
@@ -263,7 +292,7 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="focus:outline-none" disabled={loadingStates.priority}>
-                    <CustomBadge variant={getPriorityColor(ticketHeader.priority) as "gray" | "yellow" | "red" | "red-dot"} className="text-xs h-6 cursor-pointer hover:opacity-80 disabled:opacity-60">
+                    <CustomBadge variant={getPriorityColor(ticketHeader.priority) as "gray" | "yellow" | "red" | "red-dot"} className="text-[10px] sm:text-xs h-5 sm:h-6 cursor-pointer hover:opacity-80 disabled:opacity-60">
                       {loadingStates.priority ? (
                         <Loader className="w-3 h-3 mr-1 animate-spin" />
                       ) : (
@@ -302,7 +331,7 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="focus:outline-none" disabled={loadingStates.department}>
-                    <CustomBadge variant="gray" className="text-xs h-6 cursor-pointer hover:opacity-80 disabled:opacity-60">
+                    <CustomBadge variant="gray" className="text-[10px] sm:text-xs h-5 sm:h-6 cursor-pointer hover:opacity-80 disabled:opacity-60 hidden sm:inline-flex">
                       {loadingStates.department ? (
                         <Loader className="w-3 h-3 mr-1 animate-spin" />
                       ) : (
@@ -331,22 +360,21 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
             </div>
           </div>
 
-          <Separator className="my-4" />
 
-          {/* Content */}
-          <div className="flex-1 overflow-hidden p-6 pt-0">
-            <div className="flex gap-6 h-full">
+          {/* Content - Mobile Responsive */}
+          <div className="flex-1 overflow-y-auto p-3 sm:p-6 pt-3 sm:pt-4 min-h-0">
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 h-full">
               {/* Main Content Area */}
-              <div className="flex-1 flex flex-col min-w-0">
-                {/* AI Summary */}
-                <Card className="mb-6">
-                  <CardHeader className="cursor-pointer" onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}>
+              <div className="flex-1 flex flex-col min-w-0 max-w-full min-h-0">
+                {/* AI Summary - Mobile Responsive */}
+                <Card className="mb-3 sm:mb-6">
+                  <CardHeader className="cursor-pointer p-3 sm:p-6" onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}>
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
+                      <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2">
+                        <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
                         AI Summary
                       </CardTitle>
-                      <Button variant="ghost" size="sm" className="text-xs">
+                      <Button variant="ghost" size="sm" className="text-[10px] sm:text-xs p-1 sm:p-2 h-auto">
                         {isSummaryExpanded ? (
                           <>
                             <ChevronUp className="w-4 h-4 mr-1" />
@@ -362,19 +390,19 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
                     </div>
                   </CardHeader>
                   {isSummaryExpanded && (
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">
+                    <CardContent className="p-3 sm:p-6 pt-0">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         Customer experiencing issues with {ticket.title.toLowerCase()}. This is a {ticket.priority}-priority ticket that requires immediate attention. The customer has provided details about their problem and is waiting for a resolution.
                       </p>
                     </CardContent>
                   )}
                 </Card>
 
-                {/* Messages */}
-                <div className="flex-1 space-y-6 overflow-y-auto mb-6">
+                {/* Messages - Mobile Responsive */}
+                <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-6 mb-3 sm:mb-6 min-h-0">
                   {mockMessages.map((message, index) => (
-                    <div key={message.id} className={`flex gap-3 ${message.author === "Support Agent" ? "flex-row-reverse" : ""}`}>
-                      <Avatar className="w-8 h-8 flex-shrink-0">
+                    <div key={message.id} className={`flex gap-2 sm:gap-3 ${message.author === "Support Agent" ? "flex-row-reverse" : ""}`}>
+                      <Avatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0">
                         <AvatarFallback 
                           className="text-xs font-medium text-white"
                           style={{ backgroundColor: getAvatarColor(message.author) }}
@@ -382,26 +410,26 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
                           {message.initials}
                         </AvatarFallback>
                       </Avatar>
-                      <div className={`flex-1 max-w-[70%] ${message.author === "Support Agent" ? "text-right" : ""}`}>
-                        <div className={`inline-block p-4 rounded-lg ${
+                      <div className={`flex-1 max-w-[80%] sm:max-w-[70%] ${message.author === "Support Agent" ? "text-right" : ""}`}>
+                        <div className={`inline-block p-2 sm:p-4 rounded-lg ${
                           message.author === "Support Agent" 
                             ? "bg-primary text-primary-foreground" 
                             : "bg-muted"
                         }`}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-medium text-sm">{message.author}</span>
-                            <span className="text-xs opacity-70">{message.time}</span>
+                          <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                            <span className="font-medium text-xs sm:text-sm">{message.author}</span>
+                            <span className="text-[10px] sm:text-xs opacity-70">{message.time}</span>
                           </div>
-                          <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                          <p className="text-xs sm:text-sm whitespace-pre-wrap">{message.message}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Reply Section */}
-                <Card>
-                  <CardContent className="p-4">
+                {/* Reply Section - Mobile Responsive */}
+                <Card className="flex-shrink-0">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-xs">SA</AvatarFallback>
@@ -432,8 +460,8 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
                 </Card>
               </div>
 
-              {/* Right Sidebar */}
-              <div className="w-80 space-y-4 overflow-y-auto">
+              {/* Right Sidebar - Hidden on Mobile */}
+              <div className="hidden lg:block lg:w-80 space-y-4">
                 <TicketActions
                   currentPriority={ticketActions.priority}
                   currentStatus={ticketActions.status}

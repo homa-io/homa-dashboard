@@ -1,37 +1,59 @@
 "use client"
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Home, MessageSquare, Settings, Users, BarChart3, Calendar, Archive, HelpCircle, Bell, Type } from 'lucide-react'
-import { Logo } from './Logo'
+import { usePathname, useRouter } from 'next/navigation'
+import { Home, MessageSquare, Settings, Users, BarChart3, Calendar, Archive, HelpCircle, Type, User, LogOut, BookOpen } from 'lucide-react'
 
 interface MenuItem {
   icon: React.ComponentType<{ className?: string }>
   label: string
-  href: string
+  href?: string
+  onClick?: () => void
 }
 
-interface CustomSidebarProps {
+interface DashboardSidebarProps {
   className?: string
 }
 
-export function CustomSidebar({ className }: CustomSidebarProps) {
+export function DashboardSidebar({ className }: DashboardSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = () => {
+    // Clear all cookies
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+    })
+    
+    // Clear localStorage
+    localStorage.removeItem("userSession")
+    localStorage.removeItem("authToken")
+    
+    // Clear sessionStorage
+    sessionStorage.clear()
+    
+    // Redirect to login page
+    router.push("/login")
+  }
 
   const mainNavItems: MenuItem[] = [
     { icon: Home, label: "Dashboard", href: "/" },
     { icon: MessageSquare, label: "Tickets", href: "/tickets" },
     { icon: Users, label: "Customers", href: "/customers" },
     { icon: BarChart3, label: "Analytics", href: "/analytics" },
+    { icon: BookOpen, label: "Knowledge Base", href: "/knowledge-base/manage" },
     { icon: Calendar, label: "Calendar", href: "/calendar" },
     { icon: Archive, label: "Archive", href: "/archive" },
     { icon: Type, label: "Typography", href: "/typography" },
   ]
 
   const bottomNavItems: MenuItem[] = [
-    { icon: Bell, label: "Notifications", href: "/notifications" },
+    { icon: User, label: "Profile", href: "/profile" },
     { icon: HelpCircle, label: "Help", href: "/help" },
     { icon: Settings, label: "Settings", href: "/settings" },
+    { icon: LogOut, label: "Logout", onClick: handleLogout },
   ]
 
   return (
@@ -76,10 +98,27 @@ export function CustomSidebar({ className }: CustomSidebarProps) {
           {bottomNavItems.map((item) => {
             const IconComponent = item.icon
             const isActive = pathname === item.href
+            const itemKey = item.href || item.label
+            
+            if (item.onClick) {
+              return (
+                <button
+                  key={itemKey}
+                  onClick={item.onClick}
+                  className={`w-full flex items-center px-3 py-2 rounded-lg transition-colors cursor-pointer text-left hover:bg-sidebar-accent text-sidebar-foreground [&]:!text-sidebar-foreground hover:[&]:!text-sidebar-foreground`}
+                >
+                  <IconComponent className="w-5 h-5 flex-shrink-0" />
+                  <span className="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap font-poppins font-medium">
+                    {item.label}
+                  </span>
+                </button>
+              )
+            }
+            
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={itemKey}
+                href={item.href!}
                 className={`flex items-center px-3 py-2 rounded-lg transition-colors cursor-pointer ${
                   isActive 
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground' 

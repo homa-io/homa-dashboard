@@ -1,3 +1,11 @@
+interface ConversationMessage {
+  id: string;
+  author: string;
+  message: string;
+  timestamp: string;
+  type: 'customer' | 'agent' | 'system';
+}
+
 export interface Ticket {
   id: number;
   title: string;
@@ -12,7 +20,7 @@ export interface Ticket {
   assignees?: string[];
   source?: string;
   author?: string;
-  conversation?: any[];
+  conversation?: ConversationMessage[];
   aiSummary?: string;
 }
 

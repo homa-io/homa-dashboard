@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
-import { ConditionalLayout } from "../src/components/ConditionalLayout"
+import { DashboardLayoutWrapper } from "../src/components/DashboardLayoutWrapper"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,9 +43,9 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${poppins.variable} antialiased`}>
-        <ConditionalLayout>
+        <DashboardLayoutWrapper>
           {children}
-        </ConditionalLayout>
+        </DashboardLayoutWrapper>
       </body>
     </html>
   );

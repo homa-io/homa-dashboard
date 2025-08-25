@@ -28,10 +28,12 @@ import { VisitorInformation } from '@/components/tickets/VisitorInformation'
 import { TicketActions } from '@/components/tickets/TicketActions'
 import { CannedMessages } from '@/components/tickets/CannedMessages'
 import { WysiwygEditor } from '@/components/tickets/WysiwygEditor'
+import { TicketModal } from '@/components/tickets/TicketModal'
 import { getAvatarColor, getInitials } from '@/lib/avatar-colors'
 
 export default function TicketsPage() {
   const [selectedTicketId, setSelectedTicketId] = useState(1)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [replyText, setReplyText] = useState("Hi Dean,\n\nThank you for contacting us. We sure can help you. Shall we schedule a call tomorrow around 12.00pm. We can help you better if we are on a call.\n\nPlease let us know your availability.")
   const [isActionsExpanded, setIsActionsExpanded] = useState(false)
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
@@ -133,6 +135,56 @@ export default function TicketsPage() {
   
   // Check if there are unsaved changes
   const hasChanges = JSON.stringify(ticketActions) !== JSON.stringify(originalTicketActions)
+  
+  // Modal handlers
+  const openTicketModal = (ticketId: number) => {
+    setSelectedTicketId(ticketId)
+    setIsModalOpen(true)
+  }
+
+  const handleStatusChange = (ticketId: number, newStatus: string) => {
+    // Update ticket status in your state management
+    console.log(`Ticket ${ticketId} status changed to ${newStatus}`)
+  }
+  
+  // Available options
+  const availableStatuses = [
+    { value: "new", label: "New" },
+    { value: "open", label: "Open" },
+    { value: "pending", label: "Pending" },
+    { value: "resolved", label: "Resolved" },
+    { value: "closed", label: "Closed" },
+  ]
+
+  const availablePriorities = [
+    { value: "low", label: "Low Priority" },
+    { value: "medium", label: "Medium Priority" },
+    { value: "high", label: "High Priority" },
+    { value: "urgent", label: "Urgent Priority" },
+  ]
+
+  const availableDepartments = [
+    "Sales Department",
+    "Support Department", 
+    "Marketing Department",
+    "Technical Department",
+    "Billing Department"
+  ]
+  
+  // Handle ticket header changes
+  const handleTicketHeaderChange = async (field: 'status' | 'priority' | 'department', value: string) => {
+    setLoadingStates(prev => ({ ...prev, [field]: true }))
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    setTicketHeader(prev => ({ ...prev, [field]: value }))
+    setLoadingStates(prev => ({ ...prev, [field]: false }))
+  }
+  
+  const handleSaveTicketActions = () => {
+    console.log('Saving ticket actions:', ticketActions)
+  }
 
   const tickets = [
     {
@@ -666,32 +718,6 @@ export default function TicketsPage() {
   const filteredAvailableTags = availableTags
     .filter(tag => tag.toLowerCase().includes(tagSearchQuery.toLowerCase()))
     .slice(0, 5)
-    
-  // Available departments
-  const availableDepartments = [
-    "Sales Department",
-    "Support Department", 
-    "Marketing Department",
-    "Technical Department",
-    "Billing Department"
-  ]
-  
-  // Available priorities
-  const availablePriorities = [
-    { value: "low", label: "Low Priority" },
-    { value: "medium", label: "Medium Priority" },
-    { value: "high", label: "High Priority" },
-    { value: "urgent", label: "Urgent" }
-  ]
-  
-  // Available statuses
-  const availableStatuses = [
-    { value: "new", label: "New" },
-    { value: "open", label: "Open" },
-    { value: "pending", label: "Pending" },
-    { value: "resolved", label: "Resolved" },
-    { value: "closed", label: "Closed" }
-  ]
 
   // Get currently selected ticket
   const selectedTicket = allTickets.find(ticket => ticket.id === selectedTicketId)
@@ -729,42 +755,21 @@ export default function TicketsPage() {
     setReplyText(message)
   }
 
-  const handleSaveTicketActions = () => {
-    // Here you would typically save to the backend
-    console.log('Saving ticket actions:', ticketActions)
-    // For now, we'll just update the original state to reflect the save
-    // In a real app, you'd make an API call and update after success
-  }
-  
-  // Handle ticket header changes with loading simulation
-  const handleTicketHeaderChange = async (field: 'status' | 'priority' | 'department', value: string) => {
-    // Set loading state
-    setLoadingStates(prev => ({ ...prev, [field]: true }))
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Update the value
-    setTicketHeader(prev => ({ ...prev, [field]: value }))
-    
-    // Clear loading state
-    setLoadingStates(prev => ({ ...prev, [field]: false }))
-  }
 
   return (
     <div className="h-screen bg-background">
       {/* Main Content Area with proper spacing */}
-      <div className="flex h-screen">
-        {/* Ticket List Sidebar - Fixed */}
-        <div className="w-96 bg-card flex flex-col fixed left-16 top-0 h-screen z-10 shadow-lg">
+      <div className="flex flex-col lg:flex-row h-screen">
+        {/* Ticket List Sidebar - Mobile Responsive */}
+        <div className="w-full lg:w-96 bg-card flex flex-col lg:fixed lg:left-16 lg:top-0 h-screen lg:h-screen z-10 lg:shadow-lg">
           {/* Static Header - No Scroll */}
-          <div className="p-4 border-b border-border flex-shrink-0">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Recent Tickets</h2>
+          <div className="p-3 sm:p-4 border-b border-border flex-shrink-0">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-lg font-semibold">Recent Tickets</h2>
             </div>
             
             {/* Search and Filter */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-col sm:flex-row gap-2 mb-3 sm:mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -1066,12 +1071,19 @@ export default function TicketsPage() {
             </div>
           </div>
 
-          {/* Tickets List - Scrollable */}
-          <div className="flex-1 overflow-y-auto">
+          {/* Tickets List - Mobile Responsive */}
+          <div className="flex-1 overflow-y-auto max-h-64 lg:max-h-full">
           {filteredTickets.map((ticket, index) => (
             <div
               key={ticket.id}
-              onClick={() => setSelectedTicketId(ticket.id)}
+              onClick={() => {
+                // Mobile: open modal, Desktop: set selected ticket
+                if (window.innerWidth < 1024) {
+                  openTicketModal(ticket.id)
+                } else {
+                  setSelectedTicketId(ticket.id)
+                }
+              }}
               className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${
                 ticket.id === selectedTicketId ? 'bg-muted' : ''
               }`}
@@ -1112,8 +1124,8 @@ export default function TicketsPage() {
         </div>
       </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col" style={{ marginLeft: '384px' }}>
+        {/* Desktop layout - hidden on mobile */}
+        <div className="hidden lg:flex flex-1 flex-col lg:ml-[448px]">
           {selectedTicket && (
             <>
               {/* Ticket Header - Full Row */}
@@ -1238,10 +1250,10 @@ export default function TicketsPage() {
                 </div>
               </div>
 
-              {/* Content Row: Conversation + Actions */}
-              <div className="flex-1 flex">
-                {/* Conversation Column */}
-                <div className="flex-1 flex flex-col p-4">
+              {/* Content Row: Conversation + Actions - Mobile Responsive */}
+              <div className="flex-1 flex flex-col lg:flex-row">
+                {/* Conversation Column - Mobile Responsive */}
+                <div className="flex-1 flex flex-col p-3 sm:p-4">
                   {/* AI Summary Box */}
                   <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-slate-600 rounded-lg p-3 mb-4">
                     <div className="flex items-start gap-2">
@@ -1433,8 +1445,8 @@ export default function TicketsPage() {
                   </div>
                 </div>
 
-                {/* Actions Column */}
-                <div className="w-96 bg-background p-3 space-y-2 overflow-y-auto">
+                {/* Actions Column - Mobile Responsive */}
+                <div className="w-full lg:w-96 bg-background p-3 space-y-2 overflow-y-auto order-1 lg:order-2">
             <TicketActions
               currentPriority={ticketActions.priority}
               currentStatus={ticketActions.status}
@@ -1457,6 +1469,14 @@ export default function TicketsPage() {
             </>
           )}
         </div>
+        
+        {/* Ticket Modal */}
+        <TicketModal
+          ticket={selectedTicketId ? filteredTickets.find(t => t.id === selectedTicketId) : null}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onStatusChange={handleStatusChange}
+        />
       </div>
     </div>
   )

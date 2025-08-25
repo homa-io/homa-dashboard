@@ -1,10 +1,9 @@
 "use client"
 
 import { usePathname } from 'next/navigation'
-import { CustomSidebar } from './CustomSidebar'
-import { TopBar } from './TopBar'
+import { DashboardSidebar } from './DashboardSidebar'
 
-export function ConditionalLayout({ children }: { children: React.ReactNode }) {
+export function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   
   // Don't show sidebar and topbar on login and lock pages
@@ -12,8 +11,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   
   return (
     <>
-      {!isAuthPage && <CustomSidebar />}
-      {!isAuthPage && <TopBar />}
+      {!isAuthPage && <DashboardSidebar />}
       <main className={!isAuthPage ? "ml-16" : ""}>
         {children}
       </main>

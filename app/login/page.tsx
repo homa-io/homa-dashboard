@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Lock, Mail, User } from "lucide-react"
-import { RandomVantaBackground } from "@/components/RandomVantaBackground"
+import { LoginBackground } from "@/components/LoginBackground"
 import { Logo } from "@/components/Logo"
+import { Separator } from "@/components/ui/separator"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -28,8 +29,8 @@ export default function LoginPage() {
   }
 
   return (
-    <RandomVantaBackground className="flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl shadow-2xl border border-white/10 dark:border-white/5 bg-white/20 dark:bg-gray-900/20 backdrop-blur-2xl backdrop-saturate-200 relative overflow-hidden">
+    <LoginBackground className="flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-white/20 dark:border-white/10 bg-white/10 dark:bg-gray-900/10 backdrop-blur-3xl backdrop-saturate-150 relative overflow-hidden animate-fadeIn">
         {/* Multiple glossy overlay effects for ultra-glossy look */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-white/10 to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-white/30 pointer-events-none" />
@@ -122,6 +123,6 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
-    </RandomVantaBackground>
+    </LoginBackground>
   )
 }

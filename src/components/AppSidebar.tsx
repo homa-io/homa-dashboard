@@ -37,10 +37,10 @@ import {
   Shield
 } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { NavMain } from "@/components/NavMain"
+import { NavProjects } from "@/components/NavProjects"
+import { NavUser } from "@/components/NavUser"
+import { TeamSwitcher } from "@/components/TeamSwitcher"
 import {
   Sidebar,
   SidebarContent,

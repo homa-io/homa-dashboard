@@ -10,6 +10,17 @@ import { CountryFlagBadge } from "@/components/ui/country-flag-badge"
 import { ExternalLink, CreditCard, Receipt, Repeat, User, Mail, Phone, MapPin, Clock, Globe, Monitor, ChevronRight, Edit3, Smartphone, Laptop, Flag, Search, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react"
 import Link from "next/link"
 
+interface LineItem {
+  description: string
+  amount: number
+}
+
+interface UsageLimit {
+  name: string
+  used: number
+  total: number
+}
+
 interface VisitorInfo {
   name: string
   email: string
@@ -119,7 +130,7 @@ Due Date: ${item.dueDate}
 Customer: ${visitor.name} <${visitor.email}>
 
 Line Items:
-${item.items.map((item: any) => `  - ${item.description}: $${item.amount}`).join('\n')}
+${item.items.map((item: LineItem) => `  - ${item.description}: $${item.amount}`).join('\n')}
 
 Payment Terms: Net 30
 Notes: ${item.notes || 'None'}
@@ -190,7 +201,7 @@ Features:
 ${item.features.map((feature: string) => `  - ${feature}`).join('\n')}
 
 Usage Limits:
-${item.limits.map((limit: any) => `  - ${limit.name}: ${limit.used}/${limit.total}`).join('\n')}
+${item.limits.map((limit: UsageLimit) => `  - ${limit.name}: ${limit.used}/${limit.total}`).join('\n')}
 
 Generated: ${timestamp}`
 

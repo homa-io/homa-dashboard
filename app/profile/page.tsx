@@ -21,10 +21,17 @@ import {
   Camera,
   Save,
   Edit3,
-  KeyRound
+  KeyRound,
+  Clock,
+  MessageSquare,
+  TrendingUp,
+  Sun,
+  Moon
 } from "lucide-react"
+import { useDarkMode } from "@/hooks/useDarkMode"
 
 export default function ProfilePage() {
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [showPinModal, setShowPinModal] = useState(false)
@@ -279,12 +286,22 @@ export default function ProfilePage() {
             
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium">Two-Factor Authentication</h4>
-                <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
+                <h4 className="font-medium flex items-center gap-2">
+                  {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                  Theme
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Currently using {isDarkMode ? 'dark' : 'light'} mode
+                </p>
               </div>
-              <CustomBadge variant="red">
-                Disabled
-              </CustomBadge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={toggleDarkMode}
+              >
+                {isDarkMode ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
+                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+              </Button>
             </div>
             
             <Separator />
@@ -297,6 +314,61 @@ export default function ProfilePage() {
               <Button variant="outline" size="sm">
                 View Sessions
               </Button>
+            </div>
+            
+            <Separator />
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    My Performance
+                  </h4>
+                  <p className="text-sm text-muted-foreground">Your activity metrics</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.location.href = '/profile/statistic'}
+                >
+                  Statistics
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Clock className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Active Hours</p>
+                      <p className="text-xs text-muted-foreground">This month</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold">142</p>
+                    <p className="text-xs text-muted-foreground">hours</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-green-500/10">
+                      <MessageSquare className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Responded Tickets</p>
+                      <p className="text-xs text-muted-foreground">This month</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold">287</p>
+                    <p className="text-xs text-muted-foreground">tickets</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
