@@ -105,22 +105,22 @@ export function AttributeManager({ title, description, attributes, onSave }: Att
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">{title}</h2>
-        <p className="text-muted-foreground mb-6">{description}</p>
+        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">{title}</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">{description}</p>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Custom Attributes</CardTitle>
-            <CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-6">
+          <div className="space-y-1">
+            <CardTitle className="text-base sm:text-lg">Custom Attributes</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Define custom attributes with comprehensive configuration options
             </CardDescription>
           </div>
-          <Button onClick={addAttribute}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={addAttribute} className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10">
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
             Add Attribute
           </Button>
         </CardHeader>
@@ -148,9 +148,9 @@ export function AttributeManager({ title, description, attributes, onSave }: Att
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave}>
-          <Save className="w-4 h-4 mr-2" />
+      <div className="flex justify-end pt-2 sm:pt-0">
+        <Button onClick={handleSave} className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10">
+          <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
           Save Changes
         </Button>
       </div>
@@ -191,48 +191,58 @@ function AttributeCard({ attribute, onEdit, onDelete }: AttributeCardProps) {
   }
 
   return (
-    <div className="border rounded-lg p-4 space-y-3">
-      {/* Header Row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div>
-            <h4 className="font-medium">{attribute.displayName || attribute.varName}</h4>
-            <p className="text-sm text-muted-foreground">
-              Variable: <code className="bg-muted px-1 rounded">{attribute.varName}</code>
-            </p>
+    <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
+      {/* Header Row - Mobile Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+        <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <div className="min-w-0">
+              <h4 className="font-medium text-sm sm:text-base truncate">{attribute.displayName || attribute.varName}</h4>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Variable: <code className="bg-muted px-1 rounded text-xs">{attribute.varName}</code>
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge className={`${getTypeColor(attribute.type)} text-xs`}>
+                {attribute.type}
+              </Badge>
+              {attribute.required && (
+                <Badge variant="secondary" className="bg-red-100 text-red-800 text-xs">
+                  Required
+                </Badge>
+              )}
+            </div>
           </div>
-          <Badge className={getTypeColor(attribute.type)}>
-            {attribute.type}
-          </Badge>
-          {attribute.required && (
-            <Badge variant="secondary" className="bg-red-100 text-red-800">
-              Required
-            </Badge>
-          )}
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 self-start">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onEdit}
+            className="h-8 px-2 sm:px-3 text-xs sm:text-sm"
+          >
+            <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+            Edit
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setExpanded(!expanded)}
+            className="h-8 w-8 p-0"
           >
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {expanded ? <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4" /> : <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Edit className="w-4 h-4" />
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={onEdit}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+              <DropdownMenuItem onClick={onDelete} className="text-red-600 text-xs sm:text-sm">
+                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                Delete Attribute
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -241,21 +251,21 @@ function AttributeCard({ attribute, onEdit, onDelete }: AttributeCardProps) {
 
       {/* Description */}
       {attribute.description && (
-        <p className="text-sm text-muted-foreground">{attribute.description}</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">{attribute.description}</p>
       )}
 
-      {/* Expanded Details */}
+      {/* Expanded Details - Mobile Responsive */}
       {expanded && (
-        <div className="border-t pt-3 space-y-2 text-sm">
+        <div className="border-t pt-2 sm:pt-3 space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
           {attribute.defaultValue && (
-            <div>
+            <div className="break-words">
               <span className="font-medium">Default Value:</span> {attribute.defaultValue}
             </div>
           )}
           {attribute.validationRule && (
-            <div>
+            <div className="break-words">
               <span className="font-medium">Validation:</span> 
-              <code className="bg-muted px-1 rounded ml-1">{attribute.validationRule}</code>
+              <code className="bg-muted px-1 rounded ml-1 text-xs">{attribute.validationRule}</code>
             </div>
           )}
           {attribute.type === 'select' && attribute.selectOptions && attribute.selectOptions.length > 0 && (
@@ -345,21 +355,21 @@ function AttributeDialog({ attribute, isOpen, onClose, onSave }: AttributeDialog
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
             {attribute?.id ? 'Edit Attribute' : 'Add New Attribute'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             Configure the attribute properties and validation rules.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Basic Information */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="varName">Variable Name *</Label>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          {/* Basic Information - Mobile Responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="varName" className="text-xs sm:text-sm font-medium text-muted-foreground">Variable Name *</Label>
               <Input
                 id="varName"
                 value={formData.varName}
@@ -369,37 +379,40 @@ function AttributeDialog({ attribute, isOpen, onClose, onSave }: AttributeDialog
                 }}
                 placeholder="e.g., customer_tier"
                 required
+                className="text-sm h-9 sm:h-10"
               />
               <p className="text-xs text-muted-foreground">
                 Automatically converted to snake_case for API compatibility
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="displayName">Display Name *</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="displayName" className="text-xs sm:text-sm font-medium text-muted-foreground">Display Name *</Label>
               <Input
                 id="displayName"
                 value={formData.displayName}
                 onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                 placeholder="e.g., Customer Tier"
                 required
+                className="text-sm h-9 sm:h-10"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label htmlFor="description" className="text-xs sm:text-sm font-medium text-muted-foreground">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Brief description of this attribute"
               rows={2}
+              className="text-sm resize-none"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="type" className="text-xs sm:text-sm font-medium text-muted-foreground">Type *</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ 
@@ -408,7 +421,7 @@ function AttributeDialog({ attribute, isOpen, onClose, onSave }: AttributeDialog
                   selectOptions: value !== 'select' ? [] : formData.selectOptions
                 })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm h-9 sm:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -422,24 +435,26 @@ function AttributeDialog({ attribute, isOpen, onClose, onSave }: AttributeDialog
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="defaultValue">Default Value</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="defaultValue" className="text-xs sm:text-sm font-medium text-muted-foreground">Default Value</Label>
               <Input
                 id="defaultValue"
                 value={formData.defaultValue?.toString() || ''}
                 onChange={(e) => setFormData({ ...formData, defaultValue: e.target.value })}
                 placeholder="Optional default value"
+                className="text-sm h-9 sm:h-10"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="validationRule">Validation Rule</Label>
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label htmlFor="validationRule" className="text-xs sm:text-sm font-medium text-muted-foreground">Validation Rule</Label>
             <Input
               id="validationRule"
               value={formData.validationRule || ''}
               onChange={(e) => setFormData({ ...formData, validationRule: e.target.value })}
               placeholder="e.g., min:1,max:100 or regex:^[A-Z]+$"
+              className="text-sm h-9 sm:h-10"
             />
             <p className="text-xs text-muted-foreground">
               Validation rules for data entry (format depends on type)
@@ -448,11 +463,11 @@ function AttributeDialog({ attribute, isOpen, onClose, onSave }: AttributeDialog
 
           {/* Select Options - Only shown for select type */}
           {formData.type === 'select' && (
-            <div className="space-y-4 border-t pt-4">
-              <Label>Select Options</Label>
+            <div className="space-y-3 sm:space-y-4 border-t pt-3 sm:pt-4">
+              <Label className="text-xs sm:text-sm font-medium">Select Options</Label>
               
-              {/* Add new option */}
-              <div className="flex gap-2">
+              {/* Add new option - Mobile Responsive */}
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   value={newOptionKey}
                   onChange={(e) => {
@@ -460,34 +475,36 @@ function AttributeDialog({ attribute, isOpen, onClose, onSave }: AttributeDialog
                     setNewOptionKey(snakeCaseKey)
                   }}
                   placeholder="Option key (e.g., premium)"
-                  className="flex-1"
+                  className="flex-1 text-sm h-9 sm:h-10"
                 />
                 <Input
                   value={newOptionLabel}
                   onChange={(e) => setNewOptionLabel(e.target.value)}
                   placeholder="Display label (e.g., Premium Plan)"
-                  className="flex-1"
+                  className="flex-1 text-sm h-9 sm:h-10"
                 />
-                <Button type="button" onClick={addSelectOption}>
-                  <Plus className="w-4 h-4" />
+                <Button type="button" onClick={addSelectOption} className="w-full sm:w-auto h-9 sm:h-10">
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="sm:hidden ml-1.5">Add Option</span>
                 </Button>
               </div>
 
-              {/* Existing options */}
+              {/* Existing options - Mobile Responsive */}
               {selectOptions.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Current Options:</p>
+                  <p className="text-xs sm:text-sm font-medium">Current Options:</p>
                   <div className="space-y-1">
                     {selectOptions.map((option) => (
                       <div key={option.key} className="flex items-center justify-between p-2 bg-muted rounded">
-                        <span className="text-sm">
-                          <code>{option.key}</code> → {option.label}
+                        <span className="text-xs sm:text-sm break-all">
+                          <code className="text-xs">{option.key}</code> → {option.label}
                         </span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeSelectOption(option.key)}
+                          className="h-6 w-6 p-0 flex-shrink-0 ml-2"
                         >
                           <X className="w-3 h-3" />
                         </Button>
@@ -499,21 +516,21 @@ function AttributeDialog({ attribute, isOpen, onClose, onSave }: AttributeDialog
             </div>
           )}
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 py-2">
             <Switch
               id="required"
               checked={formData.required || false}
               onCheckedChange={(checked) => setFormData({ ...formData, required: checked })}
             />
-            <Label htmlFor="required">Required field</Label>
+            <Label htmlFor="required" className="text-xs sm:text-sm">Required field</Label>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:space-x-2 pt-3 sm:pt-4">
+            <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10">
               Cancel
             </Button>
-            <Button type="submit">
-              <Save className="w-4 h-4 mr-2" />
+            <Button type="submit" className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10">
+              <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
               Save Attribute
             </Button>
           </div>

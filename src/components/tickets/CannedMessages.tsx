@@ -69,23 +69,29 @@ export function CannedMessages({ onMessageSelect }: CannedMessagesProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" type="button">
-          <MessageSquare className="w-4 h-4 mr-2" />
-          Canned Messages
+        <Button variant="outline" size="sm" type="button" className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">
+          <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+          <span className="hidden xs:inline">Canned Messages</span>
+          <span className="xs:hidden">Templates</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" />
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-hidden">
+        <DialogHeader className="pb-3 sm:pb-4">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
             Select Canned Message
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <Command className="border">
-            <CommandInput placeholder="Search messages..." />
-            <CommandList className="max-h-[400px]">
-              <CommandEmpty>No messages found.</CommandEmpty>
+        <div className="space-y-3 sm:space-y-4 flex-1 min-h-0">
+          <Command className="border rounded-lg">
+            <CommandInput 
+              placeholder="Search messages..." 
+              className="text-sm h-9 sm:h-10"
+            />
+            <CommandList className="max-h-[300px] sm:max-h-[400px] overflow-y-auto">
+              <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+                No messages found.
+              </CommandEmpty>
               {categories.map((category) => (
                 <CommandGroup key={category} heading={category}>
                   {cannedMessages
@@ -94,12 +100,12 @@ export function CannedMessages({ onMessageSelect }: CannedMessagesProps) {
                       <CommandItem
                         key={message.id}
                         onSelect={() => handleMessageSelect(message)}
-                        className="cursor-pointer p-3"
+                        className="cursor-pointer p-2 sm:p-3 hover:bg-accent"
                       >
-                        <div className="w-full">
-                          <div className="font-medium text-sm mb-1">{message.title}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-2">
-                            {message.message.replace(/\n/g, ' ').substring(0, 100)}...
+                        <div className="w-full space-y-1">
+                          <div className="font-medium text-xs sm:text-sm leading-tight">{message.title}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                            {message.message.replace(/\n/g, ' ').substring(0, 120)}...
                           </div>
                         </div>
                       </CommandItem>

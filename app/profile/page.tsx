@@ -100,69 +100,73 @@ export default function ProfilePage() {
   }, [])
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Profile</h2>
-        <p className="text-muted-foreground">Manage your account settings and preferences</p>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Profile</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">Manage your account settings and preferences</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Personal Information */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Personal Information</CardTitle>
-            <CardDescription>Your basic account details</CardDescription>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">Personal Information</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Your basic account details</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <User className="w-4 h-4" />
+          <CardContent className="space-y-3 sm:space-y-4">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-muted-foreground">
+                  <User className="w-3 h-3 sm:w-4 sm:h-4" />
                   Full Name
                 </label>
                 <Input
                   value={profileData.name}
                   onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  className="text-sm h-9 sm:h-10"
                 />
               </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-muted-foreground">
+                  <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
                   Email
                 </label>
                 <Input
                   type="email"
                   value={profileData.email}
                   onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                  className="text-sm h-9 sm:h-10"
                 />
               </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-muted-foreground">
+                  <Phone className="w-3 h-3 sm:w-4 sm:h-4" />
                   Phone
                 </label>
                 <Input
                   value={profileData.phone}
                   onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                  className="text-sm h-9 sm:h-10"
                 />
               </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-muted-foreground">
+                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
                   Location
                 </label>
                 <Input
                   value={profileData.location}
                   onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                  className="text-sm h-9 sm:h-10"
                 />
               </div>
             </div>
             
             {/* Save Button */}
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end pt-3 sm:pt-4">
               <Button
                 onClick={handleSave}
                 disabled={!hasChanges || isSaving}
@@ -182,16 +186,16 @@ export default function ProfilePage() {
 
         {/* Account Information & Profile Picture */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Account Information</CardTitle>
-            <CardDescription>Your profile and account details</CardDescription>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">Account Information</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Your profile and account details</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6">
             {/* Profile Picture Section */}
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="w-24 h-24">
+            <div className="flex flex-col items-center space-y-3 sm:space-y-4">
+              <Avatar className="w-20 h-20 sm:w-24 sm:h-24">
                 <AvatarImage src={avatarUrl} />
-                <AvatarFallback className="text-xl font-semibold bg-primary text-primary-foreground">
+                <AvatarFallback className="text-lg sm:text-xl font-semibold bg-primary text-primary-foreground">
                   AU
                 </AvatarFallback>
               </Avatar>
@@ -199,8 +203,9 @@ export default function ProfilePage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowImageCropModal(true)}
+                className="text-xs sm:text-sm h-8 sm:h-9"
               >
-                <Camera className="w-4 h-4 mr-2" />
+                <Camera className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 Change Photo
               </Button>
             </div>
@@ -208,54 +213,55 @@ export default function ProfilePage() {
             <Separator />
             
             {/* Account Details */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-muted-foreground">
                   <Shield className="w-3 h-3" />
                   Role
                 </label>
-                <CustomBadge variant="blue" className="w-fit">
+                <CustomBadge variant="blue" className="w-fit text-xs sm:text-sm">
                   {profileData.role}
                 </CustomBadge>
               </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-muted-foreground">
                   <Settings className="w-3 h-3" />
                   Department
                 </label>
-                <CustomBadge variant="gray" className="w-fit">
+                <CustomBadge variant="gray" className="w-fit text-xs sm:text-sm">
                   {profileData.department}
                 </CustomBadge>
               </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-muted-foreground">
                   <Calendar className="w-3 h-3" />
                   Join Date
                 </label>
-                <p className="text-sm text-muted-foreground">{profileData.joinDate}</p>
+                <p className="text-xs sm:text-sm text-gray-900 dark:text-white">{profileData.joinDate}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Security Settings */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg">Security Settings</CardTitle>
-            <CardDescription>Manage your account security</CardDescription>
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">Security Settings</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Manage your account security</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+          <CardContent className="space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <div>
-                <h4 className="font-medium">Password</h4>
-                <p className="text-sm text-muted-foreground">Last changed 30 days ago</p>
+                <h4 className="font-medium text-sm sm:text-base">Password</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground">Last changed 30 days ago</p>
               </div>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowPasswordModal(true)}
+                className="text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto"
               >
                 Change Password
               </Button>
@@ -263,13 +269,13 @@ export default function ProfilePage() {
             
             <Separator />
             
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <div>
-                <h4 className="font-medium flex items-center gap-2">
-                  <KeyRound className="w-4 h-4" />
+                <h4 className="font-medium flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+                  <KeyRound className="w-3 h-3 sm:w-4 sm:h-4" />
                   Security PIN
                 </h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {hasPin ? "PIN is set for quick access" : "Set a 6-digit PIN for quick access"}
                 </p>
               </div>
@@ -277,6 +283,7 @@ export default function ProfilePage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowPinModal(true)}
+                className="text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto"
               >
                 {hasPin ? "Change PIN" : "Set PIN"}
               </Button>
@@ -284,13 +291,13 @@ export default function ProfilePage() {
             
             <Separator />
             
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <div>
-                <h4 className="font-medium flex items-center gap-2">
-                  {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                <h4 className="font-medium flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+                  {isDarkMode ? <Moon className="w-3 h-3 sm:w-4 sm:h-4" /> : <Sun className="w-3 h-3 sm:w-4 sm:h-4" />}
                   Theme
                 </h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Currently using {isDarkMode ? 'dark' : 'light'} mode
                 </p>
               </div>
@@ -298,73 +305,75 @@ export default function ProfilePage() {
                 variant="outline" 
                 size="sm"
                 onClick={toggleDarkMode}
+                className="text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto"
               >
-                {isDarkMode ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
+                {isDarkMode ? <Sun className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" /> : <Moon className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />}
                 {isDarkMode ? 'Light Mode' : 'Dark Mode'}
               </Button>
             </div>
             
             <Separator />
             
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <div>
-                <h4 className="font-medium">Active Sessions</h4>
-                <p className="text-sm text-muted-foreground">Manage your active sessions</p>
+                <h4 className="font-medium text-sm sm:text-base">Active Sessions</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground">Manage your active sessions</p>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto">
                 View Sessions
               </Button>
             </div>
             
             <Separator />
             
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                 <div>
-                  <h4 className="font-medium flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
+                  <h4 className="font-medium flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+                    <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
                     My Performance
                   </h4>
-                  <p className="text-sm text-muted-foreground">Your activity metrics</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Your activity metrics</p>
                 </div>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => window.location.href = '/profile/statistic'}
+                  className="text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto"
                 >
                   Statistics
                 </Button>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Clock className="w-4 h-4 text-primary" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10">
+                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Active Hours</p>
+                      <p className="text-xs sm:text-sm font-medium">Active Hours</p>
                       <p className="text-xs text-muted-foreground">This month</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold">142</p>
+                    <p className="text-lg sm:text-xl font-bold">142</p>
                     <p className="text-xs text-muted-foreground">hours</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-green-500/10">
-                      <MessageSquare className="w-4 h-4 text-green-600" />
+                <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="p-1.5 sm:p-2 rounded-lg bg-green-500/10">
+                      <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Responded Tickets</p>
+                      <p className="text-xs sm:text-sm font-medium">Responded Tickets</p>
                       <p className="text-xs text-muted-foreground">This month</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold">287</p>
+                    <p className="text-lg sm:text-xl font-bold">287</p>
                     <p className="text-xs text-muted-foreground">tickets</p>
                   </div>
                 </div>

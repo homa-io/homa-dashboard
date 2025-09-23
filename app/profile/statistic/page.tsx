@@ -157,31 +157,32 @@ export default function StatisticsPage() {
   const animatedAvgTickets = useCountAnimation(Math.round(avgTicketsPerDay * 10)) / 10
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="flex-1 space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
+      {/* Header - Mobile Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => window.location.href = '/profile'}
+            className="flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Performance Statistics</h2>
-            <p className="text-base text-gray-600 dark:text-gray-300 mt-1">Track your activity and productivity metrics</p>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white truncate">Performance Statistics</h2>
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 mt-0.5 sm:mt-1">Track your activity and productivity metrics</p>
           </div>
         </div>
         
-        {/* Month Selector */}
+        {/* Month Selector - Mobile Responsive */}
         <Select value={selectedMonth} onValueChange={handleMonthChange}>
-          <SelectTrigger className="w-[180px] bg-white">
+          <SelectTrigger className="w-full sm:w-[180px] bg-white text-sm">
             <SelectValue placeholder="Select month" />
           </SelectTrigger>
           <SelectContent className="bg-white">
             {months.map(month => (
-              <SelectItem key={month} value={month}>
+              <SelectItem key={month} value={month} className="text-sm">
                 {month} 2024
               </SelectItem>
             ))}
@@ -189,19 +190,19 @@ export default function StatisticsPage() {
         </Select>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Charts Grid - Mobile Responsive */}
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Online Hours Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 px-6 text-xl font-semibold text-gray-900 dark:text-white">
-              <Clock className="h-5 w-5 text-blue-600" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               Online Hours per Day
             </CardTitle>
-            <CardDescription className="px-6 text-sm text-gray-600 dark:text-gray-400 mt-1">Daily working hours in {selectedMonth}</CardDescription>
+            <CardDescription className="px-3 sm:px-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Daily working hours in {selectedMonth}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div style={{ width: '100%', height: 300 }}>
+            <div style={{ width: '100%', height: '250px' }} className="sm:h-[300px]">
               {mounted && (
                 <ResponsiveContainer>
                   <AreaChart 
@@ -253,15 +254,15 @@ export default function StatisticsPage() {
 
         {/* Tickets Response Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 px-6 text-xl font-semibold text-gray-900 dark:text-white">
-              <MessageSquare className="h-5 w-5 text-green-600" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
+              <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
               Tickets Responded per Day
             </CardTitle>
-            <CardDescription className="px-6 text-sm text-gray-600 dark:text-gray-400 mt-1">Daily ticket responses in {selectedMonth}</CardDescription>
+            <CardDescription className="px-3 sm:px-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Daily ticket responses in {selectedMonth}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div style={{ width: '100%', height: 300 }}>
+            <div style={{ width: '100%', height: '250px' }} className="sm:h-[300px]">
               {mounted && (
                 <ResponsiveContainer>
                   <AreaChart 
@@ -313,59 +314,59 @@ export default function StatisticsPage() {
 
       </div>
 
-      {/* Summary Statistics */}
+      {/* Summary Statistics - Mobile Responsive */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white">
-            <TrendingUp className="h-6 w-6 text-purple-600" />
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
             {selectedMonth} Summary
           </CardTitle>
-          <CardDescription className="text-base text-gray-600 dark:text-gray-400 mt-2">Overall performance metrics for the selected period</CardDescription>
+          <CardDescription className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">Overall performance metrics for the selected period</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="space-y-2 p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Hours</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+            <div className="space-y-2 p-3 sm:p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Clock className="h-3 h-3 sm:h-4 sm:w-4 text-primary" />
+                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Total Hours</p>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{animatedHours}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{animatedHours}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">hours worked</p>
             </div>
 
-            <div className="space-y-2 p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-green-600" />
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Tickets</p>
+            <div className="space-y-2 p-3 sm:p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <MessageSquare className="h-3 h-3 sm:h-4 sm:w-4 text-green-600" />
+                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Total Tickets</p>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{animatedTickets}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{animatedTickets}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">tickets resolved</p>
             </div>
 
-            <div className="space-y-2 p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-orange-600" />
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Active Days</p>
+            <div className="space-y-2 p-3 sm:p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Calendar className="h-3 h-3 sm:h-4 sm:w-4 text-orange-600" />
+                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Active Days</p>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{animatedDays}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{animatedDays}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">of {monthData.length} days</p>
             </div>
 
-            <div className="space-y-2 p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-blue-600" />
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Avg Hours/Day</p>
+            <div className="space-y-2 p-3 sm:p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Activity className="h-3 h-3 sm:h-4 sm:w-4 text-blue-600" />
+                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Avg Hours/Day</p>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{animatedAvgHours.toFixed(1)}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{animatedAvgHours.toFixed(1)}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">hours average</p>
             </div>
 
-            <div className="space-y-2 p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2">
-                <Award className="h-4 w-4 text-purple-600" />
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Avg Tickets/Day</p>
+            <div className="space-y-2 p-3 sm:p-4 rounded-lg bg-muted/50 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Award className="h-3 h-3 sm:h-4 sm:w-4 text-purple-600" />
+                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Avg Tickets/Day</p>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{animatedAvgTickets.toFixed(1)}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{animatedAvgTickets.toFixed(1)}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">tickets average</p>
             </div>
           </div>

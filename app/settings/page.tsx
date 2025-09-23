@@ -157,18 +157,34 @@ export default function SettingsPage() {
   ])
   
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
+    <div className="flex-1 pl-3 sm:pl-4 pr-4 sm:pr-6 py-3 sm:py-4">
+      <div className="mb-4">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
           Configure your dashboard preferences and system settings.
         </p>
       </div>
 
-      <div className="flex gap-6">
-        {/* Vertical Navigation */}
-        <div className="w-64 flex-shrink-0">
-          <nav className="space-y-2">
+      <div className="flex flex-col lg:flex-row gap-3 lg:gap-3">
+        {/* Horizontal Navigation on Mobile, Vertical on Desktop */}
+        <div className="lg:w-44 lg:flex-shrink-0">
+          {/* Mobile Tabs */}
+          <div className="lg:hidden">
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as SettingsTab)}
+              className="w-full px-3 py-2 border rounded-md text-sm bg-background"
+            >
+              {tabs.map((tab) => (
+                <option key={tab.id} value={tab.id}>
+                  {tab.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:block space-y-1">
             {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
@@ -177,14 +193,14 @@ export default function SettingsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-left transition-colors ${
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm font-medium rounded text-left transition-colors ${
                     isActive
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  {tab.label}
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{tab.label}</span>
                 </button>
               )
             })}
@@ -192,7 +208,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0 lg:max-w-none">
           {activeTab === 'general' && <GeneralSettings />}
           {activeTab === 'customer-attributes' && (
             <AttributeManager
@@ -221,77 +237,80 @@ export default function SettingsPage() {
 
 function GeneralSettings() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">General Settings</h2>
-        <p className="text-muted-foreground mb-6">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">General Settings</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
           Configure basic application settings and preferences.
         </p>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Application Settings</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">Application Settings</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Basic configuration for your dashboard
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="app-name">Application Name</Label>
-              <Input id="app-name" defaultValue="Homa Dashboard" />
+        <CardContent className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="app-name" className="text-xs sm:text-sm font-medium text-muted-foreground">Application Name</Label>
+              <Input id="app-name" defaultValue="Homa Dashboard" className="text-sm h-9 sm:h-10" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="company-name">Company Name</Label>
-              <Input id="company-name" defaultValue="Your Company" />
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="company-name" className="text-xs sm:text-sm font-medium text-muted-foreground">Company Name</Label>
+              <Input id="company-name" defaultValue="Your Company" className="text-sm h-9 sm:h-10" />
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="app-description">Description</Label>
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label htmlFor="app-description" className="text-xs sm:text-sm font-medium text-muted-foreground">Description</Label>
             <Textarea 
               id="app-description" 
               defaultValue="Modern customer service dashboard"
               rows={3}
+              className="text-sm resize-none"
             />
           </div>
           
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 py-3 sm:py-4">
             <div className="space-y-0.5">
-              <Label>Maintenance Mode</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="text-xs sm:text-sm font-medium">Maintenance Mode</Label>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Enable maintenance mode to prevent user access
               </p>
             </div>
-            <Switch />
+            <Switch className="self-start sm:self-center" />
           </div>
           
-          <div className="flex items-center justify-between">
+          <div className="border-t border-border"></div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 py-3 sm:py-4">
             <div className="space-y-0.5">
-              <Label>Enable Registration</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="text-xs sm:text-sm font-medium">Enable Registration</Label>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Allow new users to register accounts
               </p>
             </div>
-            <Switch defaultChecked />
+            <Switch defaultChecked className="self-start sm:self-center" />
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Localization</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">Localization</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Language and regional settings
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Default Language</Label>
+        <CardContent className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Default Language</Label>
               <Select defaultValue="en">
-                <SelectTrigger>
+                <SelectTrigger className="text-sm h-9 sm:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -302,10 +321,10 @@ function GeneralSettings() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Timezone</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Timezone</Label>
               <Select defaultValue="utc">
-                <SelectTrigger>
+                <SelectTrigger className="text-sm h-9 sm:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -320,9 +339,9 @@ function GeneralSettings() {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button>
-          <Save className="w-4 h-4 mr-2" />
+      <div className="flex justify-end pt-2 sm:pt-0">
+        <Button className="w-full sm:w-auto text-sm h-9 sm:h-10">
+          <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
           Save Changes
         </Button>
       </div>
@@ -332,15 +351,15 @@ function GeneralSettings() {
 
 function IntegrationsSettings() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">Integrations</h2>
-        <p className="text-muted-foreground mb-6">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">Integrations</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
           Connect with external services and manage API integrations.
         </p>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-3 sm:gap-6">
         {[
           {
             name: 'Slack',
@@ -386,33 +405,39 @@ function IntegrationsSettings() {
           },
         ].map((integration) => (
           <Card key={integration.name}>
-            <CardContent className="flex items-center gap-4 py-6">
-              <div className="text-2xl">{integration.logo}</div>
-              <div className="flex-1">
-                <h3 className="font-medium">{integration.name}</h3>
-                <p className="text-sm text-muted-foreground">{integration.description}</p>
+            <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 py-4 sm:py-6">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="text-xl sm:text-2xl flex-shrink-0">{integration.logo}</div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-sm sm:text-base truncate">{integration.name}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">{integration.description}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
                 {integration.connected === true ? (
                   <>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs justify-center sm:justify-start">
                       Connected
                     </Badge>
-                    <Button variant="outline" size="sm">Configure</Button>
-                    <Button variant="outline" size="sm">Logs</Button>
-                    <Button variant="outline" size="sm">Disconnect</Button>
+                    <div className="flex gap-1 sm:gap-2">
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Configure</Button>
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Logs</Button>
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Disconnect</Button>
+                    </div>
                   </>
                 ) : integration.connected === 'error' ? (
                   <>
-                    <Badge variant="secondary" className="bg-red-100 text-red-800">
+                    <Badge variant="secondary" className="bg-red-100 text-red-800 text-xs justify-center sm:justify-start">
                       Error
                     </Badge>
-                    <Button variant="outline" size="sm">Configure</Button>
-                    <Button variant="outline" size="sm">Logs</Button>
-                    <Button variant="outline" size="sm">Reconnect</Button>
+                    <div className="flex gap-1 sm:gap-2">
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Configure</Button>
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Logs</Button>
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Reconnect</Button>
+                    </div>
                   </>
                 ) : (
-                  <Button size="sm">Connect</Button>
+                  <Button size="sm" className="w-full sm:w-auto text-xs h-8">Connect</Button>
                 )}
               </div>
             </CardContent>
@@ -421,36 +446,36 @@ function IntegrationsSettings() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>API Settings</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">API Settings</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Configure API access and webhooks
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>API Base URL</Label>
-            <Input defaultValue="https://api.yourdomain.com/v1" readOnly className="bg-muted" />
+        <CardContent className="space-y-3 sm:space-y-4">
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">API Base URL</Label>
+            <Input defaultValue="https://api.yourdomain.com/v1" readOnly className="bg-muted text-sm h-9 sm:h-10" />
           </div>
           
-          <div className="space-y-2">
-            <Label>API Key</Label>
-            <Input defaultValue="sk-1234567890abcdef..." readOnly className="bg-muted" />
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">API Key</Label>
+            <Input defaultValue="sk-1234567890abcdef..." readOnly className="bg-muted text-sm h-9 sm:h-10" />
           </div>
           
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 py-3 sm:py-4">
             <div className="space-y-0.5">
-              <Label>Enable API Access</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="text-xs sm:text-sm font-medium">Enable API Access</Label>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Allow external applications to access your data
               </p>
             </div>
-            <Switch defaultChecked />
+            <Switch defaultChecked className="self-start sm:self-center" />
           </div>
           
-          <div className="space-y-2">
-            <Label>Webhook URL</Label>
-            <Input placeholder="https://yourapp.com/webhooks" />
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Webhook URL</Label>
+            <Input placeholder="https://yourapp.com/webhooks" className="text-sm h-9 sm:h-10" />
           </div>
         </CardContent>
       </Card>
@@ -460,23 +485,23 @@ function IntegrationsSettings() {
 
 function PluginsSettings() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">Plugins</h2>
-        <p className="text-muted-foreground mb-6">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">Plugins</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
           Manage installed plugins and browse available extensions.
         </p>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Installed Plugins</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">Installed Plugins</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Manage your currently installed plugins
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {[
               {
                 name: 'Auto-Response Bot',
@@ -497,30 +522,33 @@ function PluginsSettings() {
                 active: false
               },
             ].map((plugin) => (
-              <div key={plugin.name} className="flex items-center gap-4 p-4 border rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium">{plugin.name}</h4>
-                    <Badge variant="outline" className="text-xs">
+              <div key={plugin.name} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                    <h4 className="font-medium text-sm sm:text-base truncate">{plugin.name}</h4>
+                    <Badge variant="outline" className="text-xs w-fit">
                       v{plugin.version}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">{plugin.description}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{plugin.description}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Switch defaultChecked={plugin.active} />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem>Configure</DropdownMenuItem>
-                      <DropdownMenuItem>Update</DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">Uninstall</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0">
+                  <span className="text-xs text-muted-foreground sm:hidden">{plugin.active ? 'Active' : 'Inactive'}</span>
+                  <div className="flex items-center gap-2">
+                    <Switch defaultChecked={plugin.active} />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem className="text-xs">Configure</DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs">Update</DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs text-red-600">Uninstall</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
             ))}
@@ -529,20 +557,20 @@ function PluginsSettings() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Plugin Store</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">Plugin Store</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Browse and install new plugins to extend functionality
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <Globe className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Plugin Store Coming Soon</h3>
-            <p className="text-muted-foreground mb-4">
+          <div className="text-center py-6 sm:py-8">
+            <Globe className="w-8 h-8 sm:w-12 sm:h-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-medium mb-2">Plugin Store Coming Soon</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
               We're working on a plugin marketplace where you can discover and install new extensions.
             </p>
-            <Button variant="outline">Browse Plugins</Button>
+            <Button variant="outline" className="text-xs sm:text-sm h-8 sm:h-9">Browse Plugins</Button>
           </div>
         </CardContent>
       </Card>
@@ -718,43 +746,43 @@ function CannedMessagesSettings() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">Canned Messages</h2>
-        <p className="text-muted-foreground mb-6">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">Canned Messages</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
           Create and manage pre-written responses for common inquiries.
         </p>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Message Templates</CardTitle>
-            <CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-6">
+          <div className="space-y-1">
+            <CardTitle className="text-base sm:text-lg">Message Templates</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Pre-written responses that can be quickly inserted into conversations
             </CardDescription>
           </div>
-          <Button onClick={addMessage}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={addMessage} className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10">
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
             Add Message
           </Button>
         </CardHeader>
         <CardContent>
           {/* Search and Filter Controls */}
-          <div className="mb-6 space-y-4">
-            <div className="flex gap-4">
+          <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search messages by title or content..."
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
                 />
               </div>
-              <div className="w-48">
+              <div className="w-full sm:w-48">
                 <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm h-9 sm:h-10">
                     <SelectValue placeholder="Filter by category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -770,7 +798,7 @@ function CannedMessagesSettings() {
             </div>
             
             {/* Results Count */}
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Showing {startIndex + 1}-{Math.min(endIndex, filteredMessages.length)} of {filteredMessages.length} message{filteredMessages.length !== 1 ? 's' : ''}
               {searchTerm && ` matching "${searchTerm}"`}
               {selectedCategory !== 'all' && ` in "${selectedCategory}" category`}
@@ -798,81 +826,124 @@ function CannedMessagesSettings() {
               )}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Content Preview</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Card View */}
+              <div className="block sm:hidden space-y-3">
                 {paginatedMessages.map((message) => (
-                  <TableRow key={message.id}>
-                    <TableCell className="font-medium">{message.title}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{message.category}</Badge>
-                    </TableCell>
-                    <TableCell className="max-w-md">
-                      <p className="text-sm text-muted-foreground truncate">
-                        {message.content}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
+                  <div key={message.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">{message.title}</h4>
+                        <Badge variant="secondary" className="text-xs mt-1">{message.category}</Badge>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => editMessage(message)}
+                          className="h-8 px-2 text-xs"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3 h-3 mr-1" />
+                          Edit
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => deleteMessage(message.id)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                      {message.content}
+                    </p>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block overflow-x-auto -mx-3 sm:-mx-6 px-3 sm:px-6">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs sm:text-sm">Title</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Category</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Content Preview</TableHead>
+                      <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedMessages.map((message) => (
+                      <TableRow key={message.id}>
+                        <TableCell className="font-medium text-xs sm:text-sm">{message.title}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">{message.category}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-md">
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                            {message.content}
+                          </p>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => editMessage(message)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteMessage(message.id)}
+                              className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
+                            >
+                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 pt-4">
+              <div className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
                 Page {currentPage} of {totalPages}
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2 order-1 sm:order-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
+                  className="text-xs h-8"
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
+                  <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline ml-1">Previous</span>
                 </Button>
                 
-                {/* Page Numbers */}
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                {/* Page Numbers - Hide on very small screens */}
+                <div className="hidden xs:flex items-center space-x-1">
+                  {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
                     let pageNum
-                    if (totalPages <= 5) {
+                    if (totalPages <= 3) {
                       pageNum = i + 1
-                    } else if (currentPage <= 3) {
+                    } else if (currentPage <= 2) {
                       pageNum = i + 1
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i
+                    } else if (currentPage >= totalPages - 1) {
+                      pageNum = totalPages - 2 + i
                     } else {
-                      pageNum = currentPage - 2 + i
+                      pageNum = currentPage - 1 + i
                     }
                     
                     return (
@@ -881,7 +952,7 @@ function CannedMessagesSettings() {
                         variant={currentPage === pageNum ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
-                        className="w-8 h-8 p-0"
+                        className="w-8 h-8 p-0 text-xs"
                       >
                         {pageNum}
                       </Button>
@@ -894,9 +965,10 @@ function CannedMessagesSettings() {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
+                  className="text-xs h-8"
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
+                  <span className="hidden sm:inline mr-1">Next</span>
+                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
               </div>
             </div>
@@ -917,32 +989,32 @@ function CannedMessagesSettings() {
 
       {/* Category Management Section */}
       <Card>
-        <CardHeader>
-          <CardTitle>Message Categories</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">Message Categories</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Organize your canned messages into categories for better organization
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Add New Category */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 placeholder="Enter new category name..."
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addCategory()}
-                className="flex-1"
+                className="flex-1 text-sm h-9 sm:h-10"
               />
-              <Button onClick={addCategory} disabled={!newCategory.trim()}>
-                <Plus className="w-4 h-4 mr-2" />
+              <Button onClick={addCategory} disabled={!newCategory.trim()} className="text-xs sm:text-sm h-9 sm:h-10 w-full sm:w-auto">
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 Add Category
               </Button>
             </div>
 
             {/* Existing Categories */}
             <div className="space-y-2">
-              <p className="text-sm font-medium">Current Categories:</p>
+              <p className="text-xs sm:text-sm font-medium">Current Categories:</p>
               <div className="flex flex-wrap gap-2">
                 {categories.map((category) => {
                   const messageCount = messages.filter(msg => msg.category === category).length
@@ -950,14 +1022,14 @@ function CannedMessagesSettings() {
                     <Badge 
                       key={category} 
                       variant="outline" 
-                      className="px-3 py-1 flex items-center gap-2"
+                      className="px-2 sm:px-3 py-1 flex items-center gap-1 sm:gap-2 text-xs"
                     >
-                      {category}
+                      <span className="truncate max-w-[120px] sm:max-w-none">{category}</span>
                       <span className="text-xs text-muted-foreground">({messageCount})</span>
                       {messageCount === 0 && (
                         <button
                           onClick={() => removeCategory(category)}
-                          className="ml-1 hover:text-red-500 transition-colors"
+                          className="ml-1 hover:text-red-500 transition-colors flex-shrink-0"
                           title="Remove category"
                         >
                           <X className="w-3 h-3" />
@@ -968,7 +1040,7 @@ function CannedMessagesSettings() {
                 })}
               </div>
               {categories.length === 0 && (
-                <p className="text-sm text-muted-foreground">No categories created yet.</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">No categories created yet.</p>
               )}
             </div>
           </div>
@@ -1016,35 +1088,36 @@ function MessageDialog({ message, isOpen, onClose, onSave, categories }: Message
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
             {message?.id ? 'Edit Canned Message' : 'Add New Canned Message'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             Create a reusable message template for quick responses.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="title" className="text-xs sm:text-sm font-medium text-muted-foreground">Title *</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g., Welcome Message"
                 required
+                className="text-sm h-9 sm:h-10"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="category" className="text-xs sm:text-sm font-medium text-muted-foreground">Category</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm h-9 sm:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1058,27 +1131,28 @@ function MessageDialog({ message, isOpen, onClose, onSave, categories }: Message
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="content">Message Content *</Label>
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label htmlFor="content" className="text-xs sm:text-sm font-medium text-muted-foreground">Message Content *</Label>
             <Textarea
               id="content"
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               placeholder="Enter your message content here..."
-              rows={5}
+              rows={4}
               required
+              className="text-sm resize-none"
             />
             <p className="text-xs text-muted-foreground">
               Use variables like {'{customer_name}'}, {'{ticket_id}'}, {'{agent_name}'} for personalization
             </p>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:space-x-2 pt-3 sm:pt-4">
+            <Button type="button" variant="outline" onClick={onClose} className="text-xs sm:text-sm h-9 sm:h-10 order-2 sm:order-1">
               Cancel
             </Button>
-            <Button type="submit">
-              <Save className="w-4 h-4 mr-2" />
+            <Button type="submit" className="text-xs sm:text-sm h-9 sm:h-10 order-1 sm:order-2">
+              <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
               Save Message
             </Button>
           </div>
