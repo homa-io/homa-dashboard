@@ -126,91 +126,104 @@ export default function CustomerDetailPage({ params, searchParams }: CustomerDet
   const displayData = isEditing ? editData : customer
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6 min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => window.location.href = '/customers'}
+            className="flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-12 w-12">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+            <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
               <AvatarImage src={displayData.avatar} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
+              <AvatarFallback className="bg-primary text-primary-foreground text-sm sm:text-lg font-semibold">
                 {getInitials(displayData.name)}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white truncate">
                 {displayData.name}
               </h2>
-              <div className="flex items-center gap-3 mt-2">
-                <CustomBadge variant={statusColors[displayData.status]}>
+              <div className="flex flex-col gap-2 mt-1 sm:mt-2">
+                <CustomBadge variant={statusColors[displayData.status]} className="flex-shrink-0 self-start">
                   {displayData.status}
                 </CustomBadge>
-                <p className="text-base text-gray-600 dark:text-gray-300">
-                  Customer since {formatDate(displayData.createdAt)}
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                  <span className="hidden sm:inline">Customer since </span>
+                  <span className="sm:hidden">Since </span>
+                  <span className="break-words">
+                    {new Date(displayData.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full lg:w-auto">
           {!isEditing ? (
-            <Button onClick={() => setIsEditing(true)}>
+            <Button onClick={() => setIsEditing(true)} className="w-full lg:w-auto">
               <Edit3 className="h-4 w-4 mr-2" />
-              Edit Customer
+              <span className="hidden sm:inline">Edit Customer</span>
+              <span className="sm:hidden">Edit</span>
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={handleCancel}>
+              <Button variant="outline" onClick={handleCancel} className="flex-1 lg:flex-initial">
                 <X className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} className="flex-1 lg:flex-initial">
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                <span className="hidden sm:inline">Save Changes</span>
+                <span className="sm:hidden">Save</span>
               </Button>
             </>
           )}
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Customer Information */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
           {/* Basic Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <User className="h-4 w-4 sm:h-5 sm:w-5" />
                 Basic Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+            <CardContent className="space-y-3 sm:space-y-4">
+              {/* Name and Status - Stack on mobile */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="name" className="text-xs sm:text-sm font-medium text-muted-foreground">Full Name</Label>
                   {isEditing ? (
                     <Input
                       id="name"
                       value={editData.name}
                       onChange={(e) => updateEditData('name', e.target.value)}
+                      className="text-sm"
                     />
                   ) : (
-                    <p className="text-gray-900 dark:text-white font-medium">{displayData.name}</p>
+                    <p className="text-sm sm:text-base text-gray-900 dark:text-white font-medium">{displayData.name}</p>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="status" className="text-xs sm:text-sm font-medium text-muted-foreground">Status</Label>
                   {isEditing ? (
                     <Select value={editData.status} onValueChange={(value) => updateEditData('status', value)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -220,59 +233,66 @@ export default function CustomerDetailPage({ params, searchParams }: CustomerDet
                       </SelectContent>
                     </Select>
                   ) : (
-                    <CustomBadge variant={statusColors[displayData.status]}>
-                      {displayData.status}
-                    </CustomBadge>
+                    <div>
+                      <CustomBadge variant={statusColors[displayData.status]}>
+                        {displayData.status}
+                      </CustomBadge>
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+              {/* Email and Phone - Stack on mobile */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="email" className="text-xs sm:text-sm font-medium text-muted-foreground">Email Address</Label>
                   {isEditing ? (
                     <Input
                       id="email"
                       type="email"
                       value={editData.email}
                       onChange={(e) => updateEditData('email', e.target.value)}
+                      className="text-sm"
                     />
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-900 dark:text-white">{displayData.email}</span>
+                      <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-sm sm:text-base text-gray-900 dark:text-white truncate">{displayData.email}</span>
                     </div>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="phone" className="text-xs sm:text-sm font-medium text-muted-foreground">Phone Number</Label>
                   {isEditing ? (
                     <Input
                       id="phone"
                       value={editData.phone || ''}
                       onChange={(e) => updateEditData('phone', e.target.value)}
+                      className="text-sm"
                     />
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-900 dark:text-white">{displayData.phone || 'Not provided'}</span>
+                      <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.phone || 'Not provided'}</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
+              {/* Company */}
+              <div className="space-y-1.5 sm:space-y-2 pt-2 sm:pt-0">
+                <Label htmlFor="company" className="text-xs sm:text-sm font-medium text-muted-foreground">Company</Label>
                 {isEditing ? (
                   <Input
                     id="company"
                     value={editData.company || ''}
                     onChange={(e) => updateEditData('company', e.target.value)}
+                    className="text-sm"
                   />
                 ) : (
                   <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-900 dark:text-white">{displayData.company || 'Not provided'}</span>
+                    <Building className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.company || 'Not provided'}</span>
                   </div>
                 )}
               </div>
@@ -282,82 +302,106 @@ export default function CustomerDetailPage({ params, searchParams }: CustomerDet
           {/* Address Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
                 Address Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4">
               {displayData.address ? (
                 <>
-                  <div className="space-y-2">
-                    <Label htmlFor="street">Street Address</Label>
+                  {/* Street Address */}
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="street" className="text-xs sm:text-sm font-medium text-muted-foreground">Street Address</Label>
                     {isEditing ? (
                       <Input
                         id="street"
                         value={editData.address?.street || ''}
                         onChange={(e) => updateAddress('street', e.target.value)}
+                        className="text-sm"
                       />
                     ) : (
-                      <p className="text-gray-900 dark:text-white">{displayData.address.street}</p>
+                      <p className="text-sm sm:text-base text-gray-900 dark:text-white break-words">{displayData.address.street}</p>
                     )}
                   </div>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
+
+                  {/* City, State, ZIP - Stack on mobile */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="city" className="text-xs sm:text-sm font-medium text-muted-foreground">City</Label>
                       {isEditing ? (
                         <Input
                           id="city"
                           value={editData.address?.city || ''}
                           onChange={(e) => updateAddress('city', e.target.value)}
+                          className="text-sm"
                         />
                       ) : (
-                        <p className="text-gray-900 dark:text-white">{displayData.address.city}</p>
+                        <p className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.address.city}</p>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="state">State</Label>
+                    
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="state" className="text-xs sm:text-sm font-medium text-muted-foreground">State / Province</Label>
                       {isEditing ? (
                         <Input
                           id="state"
                           value={editData.address?.state || ''}
                           onChange={(e) => updateAddress('state', e.target.value)}
+                          className="text-sm"
                         />
                       ) : (
-                        <p className="text-gray-900 dark:text-white">{displayData.address.state}</p>
+                        <p className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.address.state}</p>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="zipCode">ZIP Code</Label>
+                    
+                    <div className="space-y-1.5 sm:space-y-2 sm:col-span-2 lg:col-span-1">
+                      <Label htmlFor="zipCode" className="text-xs sm:text-sm font-medium text-muted-foreground">ZIP / Postal Code</Label>
                       {isEditing ? (
                         <Input
                           id="zipCode"
                           value={editData.address?.zipCode || ''}
                           onChange={(e) => updateAddress('zipCode', e.target.value)}
+                          className="text-sm"
                         />
                       ) : (
-                        <p className="text-gray-900 dark:text-white">{displayData.address.zipCode}</p>
+                        <p className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.address.zipCode}</p>
                       )}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
+
+                  {/* Country */}
+                  <div className="space-y-1.5 sm:space-y-2 pt-2 sm:pt-0">
+                    <Label htmlFor="country" className="text-xs sm:text-sm font-medium text-muted-foreground">Country</Label>
                     {isEditing ? (
                       <Input
                         id="country"
                         value={editData.address?.country || ''}
                         onChange={(e) => updateAddress('country', e.target.value)}
+                        className="text-sm"
                       />
                     ) : (
                       <div className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-900 dark:text-white">{displayData.address.country}</span>
+                        <span className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.address.country}</span>
                       </div>
                     )}
                   </div>
+
+                  {/* Full Address Display on Mobile */}
+                  {!isEditing && (
+                    <div className="sm:hidden pt-3 mt-3 border-t">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Full Address</p>
+                      <p className="text-sm text-gray-900 dark:text-white leading-relaxed">
+                        {displayData.address.street}<br />
+                        {displayData.address.city}, {displayData.address.state} {displayData.address.zipCode}<br />
+                        {displayData.address.country}
+                      </p>
+                    </div>
+                  )}
                 </>
               ) : (
-                <p className="text-gray-500 dark:text-gray-400">No address information provided</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">No address information provided</p>
               )}
             </CardContent>
           </Card>
@@ -365,103 +409,123 @@ export default function CustomerDetailPage({ params, searchParams }: CustomerDet
           {/* Custom Fields */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Tag className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Tag className="h-4 w-4 sm:h-5 sm:w-5" />
                 Custom Fields
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {mockCustomFields.map((field) => (
-                <div key={field.id} className="space-y-2">
-                  <Label htmlFor={field.name}>{field.label}</Label>
-                  {isEditing ? (
-                    field.type === 'select' ? (
-                      <Select 
-                        value={editData.customFields[field.name]?.toString() || ''} 
-                        onValueChange={(value) => updateCustomField(field.name, value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {field.options?.map(option => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : field.type === 'boolean' ? (
-                      <Select 
-                        value={editData.customFields[field.name]?.toString() || 'false'} 
-                        onValueChange={(value) => updateCustomField(field.name, value === 'true')}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="true">Yes</SelectItem>
-                          <SelectItem value="false">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : field.type === 'number' ? (
-                      <Input
-                        id={field.name}
-                        type="number"
-                        value={editData.customFields[field.name] || ''}
-                        onChange={(e) => updateCustomField(field.name, Number(e.target.value))}
-                        placeholder={field.placeholder}
-                      />
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {mockCustomFields.map((field) => (
+                  <div key={field.id} className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor={field.name} className="text-xs sm:text-sm font-medium text-muted-foreground">
+                      {field.label}
+                    </Label>
+                    {isEditing ? (
+                      field.type === 'select' ? (
+                        <Select 
+                          value={editData.customFields[field.name]?.toString() || ''} 
+                          onValueChange={(value) => updateCustomField(field.name, value)}
+                        >
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {field.options?.map(option => (
+                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : field.type === 'boolean' ? (
+                        <Select 
+                          value={editData.customFields[field.name]?.toString() || 'false'} 
+                          onValueChange={(value) => updateCustomField(field.name, value === 'true')}
+                        >
+                          <SelectTrigger className="text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">Yes</SelectItem>
+                            <SelectItem value="false">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : field.type === 'number' ? (
+                        <Input
+                          id={field.name}
+                          type="number"
+                          value={editData.customFields[field.name] || ''}
+                          onChange={(e) => updateCustomField(field.name, Number(e.target.value))}
+                          placeholder={field.placeholder}
+                          className="text-sm"
+                        />
+                      ) : (
+                        <Input
+                          id={field.name}
+                          value={editData.customFields[field.name] || ''}
+                          onChange={(e) => updateCustomField(field.name, e.target.value)}
+                          placeholder={field.placeholder}
+                          className="text-sm"
+                        />
+                      )
                     ) : (
-                      <Input
-                        id={field.name}
-                        value={editData.customFields[field.name] || ''}
-                        onChange={(e) => updateCustomField(field.name, e.target.value)}
-                        placeholder={field.placeholder}
-                      />
-                    )
-                  ) : (
-                    <p className="text-gray-900 dark:text-white">
-                      {field.type === 'boolean' 
-                        ? (displayData.customFields[field.name] ? 'Yes' : 'No')
-                        : field.type === 'number' && field.name === 'annual_revenue'
-                        ? formatCurrency(displayData.customFields[field.name] || 0)
-                        : (displayData.customFields[field.name] || 'Not set')
-                      }
-                    </p>
-                  )}
-                </div>
-              ))}
+                      <p className="text-sm sm:text-base text-gray-900 dark:text-white">
+                        {field.type === 'boolean' 
+                          ? (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              displayData.customFields[field.name] 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                            }`}>
+                              {displayData.customFields[field.name] ? 'Yes' : 'No'}
+                            </span>
+                          )
+                          : field.type === 'number' && field.name === 'annual_revenue'
+                          ? (
+                            <span className="font-semibold">
+                              {formatCurrency(displayData.customFields[field.name] || 0)}
+                            </span>
+                          )
+                          : (displayData.customFields[field.name] || <span className="text-muted-foreground text-xs sm:text-sm">Not set</span>)
+                        }
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 lg:order-2 order-1">
           {/* Quick Stats */}
           <Card>
             <CardHeader>
               <CardTitle>Quick Stats</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Ticket className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Tickets</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4 sm:gap-6 lg:gap-4">
+                <div className="flex sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between sm:justify-start lg:justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Ticket className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Tickets</span>
+                  </div>
+                  <span className="font-semibold text-gray-900 dark:text-white">{displayData.totalTickets}</span>
                 </div>
-                <span className="font-semibold text-gray-900 dark:text-white">{displayData.totalTickets}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Customer Value</span>
+                <div className="flex sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between sm:justify-start lg:justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Customer Value</span>
+                  </div>
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(displayData.value)}</span>
                 </div>
-                <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(displayData.value)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Last Activity</span>
+                <div className="flex sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between sm:justify-start lg:justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Last Activity</span>
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 sm:mt-1 lg:mt-0">{formatDate(displayData.lastActivity)}</span>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(displayData.lastActivity)}</span>
               </div>
             </CardContent>
           </Card>
@@ -494,19 +558,19 @@ export default function CustomerDetailPage({ params, searchParams }: CustomerDet
               {customerTickets.length > 0 ? (
                 customerTickets.map((ticket) => (
                   <div key={ticket.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-2 gap-2">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate flex-1">
                         {ticket.title}
                       </h4>
-                      <CustomBadge variant={priorityColors[ticket.priority]} className="text-xs ml-2">
+                      <CustomBadge variant={priorityColors[ticket.priority]} className="text-xs self-start">
                         {ticket.priority}
                       </CustomBadge>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-gray-500 dark:text-gray-400 gap-2">
                       <CustomBadge variant={ticketStatusColors[ticket.status]} className="text-xs">
                         {ticket.status}
                       </CustomBadge>
-                      <span>{formatDate(ticket.createdAt)}</span>
+                      <span className="text-xs">{formatDate(ticket.createdAt)}</span>
                     </div>
                     {ticket.assignee && (
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">

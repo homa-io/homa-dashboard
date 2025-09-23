@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { 
   Search,
   Plus,
@@ -51,6 +52,7 @@ export default function KnowledgeBaseManagePage() {
   const [selectedTab, setSelectedTab] = useState('articles')
   const [editingArticle, setEditingArticle] = useState<string | null>(null)
   const [creatingNew, setCreatingNew] = useState(false)
+  const [previewArticle, setPreviewArticle] = useState<string | null>(null)
 
   const filteredArticles = mockKnowledgeBaseArticles.filter(article => {
     const matchesSearch = searchTerm === '' || 
@@ -306,7 +308,7 @@ export default function KnowledgeBaseManagePage() {
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setPreviewArticle(article.id)}>
                                 <Eye className="w-4 h-4 mr-2" />
                                 Preview
                               </DropdownMenuItem>
@@ -348,6 +350,112 @@ export default function KnowledgeBaseManagePage() {
           <TagManager />
         </TabsContent>
       </Tabs>
+
+      {/* Preview Modal - Mobile Responsive */}
+      {previewArticle && (() => {
+        const article = mockKnowledgeBaseArticles.find(a => a.id === previewArticle)
+        if (!article) return null
+        
+        return (
+          <Dialog open={!!previewArticle} onOpenChange={() => setPreviewArticle(null)}>
+            <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
+              <DialogHeader>
+                <DialogTitle className="text-lg sm:text-xl">Article Preview</DialogTitle>
+              </DialogHeader>
+              <div className="mt-3 sm:mt-4">
+                {/* Article Header */}
+                <div className="mb-4 sm:mb-6">
+                  {article.featuredImage && (
+                    <img 
+                      src={article.featuredImage.url} 
+                      alt={article.title}
+                      className="w-full h-40 sm:h-64 object-cover rounded-lg mb-4 sm:mb-6"
+                    />
+                  )}
+                  <h1 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-3">
+                    {article.title}
+                  </h1>
+                  {article.excerpt && (
+                    <p className="text-sm sm:text-lg text-muted-foreground mb-3 sm:mb-4">{article.excerpt}</p>
+                  )}
+                  
+                  {/* Article Meta */}
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
+                    <div className="flex items-center gap-1">
+                      <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span>{article.author.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span>{new Date(article.updatedAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span>{article.views.toLocaleString()} views</span>
+                    </div>
+                  </div>
+                  
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                    {article.tags.map(tag => (
+                      <Badge key={tag.id} variant="secondary" className="text-xs sm:text-sm">
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                  
+                  {/* Category */}
+                  {article.categoryId && (
+                    <div className="text-xs sm:text-sm text-muted-foreground">
+                      Category: {mockKnowledgeBaseCategories.find(c => c.id === article.categoryId)?.name}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Article Content - Mobile Responsive */}
+                <div 
+                  className="prose prose-sm sm:prose-base max-w-none 
+                    prose-headings:text-base sm:prose-headings:text-xl
+                    prose-p:text-sm sm:prose-p:text-base
+                    prose-li:text-sm sm:prose-li:text-base
+                    prose-img:rounded-lg prose-img:max-w-full
+                    prose-pre:text-xs sm:prose-pre:text-sm
+                    prose-code:text-xs sm:prose-code:text-sm"
+                  dangerouslySetInnerHTML={{ 
+                    __html: article.content
+                  }}
+                />
+                
+                {/* Related Articles */}
+                {article.relatedArticles && article.relatedArticles.length > 0 && (
+                  <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t">
+                    <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Related Articles</h3>
+                    <div className="space-y-2 sm:space-y-3">
+                      {article.relatedArticles.map(relatedId => {
+                        const related = mockKnowledgeBaseArticles.find(a => a.id === relatedId)
+                        return related ? (
+                          <div 
+                            key={relatedId} 
+                            className="flex items-center gap-2 group cursor-pointer"
+                            onClick={() => {
+                              setPreviewArticle(relatedId)
+                            }}
+                          >
+                            <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            <span className="text-sm sm:text-base group-hover:underline group-hover:text-primary transition-colors">
+                              {related.title}
+                            </span>
+                          </div>
+                        ) : null
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )
+      })()}
     </div>
   )
 }

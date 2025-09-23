@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { 
   ArrowLeft,
   Save,
@@ -61,6 +62,7 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
   const [status, setStatus] = useState(article?.status || 'draft')
   const [featured, setFeatured] = useState(article?.featured || false)
   const [featuredImageUrl, setFeaturedImageUrl] = useState(article?.featuredImage?.url || '')
+  const [showPreview, setShowPreview] = useState(false)
 
   const editor = useEditor({
     extensions: [
@@ -178,7 +180,12 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 sm:flex-none"
+              onClick={() => setShowPreview(true)}
+            >
               <Eye className="w-4 h-4 mr-1 sm:mr-2" />
               Preview
             </Button>
@@ -495,6 +502,62 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
           </div>
         </div>
       </div>
+
+      {/* Preview Modal - Mobile Responsive */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Article Preview</DialogTitle>
+          </DialogHeader>
+          <div className="mt-3 sm:mt-4">
+            {/* Article Header */}
+            <div className="mb-4 sm:mb-6">
+              {featuredImageUrl && (
+                <img 
+                  src={featuredImageUrl} 
+                  alt={title}
+                  className="w-full h-40 sm:h-64 object-cover rounded-lg mb-4 sm:mb-6"
+                />
+              )}
+              <h1 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-3">
+                {title || 'Untitled Article'}
+              </h1>
+              {excerpt && (
+                <p className="text-sm sm:text-lg text-muted-foreground mb-3 sm:mb-4">{excerpt}</p>
+              )}
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                {selectedTags.map(tagId => {
+                  const tag = mockKnowledgeBaseTags.find(t => t.id === tagId)
+                  return tag ? (
+                    <Badge key={tagId} variant="secondary" className="text-xs sm:text-sm">
+                      {tag.name}
+                    </Badge>
+                  ) : null
+                })}
+              </div>
+              {categoryId && (
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  Category: {mockKnowledgeBaseCategories.find(c => c.id === categoryId)?.name}
+                </div>
+              )}
+            </div>
+            
+            {/* Article Content - Mobile Responsive */}
+            <div 
+              className="prose prose-sm sm:prose-base max-w-none 
+                prose-headings:text-base sm:prose-headings:text-xl
+                prose-p:text-sm sm:prose-p:text-base
+                prose-li:text-sm sm:prose-li:text-base
+                prose-img:rounded-lg prose-img:max-w-full
+                prose-pre:text-xs sm:prose-pre:text-sm
+                prose-code:text-xs sm:prose-code:text-sm"
+              dangerouslySetInnerHTML={{ 
+                __html: editor?.getHTML() || '<p>No content yet...</p>' 
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

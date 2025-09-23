@@ -80,48 +80,52 @@ const CustomerTableRow = memo<{
 }) => (
   <TableRow>
     <TableCell>
-      <div className="flex items-center space-x-3">
-        <Avatar className="h-8 w-8">
+      <div className="flex items-center space-x-2 sm:space-x-3">
+        <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
           <AvatarImage src={customer.avatar} />
           <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
             {getInitials(customer.name)}
           </AvatarFallback>
         </Avatar>
-        <div>
+        <div className="min-w-0">
           <Link 
             href={`/customers/${customer.id}`}
-            className="font-medium text-blue-600 hover:text-blue-500 hover:underline"
+            className="font-medium text-blue-600 hover:text-blue-500 hover:underline text-sm sm:text-base block truncate"
           >
             {customer.name}
           </Link>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 mt-1">
             <StatusBadge status={customer.status} type="customer" size="sm" />
+            {/* Show email on mobile when email column is hidden */}
+            <div className="sm:hidden text-xs text-gray-500 mt-1 truncate">
+              {customer.email}
+            </div>
           </div>
         </div>
       </div>
     </TableCell>
     {visibleColumns.email && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden sm:table-cell">
         {customer.email}
       </TableCell>
     )}
     {visibleColumns.phone && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell">
         {customer.phone || '-'}
       </TableCell>
     )}
     {visibleColumns.company && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
         {customer.company || '-'}
       </TableCell>
     )}
     {visibleColumns.source && (
-      <TableCell>
+      <TableCell className="hidden sm:table-cell">
         <SourceBadge source={customer.source} size="sm" />
       </TableCell>
     )}
     {visibleColumns.tags && (
-      <TableCell>
+      <TableCell className="hidden lg:table-cell">
         <div className="flex flex-wrap gap-1">
           {customer.tags.slice(0, 2).map((tag, index) => (
             <Badge key={index} variant="secondary" className="text-xs">
@@ -137,7 +141,7 @@ const CustomerTableRow = memo<{
       </TableCell>
     )}
     {visibleColumns.tickets && (
-      <TableCell className="text-sm">
+      <TableCell className="text-sm hidden md:table-cell">
         <div className="flex items-center">
           <Ticket className="h-4 w-4 mr-1 text-gray-400" />
           {customer.totalTickets}
@@ -150,17 +154,17 @@ const CustomerTableRow = memo<{
       </TableCell>
     )}
     {visibleColumns.lastActivity && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
         {formatDate(customer.lastActivity)}
       </TableCell>
     )}
     {visibleColumns.address && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden xl:table-cell">
         {customer.address ? `${customer.address.city}, ${customer.address.state}` : '-'}
       </TableCell>
     )}
     {visibleColumns.joinDate && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden xl:table-cell">
         {formatDate(customer.createdAt)}
       </TableCell>
     )}
@@ -300,33 +304,33 @@ export default function CustomersPage() {
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Customers</h2>
-          <p className="text-base text-gray-600 dark:text-gray-300 mt-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex-1">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Customers</h2>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
             Manage your customer database and relationships
           </p>
         </div>
-        <Button>
+        <Button className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Add Customer
         </Button>
       </div>
 
       {/* Filters and Sort Bar */}
-      <div className="flex items-center gap-4">
-        <div className="relative">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+        <div className="relative flex-1 min-w-0 sm:flex-initial sm:w-auto">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
-            placeholder="Search customers by name, email, or phone..."
+            placeholder="Search customers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 w-[350px]"
+            className="pl-10 w-full sm:w-[350px]"
           />
         </div>
         
         <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -338,11 +342,13 @@ export default function CustomersPage() {
           </SelectContent>
         </Select>
 
+        <div className="flex gap-2 sm:gap-4">
         <DropdownMenu open={filterDropdownOpen} onOpenChange={setFilterDropdownOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline">
+            <Button variant="outline" className="flex-1 sm:flex-initial">
               <Filter className="h-4 w-4 mr-2" />
-              Filters
+              <span className="hidden sm:inline">Filters</span>
+              <span className="sm:hidden">Filter</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -435,9 +441,10 @@ export default function CustomersPage() {
 
         <DropdownMenu open={columnsDropdownOpen} onOpenChange={setColumnsDropdownOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline">
+            <Button variant="outline" className="flex-1 sm:flex-initial">
               <Columns3 className="h-4 w-4 mr-2" />
-              Columns
+              <span className="hidden sm:inline">Columns</span>
+              <span className="sm:hidden">Cols</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -536,6 +543,7 @@ export default function CustomersPage() {
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
       {/* Active Filter Badges */}
@@ -589,21 +597,21 @@ export default function CustomersPage() {
       </div>
 
       {/* Customers Table */}
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-[600px] sm:min-w-[800px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[250px]">Customer</TableHead>
-              {visibleColumns.email && <TableHead>Email</TableHead>}
-              {visibleColumns.phone && <TableHead>Phone</TableHead>}
-              {visibleColumns.company && <TableHead>Company</TableHead>}
-              {visibleColumns.source && <TableHead>Source</TableHead>}
-              {visibleColumns.tags && <TableHead>Tags</TableHead>}
-              {visibleColumns.tickets && <TableHead>Tickets</TableHead>}
+              <TableHead className="w-[200px] sm:w-[250px]">Customer</TableHead>
+              {visibleColumns.email && <TableHead className="hidden sm:table-cell">Email</TableHead>}
+              {visibleColumns.phone && <TableHead className="hidden md:table-cell">Phone</TableHead>}
+              {visibleColumns.company && <TableHead className="hidden lg:table-cell">Company</TableHead>}
+              {visibleColumns.source && <TableHead className="hidden sm:table-cell">Source</TableHead>}
+              {visibleColumns.tags && <TableHead className="hidden lg:table-cell">Tags</TableHead>}
+              {visibleColumns.tickets && <TableHead className="hidden md:table-cell">Tickets</TableHead>}
               {visibleColumns.value && <TableHead>Value</TableHead>}
-              {visibleColumns.lastActivity && <TableHead>Last Activity</TableHead>}
-              {visibleColumns.address && <TableHead>Address</TableHead>}
-              {visibleColumns.joinDate && <TableHead>Join Date</TableHead>}
+              {visibleColumns.lastActivity && <TableHead className="hidden lg:table-cell">Last Activity</TableHead>}
+              {visibleColumns.address && <TableHead className="hidden xl:table-cell">Address</TableHead>}
+              {visibleColumns.joinDate && <TableHead className="hidden xl:table-cell">Join Date</TableHead>}
               <TableHead className="w-[50px]">Actions</TableHead>
             </TableRow>
           </TableHeader>

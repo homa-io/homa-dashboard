@@ -757,11 +757,11 @@ export default function TicketsPage() {
 
 
   return (
-    <div className="h-screen bg-background">
+    <div className="min-h-screen lg:h-screen bg-background">
       {/* Main Content Area with proper spacing */}
-      <div className="flex flex-col lg:flex-row h-screen">
+      <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen">
         {/* Ticket List Sidebar - Mobile Responsive */}
-        <div className="w-full lg:w-96 bg-card flex flex-col lg:fixed lg:left-16 lg:top-0 h-screen lg:h-screen z-10 lg:shadow-lg">
+        <div className="w-full lg:w-96 bg-card flex flex-col lg:fixed lg:left-16 lg:top-0 h-auto lg:h-screen z-10 lg:shadow-lg">
           {/* Static Header - No Scroll */}
           <div className="p-3 sm:p-4 border-b border-border flex-shrink-0">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -1072,7 +1072,7 @@ export default function TicketsPage() {
           </div>
 
           {/* Tickets List - Mobile Responsive */}
-          <div className="flex-1 overflow-y-auto max-h-64 lg:max-h-full">
+          <div className="flex-1 overflow-y-auto min-h-[50vh] lg:max-h-full">
           {filteredTickets.map((ticket, index) => (
             <div
               key={ticket.id}

@@ -231,8 +231,8 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] sm:max-w-[95vw] max-h-[90vh] sm:max-h-[95vh] w-full p-0 rounded-lg sm:rounded-xl overflow-hidden [&>button]:hidden mt-4 sm:mt-0">
-        <div className="flex flex-col h-full max-h-[90vh] sm:max-h-[95vh]">
+      <DialogContent className="max-w-[98vw] sm:max-w-[95vw] max-h-[85vh] sm:max-h-[90vh] w-full p-0 rounded-lg sm:rounded-xl overflow-hidden [&>button]:hidden my-auto">
+        <div className="flex flex-col h-full max-h-[85vh] sm:max-h-[90vh]">
           {/* Ticket Header - Mobile Responsive */}
           <div className="p-3 sm:p-4 border-b border-border bg-card relative">
             <Button
@@ -368,7 +368,7 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
           <div className="flex-1 overflow-y-auto p-3 sm:p-6 pt-3 sm:pt-4 min-h-0">
             <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 h-full">
               {/* Main Content Area */}
-              <div className="flex-1 flex flex-col min-w-0 max-w-full min-h-0">
+              <div className="flex-1 flex flex-col min-w-0 max-w-full">
                 {/* AI Summary - Mobile Responsive */}
                 <Card className="mb-3 sm:mb-6">
                   <CardHeader className="cursor-pointer p-3 sm:p-6" onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}>
@@ -402,7 +402,10 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
                 </Card>
 
                 {/* Messages - Mobile Responsive */}
-                <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-6 mb-3 sm:mb-6 min-h-0">
+                <div className="mb-1">
+                  <h3 className="text-xs sm:text-sm font-semibold mb-2 px-1">Customer Messages</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-6 mb-3 sm:mb-6 min-h-[200px] sm:min-h-0 bg-muted/10 rounded-lg p-2 sm:p-3">
                   {mockMessages.map((message, index) => (
                     <div key={message.id} className={`flex gap-2 sm:gap-3 ${message.author === "Support Agent" ? "flex-row-reverse" : ""}`}>
                       <Avatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0">
@@ -419,9 +422,9 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
                             ? "bg-primary text-primary-foreground" 
                             : "bg-muted"
                         }`}>
-                          <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-                            <span className="font-medium text-xs sm:text-sm">{message.author}</span>
-                            <span className="text-[10px] sm:text-xs opacity-70">{message.time}</span>
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                            <span className="font-medium text-xs sm:text-sm break-all sm:break-words">{message.author || 'Customer'}</span>
+                            <span className="text-[10px] sm:text-xs opacity-70 whitespace-nowrap">{message.time}</span>
                           </div>
                           <p className="text-xs sm:text-sm whitespace-pre-wrap">{message.message}</p>
                         </div>
@@ -437,9 +440,14 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-xs">SA</AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <span className="text-xs font-medium">Reply to: </span>
-                        <span className="text-xs">{ticket.customer} ({ticket.email})</span>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1">
+                          <span className="text-xs font-medium">Reply to:</span>
+                          <div className="text-xs truncate">
+                            <span className="font-medium">{ticket.customer || 'Customer'}</span>
+                            <span className="text-muted-foreground"> ({ticket.email})</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
