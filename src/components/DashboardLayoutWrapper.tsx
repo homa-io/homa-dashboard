@@ -5,10 +5,10 @@ import { DashboardSidebar } from './DashboardSidebar'
 
 export function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  
-  // Don't show sidebar and topbar on login and lock pages
-  const isAuthPage = pathname === '/login' || pathname === '/lock'
-  
+
+  // Don't show sidebar and topbar on login, lock, and auth callback pages
+  const isAuthPage = pathname === '/login' || pathname === '/lock' || pathname?.startsWith('/auth/')
+
   return (
     <>
       {!isAuthPage && <DashboardSidebar />}

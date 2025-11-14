@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { DashboardLayoutWrapper } from "../src/components/DashboardLayoutWrapper"
+import { AuthProvider } from "../src/contexts/AuthContext"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,9 +44,11 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${poppins.variable} antialiased`}>
-        <DashboardLayoutWrapper>
-          {children}
-        </DashboardLayoutWrapper>
+        <AuthProvider>
+          <DashboardLayoutWrapper>
+            {children}
+          </DashboardLayoutWrapper>
+        </AuthProvider>
       </body>
     </html>
   );

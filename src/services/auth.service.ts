@@ -4,18 +4,18 @@
  */
 
 import { apiClient, type ApiResponse } from './api-client'
+import { setAuthTokens, clearAuthTokens, getRefreshToken } from '@/lib/cookies'
 
 export interface LoginRequest {
   email: string
   password: string
-  rememberMe?: boolean
 }
 
 export interface LoginResponse {
+  access_token: string
+  refresh_token: string
+  expires_in: number
   user: User
-  token: string
-  refreshToken: string
-  expiresIn: number
 }
 
 export interface User {
@@ -68,7 +68,7 @@ export interface RefreshTokenRequest {
 }
 
 class AuthService {
-  private readonly basePath = '/auth'
+  private readonly basePath = '/api/auth'
 
   /**
    * Login with email and password
@@ -76,20 +76,17 @@ class AuthService {
   async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
     try {
       const response = await apiClient.post<LoginResponse>(`${this.basePath}/login`, credentials)
-      
-      if (response.success && response.data.token) {
-        // Store token in client
-        apiClient.setAuthToken(response.data.token)
-        
-        // Store user data
+
+      if (response.success && response.data.access_token) {
+        // Store tokens in cookies (6 months duration)
+        setAuthTokens(response.data.access_token, response.data.refresh_token)
+
+        // Store user data in localStorage for quick access
         if (typeof window !== 'undefined') {
           localStorage.setItem('user', JSON.stringify(response.data.user))
-          if (response.data.refreshToken) {
-            localStorage.setItem('refreshToken', response.data.refreshToken)
-          }
         }
       }
-      
+
       return response
     } catch (error) {
       throw error
@@ -99,19 +96,80 @@ class AuthService {
   /**
    * Logout current user
    */
-  async logout(): Promise<ApiResponse<void>> {
+  async logout(): Promise<void> {
     try {
-      const response = await apiClient.post<void>(`${this.basePath}/logout`)
-      
-      // Clear client-side data regardless of API response
+      // Note: Backend may not have a logout endpoint, so we just clear local data
+      // await apiClient.post<void>(`${this.basePath}/logout`)
+
+      // Clear client-side data
       this.clearAuthData()
-      
-      return response
     } catch (error) {
       // Still clear local data even if logout API fails
       this.clearAuthData()
       throw error
     }
+  }
+
+  /**
+   * Initiate OAuth login with a provider
+   * @param provider - OAuth provider (google, microsoft)
+   * @param redirectUrl - URL to redirect after OAuth success
+   */
+  initiateOAuthLogin(provider: 'google' | 'microsoft', redirectUrl?: string): void {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    const redirect = redirectUrl || `${baseUrl}/auth/callback`
+    const oauthUrl = `${this.basePath}/oauth/${provider}?redirect_url=${encodeURIComponent(redirect)}`
+
+    // Redirect to OAuth provider
+    if (typeof window !== 'undefined') {
+      window.location.href = `${apiClient['baseURL']}${oauthUrl}`
+    }
+  }
+
+  /**
+   * Get available OAuth providers
+   */
+  async getOAuthProviders(): Promise<ApiResponse<{ providers: string[] }>> {
+    return apiClient.get<{ providers: string[] }>(`${this.basePath}/oauth/providers`)
+  }
+
+  /**
+   * Handle OAuth callback
+   * Processes OAuth response from URL parameters
+   */
+  handleOAuthCallback(): LoginResponse | null {
+    if (typeof window === 'undefined') return null
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const oauth = urlParams.get('oauth')
+
+    if (oauth === 'success') {
+      const data = urlParams.get('data')
+      if (data) {
+        try {
+          const decodedData = atob(decodeURIComponent(data))
+          const oauthResponse = JSON.parse(decodedData) as LoginResponse
+
+          // Store tokens in cookies
+          setAuthTokens(oauthResponse.access_token, oauthResponse.refresh_token)
+
+          // Store user data
+          localStorage.setItem('user', JSON.stringify(oauthResponse.user))
+
+          // Clean URL
+          window.history.replaceState({}, document.title, window.location.pathname)
+
+          return oauthResponse
+        } catch (e) {
+          console.error('Failed to parse OAuth response:', e)
+        }
+      }
+    } else if (oauth === 'error') {
+      const message = urlParams.get('message')
+      throw new Error(decodeURIComponent(message || 'OAuth authentication failed'))
+    }
+
+    return null
   }
 
   /**
@@ -169,19 +227,19 @@ class AuthService {
   /**
    * Refresh authentication token
    */
-  async refreshToken(): Promise<ApiResponse<{ token: string; expiresIn: number }>> {
-    const refreshToken = this.getRefreshToken()
+  async refreshToken(): Promise<ApiResponse<{ access_token: string; expires_in: number }>> {
+    const refreshToken = getRefreshToken()
     if (!refreshToken) {
       throw new Error('No refresh token available')
     }
 
-    const response = await apiClient.post<{ token: string; expiresIn: number }>(
+    const response = await apiClient.post<{ access_token: string; refresh_token: string; expires_in: number }>(
       `${this.basePath}/refresh-token`,
-      { refreshToken }
+      { refresh_token: refreshToken }
     )
 
-    if (response.success) {
-      apiClient.setAuthToken(response.data.token)
+    if (response.success && response.data.access_token) {
+      setAuthTokens(response.data.access_token, response.data.refresh_token)
     }
 
     return response
@@ -206,11 +264,9 @@ class AuthService {
    */
   isAuthenticated(): boolean {
     if (typeof window === 'undefined') return false
-    
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
-    const user = localStorage.getItem('user')
-    
-    return !!(token && user)
+
+    const { isAuthenticated } = require('@/lib/cookies')
+    return isAuthenticated()
   }
 
   /**
@@ -228,23 +284,13 @@ class AuthService {
   }
 
   /**
-   * Get refresh token from local storage
-   */
-  private getRefreshToken(): string | null {
-    if (typeof window === 'undefined') return null
-    return localStorage.getItem('refreshToken')
-  }
-
-  /**
    * Clear all authentication data
    */
   private clearAuthData(): void {
     if (typeof window === 'undefined') return
-    
-    apiClient.clearAuthToken()
+
+    clearAuthTokens()
     localStorage.removeItem('user')
-    localStorage.removeItem('refreshToken')
-    sessionStorage.clear()
   }
 
   /**

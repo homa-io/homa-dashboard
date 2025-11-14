@@ -3,6 +3,8 @@
  * Handles authentication, base URL, and common request/response logic
  */
 
+import { getAccessToken } from '@/lib/cookies'
+
 export interface ApiError {
   message: string
   status: number
@@ -37,7 +39,7 @@ class ApiClient {
   private defaultTimeout: number
 
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://api.getevo.dev'
     this.defaultHeaders = {
       'Content-Type': 'application/json',
     }
@@ -118,7 +120,7 @@ class ApiClient {
 
   private getAuthToken(): string | null {
     if (typeof window === 'undefined') return null
-    return localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+    return getAccessToken()
   }
 
   public async get<T>(endpoint: string, config?: RequestConfig): Promise<ApiResponse<T>> {
@@ -166,16 +168,13 @@ class ApiClient {
   }
 
   public setAuthToken(token: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('authToken', token)
-    }
+    // Token is managed by cookie utilities, not needed here
+    // Kept for backwards compatibility
   }
 
   public clearAuthToken(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('authToken')
-      sessionStorage.removeItem('authToken')
-    }
+    // Token is managed by cookie utilities, not needed here
+    // Kept for backwards compatibility
   }
 }
 
