@@ -7,16 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  MoreVertical, 
-  Mail, 
-  Phone, 
-  Building, 
+import {
+  Search,
+  Filter,
+  Plus,
+  MoreVertical,
+  Building,
   Calendar,
-  DollarSign,
   Ticket,
   Eye,
   Edit,
@@ -28,7 +25,9 @@ import {
   X,
   Check,
   MessageCircle,
-  Monitor
+  Monitor,
+  Mail,
+  Phone
 } from "lucide-react"
 import { mockCustomers, mockCustomFields } from "@/data/mockCustomers"
 import { Customer, CustomerFilters } from "@/types/customer.types"
@@ -67,16 +66,14 @@ const CustomerTableRow = memo<{
   onViewCustomer: (id: string) => void
   onEditCustomer: (id: string) => void
   getInitials: (name: string) => string
-  formatCurrency: (amount: number) => string
   formatDate: (date: string) => string
-}>(({ 
-  customer, 
-  visibleColumns, 
-  onViewCustomer, 
-  onEditCustomer, 
-  getInitials, 
-  formatCurrency, 
-  formatDate 
+}>(({
+  customer,
+  visibleColumns,
+  onViewCustomer,
+  onEditCustomer,
+  getInitials,
+  formatDate
 }) => (
   <TableRow>
     <TableCell>
@@ -96,24 +93,10 @@ const CustomerTableRow = memo<{
           </Link>
           <div className="text-xs text-gray-500 mt-1">
             <StatusBadge status={customer.status} type="customer" size="sm" />
-            {/* Show email on mobile when email column is hidden */}
-            <div className="sm:hidden text-xs text-gray-500 mt-1 truncate">
-              {customer.email}
-            </div>
           </div>
         </div>
       </div>
     </TableCell>
-    {visibleColumns.email && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden sm:table-cell">
-        {customer.email}
-      </TableCell>
-    )}
-    {visibleColumns.phone && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell">
-        {customer.phone || '-'}
-      </TableCell>
-    )}
     {visibleColumns.company && (
       <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
         {customer.company || '-'}
@@ -146,11 +129,6 @@ const CustomerTableRow = memo<{
           <Ticket className="h-4 w-4 mr-1 text-gray-400" />
           {customer.totalTickets}
         </div>
-      </TableCell>
-    )}
-    {visibleColumns.value && (
-      <TableCell className="text-sm font-medium">
-        {formatCurrency(customer.value)}
       </TableCell>
     )}
     {visibleColumns.lastActivity && (
@@ -210,13 +188,10 @@ export default function CustomersPage() {
   const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false)
   const [tagSearchQuery, setTagSearchQuery] = useState('')
   const [visibleColumns, setVisibleColumns] = useState({
-    email: true,
-    phone: true,
     company: false,
     source: true,
     tags: true,
     tickets: true,
-    value: true,
     lastActivity: true,
     address: false,
     joinDate: false,
@@ -241,14 +216,10 @@ export default function CustomersPage() {
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name)
-        case 'email':
-          return a.email.localeCompare(b.email)
         case 'company':
           return (a.company || '').localeCompare(b.company || '')
         case 'created':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        case 'value':
-          return b.value - a.value
         default:
           return 0
       }
@@ -278,15 +249,6 @@ export default function CustomersPage() {
 
   const handleEditCustomer = useCallback((customerId: string) => {
     window.location.href = `/customers/${customerId}?edit=true`
-  }, [])
-
-  const formatCurrency = useCallback((amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
   }, [])
 
   const formatDate = useCallback((dateString: string) => {
@@ -335,10 +297,8 @@ export default function CustomersPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="name">Sort by Name</SelectItem>
-            <SelectItem value="email">Sort by Email</SelectItem>
             <SelectItem value="company">Sort by Company</SelectItem>
             <SelectItem value="created">Sort by Created</SelectItem>
-            <SelectItem value="value">Sort by Value</SelectItem>
           </SelectContent>
         </Select>
 
@@ -451,26 +411,8 @@ export default function CustomersPage() {
             <div className="px-2 py-2">
               <h4 className="font-semibold text-sm mb-2">Show Columns</h4>
               <DropdownMenuCheckboxItem
-                checked={visibleColumns.email}
-                onCheckedChange={(checked) => 
-                  setVisibleColumns(prev => ({ ...prev, email: checked }))
-                }
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Email
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.phone}
-                onCheckedChange={(checked) => 
-                  setVisibleColumns(prev => ({ ...prev, phone: checked }))
-                }
-              >
-                <Phone className="h-4 w-4 mr-2" />
-                Phone
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
                 checked={visibleColumns.company}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setVisibleColumns(prev => ({ ...prev, company: checked }))
                 }
               >
@@ -497,7 +439,7 @@ export default function CustomersPage() {
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={visibleColumns.tickets}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setVisibleColumns(prev => ({ ...prev, tickets: checked }))
                 }
               >
@@ -505,17 +447,8 @@ export default function CustomersPage() {
                 Tickets
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={visibleColumns.value}
-                onCheckedChange={(checked) => 
-                  setVisibleColumns(prev => ({ ...prev, value: checked }))
-                }
-              >
-                <DollarSign className="h-4 w-4 mr-2" />
-                Value
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
                 checked={visibleColumns.lastActivity}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setVisibleColumns(prev => ({ ...prev, lastActivity: checked }))
                 }
               >
@@ -602,13 +535,10 @@ export default function CustomersPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[200px] sm:w-[250px]">Customer</TableHead>
-              {visibleColumns.email && <TableHead className="hidden sm:table-cell">Email</TableHead>}
-              {visibleColumns.phone && <TableHead className="hidden md:table-cell">Phone</TableHead>}
               {visibleColumns.company && <TableHead className="hidden lg:table-cell">Company</TableHead>}
               {visibleColumns.source && <TableHead className="hidden sm:table-cell">Source</TableHead>}
               {visibleColumns.tags && <TableHead className="hidden lg:table-cell">Tags</TableHead>}
               {visibleColumns.tickets && <TableHead className="hidden md:table-cell">Tickets</TableHead>}
-              {visibleColumns.value && <TableHead>Value</TableHead>}
               {visibleColumns.lastActivity && <TableHead className="hidden lg:table-cell">Last Activity</TableHead>}
               {visibleColumns.address && <TableHead className="hidden xl:table-cell">Address</TableHead>}
               {visibleColumns.joinDate && <TableHead className="hidden xl:table-cell">Join Date</TableHead>}
@@ -617,14 +547,13 @@ export default function CustomersPage() {
           </TableHeader>
           <TableBody>
             {filteredAndSortedCustomers.map((customer) => (
-              <CustomerTableRow 
+              <CustomerTableRow
                 key={customer.id}
                 customer={customer}
                 visibleColumns={visibleColumns}
                 onViewCustomer={handleViewCustomer}
                 onEditCustomer={handleEditCustomer}
                 getInitials={getInitials}
-                formatCurrency={formatCurrency}
                 formatDate={formatDate}
               />
             ))}
