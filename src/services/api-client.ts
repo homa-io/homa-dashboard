@@ -81,11 +81,18 @@ class ApiClient {
         throw await this.handleErrorResponse(response)
       }
 
-      const data = await response.json()
+      const jsonResponse = await response.json()
+
+      // If the API already returns a success/data structure, use it directly
+      if (jsonResponse.success !== undefined && jsonResponse.data !== undefined) {
+        return jsonResponse
+      }
+
+      // Otherwise, wrap the response
       return {
-        data,
+        data: jsonResponse,
         success: true,
-        message: data.message,
+        message: jsonResponse.message,
       }
     } catch (error) {
       if (error instanceof Error) {

@@ -21,13 +21,17 @@ export interface LoginResponse {
 export interface User {
   id: string
   name: string
+  last_name?: string
+  display_name: string
   email: string
-  avatar?: string
-  role: 'admin' | 'agent' | 'manager'
-  permissions: string[]
-  preferences: UserPreferences
-  createdAt: Date
-  lastLoginAt: Date
+  avatar?: string | null
+  type: string
+  created_at: string
+  updated_at: string
+  // Optional fields for backwards compatibility
+  role?: 'admin' | 'agent' | 'manager'
+  permissions?: string[]
+  preferences?: UserPreferences
 }
 
 export interface UserPreferences {
