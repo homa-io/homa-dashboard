@@ -167,6 +167,15 @@ export default function Dashboard() {
         })
 
         setConversations(conversationsMap)
+
+        // Update selected conversation if modal is open
+        if (selectedConversation) {
+          const allConversations = Object.values(conversationsMap).flat()
+          const updated = allConversations.find(c => c.id === selectedConversation.id)
+          if (updated) {
+            setSelectedConversation(updated)
+          }
+        }
       } catch (error) {
         console.error('Error fetching conversations:', error)
         toast({
@@ -186,6 +195,11 @@ export default function Dashboard() {
   const openConversationModal = (conversation: Conversation) => {
     setSelectedConversation(conversation)
     setIsModalOpen(true)
+  }
+
+  const handleConversationUpdate = () => {
+    // Refresh all conversations to get latest data from server
+    setRefreshTrigger(prev => prev + 1)
   }
 
   const handleStatusChange = async (conversationId: number, newStatus: string) => {
@@ -289,6 +303,7 @@ export default function Dashboard() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onStatusChange={handleStatusChange}
+        onUpdate={handleConversationUpdate}
       />
     </div>
   )

@@ -45,9 +45,10 @@ interface ConversationModalProps {
   isOpen: boolean
   onClose: () => void
   onStatusChange?: (conversationId: number, newStatus: string) => void
+  onUpdate?: () => void
 }
 
-export function ConversationModal({ conversation, isOpen, onClose, onStatusChange }: ConversationModalProps) {
+export function ConversationModal({ conversation, isOpen, onClose, onStatusChange, onUpdate }: ConversationModalProps) {
   const [isActionsExpanded, setIsActionsExpanded] = useState(true)
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
@@ -121,9 +122,14 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
         description: `${field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`
       })
 
-      // Call parent callback if status changed
+      // Call parent callbacks
       if (field === 'status' && onStatusChange) {
         onStatusChange(conversation.id, value)
+      }
+
+      // Notify parent to refresh data
+      if (onUpdate) {
+        onUpdate()
       }
     } catch (error) {
       console.error(`Error updating ${field}:`, error)
@@ -234,7 +240,10 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
     ip: conversation.ip || "Not available",
     os: conversation.operating_system || "Not available",
     browser: conversation.browser || "Not available",
-    country: "Not specified"
+    country: "Not specified",
+    clientId: conversation.customer.id,
+    externalIDs: conversation.customer.external_ids || [],
+    timezone: conversation.customer.timezone
   }
 
   const formatTime = (dateString: string) => {
@@ -244,8 +253,8 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] sm:max-w-[95vw] max-h-[85vh] sm:max-h-[90vh] w-full p-0 rounded-lg sm:rounded-xl overflow-hidden [&>button]:hidden my-auto">
-        <div className="flex flex-col h-full max-h-[85vh] sm:max-h-[90vh]">
+      <DialogContent className="max-w-[95vw] sm:max-w-[85vw] lg:max-w-[1200px] max-h-[80vh] sm:max-h-[85vh] w-full p-0 rounded-lg sm:rounded-xl overflow-hidden [&>button]:hidden my-auto shadow-2xl border-2">
+        <div className="flex flex-col h-full max-h-[80vh] sm:max-h-[85vh]">
           {/* Conversation Header */}
           <div className="p-3 sm:p-4 border-b border-border bg-card relative">
             <Button
@@ -446,6 +455,7 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
                     try {
                       await conversationService.assignUsersToConversation(conversation.id, assignees)
                       toast({ title: "Success", description: "Assignees updated" })
+                      if (onUpdate) onUpdate()
                     } catch (error) {
                       toast({ variant: "destructive", title: "Error", description: "Failed to update assignees" })
                     }
@@ -459,13 +469,14 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
                       }).filter(Boolean) as number[]
                       await conversationService.updateConversationTags(conversation.id, tagIds)
                       toast({ title: "Success", description: "Tags updated" })
+                      if (onUpdate) onUpdate()
                     } catch (error) {
                       toast({ variant: "destructive", title: "Error", description: "Failed to update tags" })
                     }
                   }}
                 />
 
-                <VisitorInformation visitor={visitorInfo} />
+                <VisitorInformation visitor={visitorInfo} currentConversationId={conversation.id} />
               </div>
             </div>
           </div>
