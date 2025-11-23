@@ -12,7 +12,7 @@ export function QuickActionsPanel({ className }: QuickActionsPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const actions = [
-    { icon: Plus, label: 'New Ticket', color: 'hover:bg-accent-purple/10 hover:text-accent-purple' },
+    { icon: Plus, label: 'New Conversation', color: 'hover:bg-accent-purple/10 hover:text-accent-purple' },
     { icon: BarChart3, label: 'Reports', color: 'hover:bg-accent-blue/10 hover:text-accent-blue' },
     { icon: Users, label: 'Assign', color: 'hover:bg-accent-violet/10 hover:text-accent-violet' },
     { icon: Tag, label: 'Bulk Tag', color: 'hover:bg-accent-cyan/10 hover:text-accent-cyan' },

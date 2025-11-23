@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import { CustomBadge } from "@/components/ui/custom-badge"
-import { TicketModal } from "@/components/tickets/TicketModal"
+import { ConversationModal } from "@/components/conversations/ConversationModal"
 import { 
   Circle,
   Clock,
@@ -12,8 +12,8 @@ import {
   Mail
 } from "lucide-react"
 
-// Creative Ticket Card Component - Modern card design
-interface Ticket {
+// Creative Conversation Card Component - Modern card design
+interface Conversation {
   id: number;
   title: string;
   customer: string;
@@ -28,7 +28,7 @@ interface Ticket {
   source?: string;
 }
 
-function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }) {
+function ConversationCard({ conversation, onClick }: { conversation: Conversation; onClick: () => void }) {
   const getSourceIcon = (source: string) => {
     switch (source) {
       case 'email': return <Mail className="w-3 h-3" />
@@ -54,56 +54,56 @@ function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }
       onClick={onClick}
     >
       {/* Priority indicator stripe */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${getPriorityColor(ticket.priority)}`}></div>
+      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${getPriorityColor(conversation.priority)}`}></div>
       
       {/* Header row */}
       <div className="flex items-start justify-between mb-2 ml-2">
         <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
           <CustomBadge 
             variant={
-              ticket.priority === "urgent" ? "red-dot" : 
-              ticket.priority === "high" ? "red" :
-              ticket.priority === "medium" ? "yellow" : "gray"
+              conversation.priority === "urgent" ? "red-dot" : 
+              conversation.priority === "high" ? "red" :
+              conversation.priority === "medium" ? "yellow" : "gray"
             }
             className="text-[10px] sm:text-xs font-medium"
           >
-            {ticket.priority.toUpperCase()}
+            {conversation.priority.toUpperCase()}
           </CustomBadge>
           <CustomBadge variant="outline" className="text-[10px] sm:text-xs hidden sm:inline-flex">
-            {ticket.department || "Support"}
+            {conversation.department || "Support"}
           </CustomBadge>
         </div>
         <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-          <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">{getSourceIcon(ticket.source || 'email')}</span>
-          <span className="text-[10px] sm:text-xs text-muted-foreground">{ticket.time}</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">{getSourceIcon(conversation.source || 'email')}</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground">{conversation.time}</span>
         </div>
       </div>
       
       {/* Sender name */}
       <h4 className="text-xs sm:text-sm font-semibold text-card-foreground leading-tight line-clamp-1 sm:line-clamp-2 mb-2 ml-2">
-        {ticket.customer}
+        {conversation.customer}
       </h4>
       
       {/* Preview with subtle background */}
       <div className="bg-muted rounded-md p-1.5 sm:p-2 mb-2 ml-2 mr-0">
         <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-          {ticket.preview || "Customer needs assistance with account-related issues..."}
+          {conversation.preview || "Customer needs assistance with account-related issues..."}
         </p>
       </div>
       
       {/* Footer - Tags */}
       <div className="ml-2">
         {/* Tags */}
-        {ticket.tags && ticket.tags.length > 0 && (
+        {conversation.tags && conversation.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {ticket.tags.slice(0, 1).map((tag: string, index: number) => (
+            {conversation.tags.slice(0, 1).map((tag: string, index: number) => (
               <span key={index} className="inline-flex items-center px-1 py-0.5 rounded text-[9px] sm:text-[10px] bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
                 #{tag}
               </span>
             ))}
-            {ticket.tags.length > 1 && (
+            {conversation.tags.length > 1 && (
               <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] sm:text-[10px] bg-muted text-muted-foreground border border-border">
-                +{ticket.tags.length - 1}
+                +{conversation.tags.length - 1}
               </span>
             )}
           </div>
@@ -116,7 +116,7 @@ function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }
 export default function Dashboard() {
 
   // State management
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
+  const [selectedConversation, setSelectedTicket] = useState<Conversation | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   // Helper function for priority colors
@@ -130,8 +130,8 @@ export default function Dashboard() {
     }
   }
 
-  // Mock ticket data with additional fields
-  const [tickets, setTickets] = useState<Ticket[]>([
+  // Mock conversation data with additional fields
+  const [conversations, setTickets] = useState<Conversation[]>([
     { id: 1, title: "Payment gateway not working", customer: "John Doe", email: "john@example.com", priority: "high", status: "new", time: "2 min ago", preview: "Customer unable to complete checkout process. Error occurs at payment step.", tags: ["payment", "urgent"], department: "Technical", assignees: ["JD", "MS"], source: "email" },
     { id: 2, title: "Unable to reset password", customer: "Jane Smith", email: "jane@example.com", priority: "medium", status: "new", time: "5 min ago", preview: "Password reset link not working. Customer tried multiple times.", tags: ["account", "password"], department: "Support", assignees: ["AB"], source: "chat" },
     { id: 10, title: "Login form not responsive", customer: "Alex Rodriguez", email: "alex@example.com", priority: "low", status: "new", time: "8 min ago", preview: "Login page doesn't display properly on mobile devices.", tags: ["ui", "mobile"], department: "Development", assignees: [], source: "email" },
@@ -153,17 +153,17 @@ export default function Dashboard() {
 
 
   // Modal handlers
-  const openTicketModal = (ticket: Ticket) => {
-    setSelectedTicket(ticket)
+  const openConversationModal = (conversation: Conversation) => {
+    setSelectedTicket(conversation)
     setIsModalOpen(true)
   }
 
   const handleStatusChange = (ticketId: number, newStatus: string) => {
     setTickets(prevTickets =>
-      prevTickets.map(ticket =>
-        ticket.id === ticketId
-          ? { ...ticket, status: newStatus }
-          : ticket
+      prevTickets.map(conversation =>
+        conversation.id === ticketId
+          ? { ...conversation, status: newStatus }
+          : conversation
       )
     )
   }
@@ -183,13 +183,13 @@ export default function Dashboard() {
     urgent: "text-purple-600 dark:text-purple-400"
   }
 
-  const getTicketsByStatus = (status: string) => tickets.filter(ticket => ticket.status === status)
+  const getTicketsByStatus = (status: string) => conversations.filter(conversation => conversation.status === status)
 
   return (
     <div className="flex-1 space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Support Tickets</h2>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Support Conversations</h2>
           <p className="text-xs sm:text-sm text-muted-foreground">Manage customer support requests by status</p>
         </div>
       </div>
@@ -197,7 +197,7 @@ export default function Dashboard() {
       {/* Mobile-Responsive Kanban Board */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {statuses.map((status) => {
-          const statusTickets = getTicketsByStatus(status.key)
+          const statusConversations = getTicketsByStatus(status.key)
           const StatusIcon = status.icon
           
           return (
@@ -214,25 +214,25 @@ export default function Dashboard() {
                   }`} />
                   <h3 className="text-base font-semibold text-foreground flex-1 text-center">{status.label}</h3>
                   <CustomBadge variant="secondary" className="text-xs">
-                    {statusTickets.length}
+                    {statusConversations.length}
                   </CustomBadge>
                 </div>
               </div>
               
-              {/* Tickets */}
+              {/* Conversations */}
               <div className="space-y-3">
-                {statusTickets.map((ticket) => (
-                  <TicketCard 
-                    key={ticket.id} 
-                    ticket={ticket} 
-                    onClick={() => openTicketModal(ticket)}
+                {statusConversations.map((conversation) => (
+                  <ConversationCard 
+                    key={conversation.id} 
+                    conversation={conversation} 
+                    onClick={() => openConversationModal(conversation)}
                   />
                 ))}
                 
-                {statusTickets.length === 0 && (
+                {statusConversations.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     <StatusIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No {status.label.toLowerCase()} tickets</p>
+                    <p className="text-sm">No {status.label.toLowerCase()} conversations</p>
                   </div>
                 )}
               </div>
@@ -242,9 +242,9 @@ export default function Dashboard() {
       </div>
 
 
-      {/* Ticket Modal */}
-      <TicketModal
-        ticket={selectedTicket}
+      {/* Conversation Modal */}
+      <ConversationModal
+        conversation={selectedConversation}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onStatusChange={handleStatusChange}

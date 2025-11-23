@@ -13,7 +13,7 @@ import {
   Settings, 
   User, 
   Tag, 
-  Ticket, 
+  Conversation, 
   Zap, 
   Plug, 
   MessageSquare,
@@ -52,7 +52,7 @@ import {
 import { AttributeManager } from "@/components/settings/AttributeManager"
 import type { CustomAttribute } from "@/types/settings.types"
 
-type SettingsTab = 'general' | 'customer-attributes' | 'ticket-attributes' | 'integrations' | 'plugins' | 'canned-messages'
+type SettingsTab = 'general' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'plugins' | 'canned-messages'
 
 const tabs = [
   {
@@ -68,10 +68,10 @@ const tabs = [
     description: 'Manage custom fields and attributes for customers'
   },
   {
-    id: 'ticket-attributes' as SettingsTab,
-    label: 'Ticket Attributes',
-    icon: Ticket,
-    description: 'Configure ticket fields, statuses, and priorities'
+    id: 'conversation-attributes' as SettingsTab,
+    label: 'Conversation Attributes',
+    icon: Conversation,
+    description: 'Configure conversation fields, statuses, and priorities'
   },
   {
     id: 'integrations' as SettingsTab,
@@ -126,7 +126,7 @@ export default function SettingsPage() {
     }
   ])
 
-  // Sample ticket attributes
+  // Sample conversation attributes
   const [ticketAttributes, setTicketAttributes] = useState<CustomAttribute[]>([
     {
       id: '1',
@@ -218,10 +218,10 @@ export default function SettingsPage() {
               onSave={setCustomerAttributes}
             />
           )}
-          {activeTab === 'ticket-attributes' && (
+          {activeTab === 'conversation-attributes' && (
             <AttributeManager
-              title="Ticket Attributes"
-              description="Configure custom fields and attributes for tickets."
+              title="Conversation Attributes"
+              description="Configure custom fields and attributes for conversations."
               attributes={ticketAttributes}
               onSave={setTicketAttributes}
             />
@@ -363,7 +363,7 @@ function IntegrationsSettings() {
         {[
           {
             name: 'Slack',
-            description: 'Get notifications and manage tickets from Slack',
+            description: 'Get notifications and manage conversations from Slack',
             connected: true,
             logo: '💬'
           },
@@ -375,7 +375,7 @@ function IntegrationsSettings() {
           },
           {
             name: 'Gmail',
-            description: 'Manage email tickets and customer communications',
+            description: 'Manage email conversations and customer communications',
             connected: false,
             logo: '📧'
           },
@@ -511,7 +511,7 @@ function PluginsSettings() {
               },
               {
                 name: 'Customer Satisfaction Survey',
-                description: 'Send automated satisfaction surveys after ticket resolution',
+                description: 'Send automated satisfaction surveys after conversation resolution',
                 version: '2.1.0',
                 active: true
               },
@@ -588,8 +588,8 @@ function CannedMessagesSettings() {
     },
     {
       id: '2',
-      title: 'Ticket Received',
-      content: 'We have received your inquiry and a support ticket has been created. We will get back to you within 24 hours.',
+      title: 'Conversation Received',
+      content: 'We have received your inquiry and a support conversation has been created. We will get back to you within 24 hours.',
       category: 'Confirmations'
     },
     {

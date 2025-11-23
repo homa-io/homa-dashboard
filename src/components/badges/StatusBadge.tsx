@@ -9,7 +9,7 @@ import type { BadgeVariant } from '@/lib/badge-utils'
 
 export interface StatusBadgeProps {
   status: string
-  type: 'customer' | 'ticket'
+  type: 'customer' | 'conversation'
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }

@@ -70,7 +70,7 @@ const mockTickets: TicketProps[] = [
   }
 ]
 
-function TicketItem({ ticket }: { ticket: TicketProps }) {
+function TicketItem({ conversation }: { conversation: TicketProps }) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Open': return 'bg-blue-100 text-blue-800'
@@ -101,23 +101,23 @@ function TicketItem({ ticket }: { ticket: TicketProps }) {
   return (
     <div className="flex items-start gap-3 p-4 hover:bg-muted/50 transition-colors cursor-pointer">
       <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-        <span className="text-purple-600 font-medium text-sm">{ticket.customer.avatar}</span>
+        <span className="text-purple-600 font-medium text-sm">{conversation.customer.avatar}</span>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-medium text-sm">{ticket.customer.name}</span>
-          <span className="text-xs text-muted-foreground">{ticket.timeAgo}</span>
+          <span className="font-medium text-sm">{conversation.customer.name}</span>
+          <span className="text-xs text-muted-foreground">{conversation.timeAgo}</span>
         </div>
-        <p className="text-sm text-muted-foreground mb-2 truncate">{ticket.message}</p>
+        <p className="text-sm text-muted-foreground mb-2 truncate">{conversation.message}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <span className={cn('px-2 py-1 rounded text-xs font-medium', getStatusColor(ticket.status))}>
-            {ticket.status}
+          <span className={cn('px-2 py-1 rounded text-xs font-medium', getStatusColor(conversation.status))}>
+            {conversation.status}
           </span>
-          <span className={cn('text-xs font-medium', getPriorityColor(ticket.priority))}>
-            • {ticket.priority}
+          <span className={cn('text-xs font-medium', getPriorityColor(conversation.priority))}>
+            • {conversation.priority}
           </span>
-          <span className={cn('text-xs', getDepartmentColor(ticket.department))}>
-            {ticket.department}
+          <span className={cn('text-xs', getDepartmentColor(conversation.department))}>
+            {conversation.department}
           </span>
         </div>
       </div>
@@ -130,7 +130,7 @@ export function RecentTickets() {
     <div className="flex-1 flex flex-col border-r bg-card">
       {/* Header */}
       <div className="p-6 border-b">
-        <h2 className="text-lg font-semibold mb-4">Recent Tickets</h2>
+        <h2 className="text-lg font-semibold mb-4">Recent Conversations</h2>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -145,16 +145,16 @@ export function RecentTickets() {
         </div>
       </div>
 
-      {/* Ticket Section */}
+      {/* Conversation Section */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium text-sm">My Open tickets (6)</h3>
+            <h3 className="font-medium text-sm">My Open conversations (6)</h3>
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="space-y-0">
-            {mockTickets.map((ticket) => (
-              <TicketItem key={ticket.id} ticket={ticket} />
+            {mockTickets.map((conversation) => (
+              <TicketItem key={conversation.id} conversation={conversation} />
             ))}
           </div>
         </div>

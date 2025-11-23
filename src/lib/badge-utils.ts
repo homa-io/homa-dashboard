@@ -31,7 +31,7 @@ export const CUSTOMER_STATUS_CONFIG: Record<string, StatusConfig> = {
   pending: { color: 'yellow', label: 'Pending' }
 } as const
 
-// Ticket status configurations
+// Conversation status configurations
 export const TICKET_STATUS_CONFIG: Record<string, StatusConfig> = {
   new: { color: 'blue', label: 'New' },
   open: { color: 'green', label: 'Open' },
@@ -68,7 +68,7 @@ export const getCustomerStatusVariant = (status: string): BadgeVariant => {
 }
 
 /**
- * Get badge variant for ticket status
+ * Get badge variant for conversation status
  */
 export const getTicketStatusVariant = (status: string): BadgeVariant => {
   return TICKET_STATUS_CONFIG[status?.toLowerCase()]?.color || 'gray'

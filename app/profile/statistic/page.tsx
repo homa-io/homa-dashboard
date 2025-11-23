@@ -80,7 +80,7 @@ const generateMonthData = (month: string) => {
     data.push({
       day: i,
       hours: Math.floor(Math.random() * 8) + 2,
-      tickets: Math.floor(Math.random() * 20) + 5,
+      conversations: Math.floor(Math.random() * 20) + 5,
       active: isActive ? 1 : 0,
       activityLevel: isActive ? Math.floor(Math.random() * 8) + 2 : 0 // Activity level from 0-10
     })
@@ -144,7 +144,7 @@ export default function StatisticsPage() {
 
   // Calculate totals
   const totalHours = monthData.reduce((sum, day) => sum + day.hours, 0)
-  const totalTickets = monthData.reduce((sum, day) => sum + day.tickets, 0)
+  const totalTickets = monthData.reduce((sum, day) => sum + day.conversations, 0)
   const activeDays = monthData.filter(day => day.active === 1).length
   const avgHoursPerDay = totalHours / monthData.length
   const avgTicketsPerDay = totalTickets / monthData.length
@@ -252,14 +252,14 @@ export default function StatisticsPage() {
           </CardContent>
         </Card>
 
-        {/* Tickets Response Chart */}
+        {/* Conversations Response Chart */}
         <Card>
           <CardHeader className="pb-3 sm:pb-6">
             <CardTitle className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
               <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-              Tickets Responded per Day
+              Conversations Responded per Day
             </CardTitle>
-            <CardDescription className="px-3 sm:px-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Daily ticket responses in {selectedMonth}</CardDescription>
+            <CardDescription className="px-3 sm:px-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Daily conversation responses in {selectedMonth}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div style={{ width: '100%', height: '250px' }} className="sm:h-[300px]">
@@ -298,7 +298,7 @@ export default function StatisticsPage() {
                     />
                     <Area
                       type="monotone" 
-                      dataKey="tickets"
+                      dataKey="conversations"
                       stroke="#10b981"
                       strokeWidth={3}
                       fill="url(#ticketsGradient)"
@@ -337,10 +337,10 @@ export default function StatisticsPage() {
             <div className="space-y-2 p-3 sm:p-4 rounded-lg bg-muted/50">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <MessageSquare className="h-3 h-3 sm:h-4 sm:w-4 text-green-600" />
-                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Total Tickets</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Total Conversations</p>
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{animatedTickets}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">tickets resolved</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">conversations resolved</p>
             </div>
 
             <div className="space-y-2 p-3 sm:p-4 rounded-lg bg-muted/50">
@@ -364,10 +364,10 @@ export default function StatisticsPage() {
             <div className="space-y-2 p-3 sm:p-4 rounded-lg bg-muted/50 sm:col-span-2 lg:col-span-1">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <Award className="h-3 h-3 sm:h-4 sm:w-4 text-purple-600" />
-                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Avg Tickets/Day</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Avg Conversations/Day</p>
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{animatedAvgTickets.toFixed(1)}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">tickets average</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">conversations average</p>
             </div>
           </div>
         </CardContent>

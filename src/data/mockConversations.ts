@@ -6,7 +6,7 @@ interface ConversationMessage {
   type: 'customer' | 'agent' | 'system';
 }
 
-export interface Ticket {
+export interface Conversation {
   id: number;
   title: string;
   customer: string;
@@ -24,7 +24,7 @@ export interface Ticket {
   aiSummary?: string;
 }
 
-export const mockTickets: Ticket[] = [
+export const mockConversations: Conversation[] = [
   { id: 1, title: "Payment gateway not working", customer: "John Doe", email: "john@example.com", priority: "high", status: "new", time: "2 min ago", preview: "Customer unable to complete checkout process. Error occurs at payment step.", tags: ["payment", "urgent"], department: "Technical", assignees: ["JD", "MS"], source: "email" },
   { id: 2, title: "Unable to reset password", customer: "Jane Smith", email: "jane@example.com", priority: "medium", status: "new", time: "5 min ago", preview: "Password reset link not working. Customer tried multiple times.", tags: ["account", "password"], department: "Support", assignees: ["AB"], source: "chat" },
   { id: 10, title: "Login form not responsive", customer: "Alex Rodriguez", email: "alex@example.com", priority: "low", status: "new", time: "8 min ago", preview: "Login page doesn't display properly on mobile devices.", tags: ["ui", "mobile"], department: "Development", assignees: [], source: "email" },
@@ -44,17 +44,17 @@ export const mockTickets: Ticket[] = [
   { id: 17, title: "Integration setup complete", customer: "Sophie Turner", email: "sophie@example.com", priority: "low", status: "closed", time: "1 week ago", preview: "Third-party integration successfully configured.", tags: ["integration", "setup"], department: "Technical", assignees: ["DE"], source: "email" },
 ]
 
-// Generate additional tickets for testing
-export const generateAdditionalTickets = (): Ticket[] => {
+// Generate additional conversations for testing
+export const generateAdditionalTickets = (): Conversation[] => {
   return Array.from({ length: 35 }, (_, i) => ({
     id: 100 + i,
-    title: `Generated Ticket ${i + 1}`,
+    title: `Generated Conversation ${i + 1}`,
     customer: `Customer ${i + 1}`,
     email: `customer${i + 1}@example.com`,
     priority: ['low', 'medium', 'high', 'urgent'][i % 4],
     status: ['new', 'open', 'pending', 'resolved', 'closed'][i % 5],
     time: `${Math.floor(Math.random() * 24)} hours ago`,
-    preview: `This is a generated ticket for testing purposes. Ticket number ${i + 1}.`,
+    preview: `This is a generated conversation for testing purposes. Conversation number ${i + 1}.`,
     tags: [`tag${i % 5}`, `category${i % 3}`],
     department: ['Support', 'Technical', 'Billing', 'Product'][i % 4],
     assignees: i % 3 === 0 ? [] : [`Agent${i % 5}`],
@@ -62,6 +62,6 @@ export const generateAdditionalTickets = (): Ticket[] => {
   }))
 }
 
-export const getAllTickets = (): Ticket[] => {
-  return [...mockTickets, ...generateAdditionalTickets()]
+export const getAllTickets = (): Conversation[] => {
+  return [...mockConversations, ...generateAdditionalTickets()]
 }

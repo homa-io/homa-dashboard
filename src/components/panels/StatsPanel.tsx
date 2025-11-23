@@ -39,7 +39,7 @@ export function StatsPanel({ stats, className }: StatsPanelProps) {
       )}>
         <div className="px-4 pb-4 space-y-3">
           <div className="flex items-center justify-between py-2">
-            <span className="text-text-secondary text-sm">Open Tickets</span>
+            <span className="text-text-secondary text-sm">Open Conversations</span>
             <div className="flex items-center gap-2">
               <span className="text-text-primary font-medium">{stats.openTickets}</span>
               <TrendingUp className="w-4 h-4 text-status-success" />

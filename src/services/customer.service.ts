@@ -105,7 +105,7 @@ class CustomerService {
   }
 
   /**
-   * Get customer tickets
+   * Get customer conversations
    */
   async getCustomerTickets(customerId: string, params: { page?: number; limit?: number } = {}): Promise<ApiResponse<PaginatedResponse<any>>> {
     const searchParams = new URLSearchParams()
@@ -114,8 +114,8 @@ class CustomerService {
     
     const queryString = searchParams.toString()
     const endpoint = queryString 
-      ? `${this.basePath}/${customerId}/tickets?${queryString}`
-      : `${this.basePath}/${customerId}/tickets`
+      ? `${this.basePath}/${customerId}/conversations?${queryString}`
+      : `${this.basePath}/${customerId}/conversations`
     
     return apiClient.get(endpoint)
   }

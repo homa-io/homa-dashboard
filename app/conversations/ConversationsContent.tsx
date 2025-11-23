@@ -23,16 +23,20 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Search, Filter, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Link, Download, FileText, Image as ImageIcon, ChevronDown, Reply, Mail, Globe, MessageCircle, Phone, Monitor, ChevronUp, Sparkles, Check, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, CircleDot, X, Tag, Building, Minus, AlertTriangle, Zap, Circle, Clock, CheckCircle, XCircle, Pause, Loader } from 'lucide-react'
-import { VisitorInformation } from '@/components/tickets/VisitorInformation'
-import { TicketActions } from '@/components/tickets/TicketActions'
-import { CannedMessages } from '@/components/tickets/CannedMessages'
-import { WysiwygEditor } from '@/components/tickets/WysiwygEditor'
-import { TicketModal } from '@/components/tickets/TicketModal'
+import { Search, Filter, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Link, Download, FileText, Image as ImageIcon, ChevronDown, Reply, Mail, Globe, MessageCircle, Phone, Monitor, ChevronUp, Sparkles, Check, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, CircleDot, X, Tag, Building, Minus, AlertTriangle, Zap, Circle, Clock, CheckCircle, XCircle, Pause, Loader, Archive } from 'lucide-react'
+import { VisitorInformation } from '@/components/conversations/VisitorInformation'
+import { ConversationActions } from '@/components/conversations/ConversationActions'
+import { CannedMessages } from '@/components/conversations/CannedMessages'
+import { WysiwygEditor } from '@/components/conversations/WysiwygEditor'
+import { ConversationModal } from '@/components/conversations/ConversationModal'
 import { getAvatarColor, getInitials } from '@/lib/avatar-colors'
+import { conversationService } from '@/services'
+import type { Conversation } from '@/types/conversation.types'
+import { useToast } from '@/hooks/use-toast'
 
-export default function TicketsContent() {
-  const [selectedTicketId, setSelectedTicketId] = useState(1)
+export default function ConversationsContent() {
+  const { toast } = useToast()
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [replyText, setReplyText] = useState("Hi Dean,\n\nThank you for contacting us. We sure can help you. Shall we schedule a call tomorrow around 12.00pm. We can help you better if we are on a call.\n\nPlease let us know your availability.")
   const [isActionsExpanded, setIsActionsExpanded] = useState(false)
@@ -47,6 +51,17 @@ export default function TicketsContent() {
   const [tagSearchQuery, setTagSearchQuery] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
+  // API state
+  const [apiConversations, setApiConversations] = useState<Conversation[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [totalConversations, setTotalConversations] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([])
+  const [availableTags, setAvailableTags] = useState<Array<{ id: number; name: string; color: string }>>([])
+  const [availableUsers, setAvailableUsers] = useState<Array<{ id: string; name: string; last_name: string; display_name: string; email: string; avatar: string | null }>>([])
+
   // Get URL search parameters
   const searchParams = useSearchParams()
 
@@ -57,6 +72,104 @@ export default function TicketsContent() {
       setSearchQuery(ticketId)
     }
   }, [searchParams])
+
+  // Fetch departments, tags, and users on component mount
+  useEffect(() => {
+    const fetchDepartmentsTagsAndUsers = async () => {
+      try {
+        const [depts, tags, users] = await Promise.all([
+          conversationService.getDepartments(),
+          conversationService.getTags(),
+          conversationService.getUsers()
+        ])
+        setDepartments(depts.map(d => ({ id: d.id, name: d.name })))
+        setAvailableTags(tags.map(t => ({ id: t.id, name: t.name, color: t.color })))
+        setAvailableUsers(users)
+      } catch (err) {
+        console.error('Error fetching departments, tags, and users:', err)
+      }
+    }
+    fetchDepartmentsTagsAndUsers()
+  }, [])
+
+  // Fetch conversations from API
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const params: any = {
+          page: currentPage,
+          limit: 25,
+          sort_order: sortOrder,
+        }
+
+        if (searchQuery.trim()) {
+          params.search = searchQuery.trim()
+        }
+
+        if (filterStatus) {
+          params.status = filterStatus
+        }
+
+        if (filterPriority) {
+          params.priority = filterPriority
+        }
+
+        if (filterSource) {
+          params.channel = filterSource
+        }
+
+        if (filterTags.length > 0) {
+          params.tags = filterTags.join(',')
+        }
+
+        const result = await conversationService.searchConversations(params)
+
+        setApiConversations(result.data)
+        setTotalConversations(result.total)
+      } catch (err) {
+        console.error('Error fetching conversations:', err)
+        setError(err instanceof Error ? err.message : 'Failed to fetch conversations')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchConversations()
+  }, [searchQuery, filterStatus, filterPriority, filterSource, filterTags, sortOrder, currentPage, refreshTrigger])
+
+  // Auto-select first conversation on page load
+  useEffect(() => {
+    if (apiConversations.length > 0 && !selectedConversationId) {
+      setSelectedConversationId(apiConversations[0].id)
+    }
+  }, [apiConversations, selectedConversationId])
+
+  // Get currently selected conversation
+  const selectedConversation = apiConversations.find(conversation => conversation.id === selectedConversationId)
+
+  // Sync ticketActions and ticketHeader with selected conversation
+  useEffect(() => {
+    if (selectedConversation) {
+      // Update ticket header
+      setTicketHeader({
+        priority: selectedConversation.priority || 'medium',
+        status: selectedConversation.status || 'new',
+        department: selectedConversation.department?.name || 'Support Department'
+      })
+
+      // Update ticket actions
+      setTicketActions({
+        priority: selectedConversation.priority || 'medium',
+        status: selectedConversation.status || 'new',
+        department: selectedConversation.department?.name || 'Support Department',
+        assignees: selectedConversation.assigned_agents?.map(u => u.id) || [],
+        tags: selectedConversation.tags?.map(t => t.name) || []
+      })
+    }
+  }, [selectedConversation])
 
   const getSourceIcon = (source: string) => {
     switch (source) {
@@ -93,15 +206,30 @@ export default function TicketsContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new': return 'blue'
-      case 'open': return 'green'
-      case 'pending': return 'yellow'
-      case 'resolved': return 'green'
+      case 'user_reply': return 'green'
+      case 'agent_reply': return 'blue'
+      case 'processing': return 'yellow'
       case 'closed': return 'gray'
+      case 'archived': return 'gray'
+      case 'postponed': return 'yellow'
       default: return 'gray'
     }
   }
 
-  // Ticket actions state
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'new': return <Circle className="w-3 h-3" />
+      case 'user_reply': return <ArrowUp className="w-3 h-3" />
+      case 'agent_reply': return <ArrowDown className="w-3 h-3" />
+      case 'processing': return <Loader className="w-3 h-3" />
+      case 'closed': return <XCircle className="w-3 h-3" />
+      case 'archived': return <Archive className="w-3 h-3" />
+      case 'postponed': return <Clock className="w-3 h-3" />
+      default: return <Circle className="w-3 h-3" />
+    }
+  }
+
+  // Conversation actions state
   const [ticketActions, setTicketActions] = useState({
     priority: "high",
     status: "open",
@@ -110,50 +238,40 @@ export default function TicketsContent() {
     tags: ["payment", "urgent", "visa"]
   })
 
-  // Ticket header state (for the currently selected ticket)
+  // Conversation header state (for the currently selected conversation)
   const [ticketHeader, setTicketHeader] = useState({
     priority: "high",
     status: "open",
     department: "Sales Department"
   })
 
-  // Loading states for ticket header changes
+  // Loading states for conversation header changes
   const [loadingStates, setLoadingStates] = useState({
     status: false,
     priority: false,
     department: false
   })
 
-  // Original ticket actions for change detection
-  const [originalTicketActions] = useState({
-    priority: "high",
-    status: "open",
-    department: "Sales Department",
-    assignees: ["1", "2"],
-    tags: ["payment", "urgent", "visa"]
-  })
-
-  // Check if there are unsaved changes
-  const hasChanges = JSON.stringify(ticketActions) !== JSON.stringify(originalTicketActions)
-
   // Modal handlers
   const openTicketModal = (ticketId: number) => {
-    setSelectedTicketId(ticketId)
+    setSelectedConversationId(ticketId)
     setIsModalOpen(true)
   }
 
   const handleStatusChange = (ticketId: number, newStatus: string) => {
-    // Update ticket status in your state management
-    console.log(`Ticket ${ticketId} status changed to ${newStatus}`)
+    // Update conversation status in your state management
+    console.log(`Conversation ${ticketId} status changed to ${newStatus}`)
   }
 
   // Available options
   const availableStatuses = [
     { value: "new", label: "New" },
-    { value: "open", label: "Open" },
-    { value: "pending", label: "Pending" },
-    { value: "resolved", label: "Resolved" },
+    { value: "user_reply", label: "User Reply" },
+    { value: "agent_reply", label: "Agent Reply" },
+    { value: "processing", label: "Processing" },
     { value: "closed", label: "Closed" },
+    { value: "archived", label: "Archived" },
+    { value: "postponed", label: "Postponed" },
   ]
 
   const availablePriorities = [
@@ -163,30 +281,255 @@ export default function TicketsContent() {
     { value: "urgent", label: "Urgent Priority" },
   ]
 
-  const availableDepartments = [
-    "Sales Department",
-    "Support Department",
-    "Marketing Department",
-    "Technical Department",
-    "Billing Department"
-  ]
+  // Use dynamically fetched departments or fallback to defaults
+  const availableDepartments = departments.length > 0
+    ? departments.map(d => d.name)
+    : [
+      "Sales Department",
+      "Support Department",
+      "Marketing Department",
+      "Technical Department",
+      "Billing Department"
+    ]
 
-  // Handle ticket header changes
+  // Handle conversation header changes
   const handleTicketHeaderChange = async (field: 'status' | 'priority' | 'department', value: string) => {
+    if (!selectedConversation) return
+
     setLoadingStates(prev => ({ ...prev, [field]: true }))
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      const updates: any = {}
+      if (field === 'priority') updates.priority = value
+      if (field === 'status') updates.status = value
+      if (field === 'department') {
+        // Find department ID from name
+        const department = departments.find(d => d.name === value)
+        if (department) {
+          updates.department_id = department.id
+        } else {
+          console.error('Department not found:', value)
+          setLoadingStates(prev => ({ ...prev, [field]: false }))
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Department not found. Please try again.",
+          })
+          return
+        }
+      }
 
-    setTicketHeader(prev => ({ ...prev, [field]: value }))
-    setLoadingStates(prev => ({ ...prev, [field]: false }))
+      await conversationService.updateConversationProperties(selectedConversation.id, updates)
+
+      setTicketHeader(prev => ({ ...prev, [field]: value }))
+
+      // Refresh conversations list
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      console.error('Error updating conversation:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update conversation. Please try again.",
+      })
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [field]: false }))
+    }
   }
 
-  const handleSaveTicketActions = () => {
-    console.log('Saving ticket actions:', ticketActions)
+  // Handlers for immediate save on change
+  const handleActionsPriorityChange = async (priority: string) => {
+    if (!selectedConversation) return
+
+    setTicketActions(prev => ({ ...prev, priority }))
+
+    try {
+      await conversationService.updateConversationProperties(selectedConversation.id, { priority })
+      toast({
+        title: "Success",
+        description: "Priority updated successfully!",
+      })
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update priority. Please try again.",
+      })
+    }
   }
 
-  const tickets = [
+  const handleActionsStatusChange = async (status: string) => {
+    if (!selectedConversation) return
+
+    setTicketActions(prev => ({ ...prev, status }))
+
+    try {
+      await conversationService.updateConversationProperties(selectedConversation.id, { status })
+      toast({
+        title: "Success",
+        description: "Status updated successfully!",
+      })
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update status. Please try again.",
+      })
+    }
+  }
+
+  const handleActionsDepartmentChange = async (department: string) => {
+    if (!selectedConversation) return
+
+    setTicketActions(prev => ({ ...prev, department }))
+
+    try {
+      const dept = departments.find(d => d.name === department)
+      if (dept) {
+        await conversationService.updateConversationProperties(selectedConversation.id, {
+          department_id: dept.id
+        })
+        toast({
+          title: "Success",
+          description: "Department updated successfully!",
+        })
+        setRefreshTrigger(prev => prev + 1)
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Department not found. Please try again.",
+        })
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update department. Please try again.",
+      })
+    }
+  }
+
+  const handleActionsAssigneesChange = async (assignees: string[]) => {
+    if (!selectedConversation) return
+
+    setTicketActions(prev => ({ ...prev, assignees }))
+
+    try {
+      await conversationService.assignUsersToConversation(selectedConversation.id, assignees)
+      toast({
+        title: "Success",
+        description: "Assignees updated successfully!",
+      })
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update assignees. Please try again.",
+      })
+    }
+  }
+
+  const handleActionsTagsChange = async (tags: string[]) => {
+    if (!selectedConversation) return
+
+    setTicketActions(prev => ({ ...prev, tags }))
+
+    try {
+      // Create tags that don't exist yet
+      const newTags: Array<{ id: number; name: string; color: string }> = []
+      for (const tagName of tags) {
+        const existingTag = availableTags.find(t => t.name.toLowerCase() === tagName.toLowerCase())
+        if (!existingTag) {
+          // Create the tag
+          const createdTag = await conversationService.createTag(tagName)
+          newTags.push({ id: createdTag.id, name: createdTag.name, color: createdTag.color })
+        }
+      }
+
+      // Update availableTags if new tags were created
+      if (newTags.length > 0) {
+        setAvailableTags(prev => [...prev, ...newTags])
+      }
+
+      // Convert tag names to tag IDs (including newly created ones)
+      const updatedAvailableTags = [...availableTags, ...newTags]
+      const tagIds = tags
+        .map(tagName => {
+          const tag = updatedAvailableTags.find(t => t.name.toLowerCase() === tagName.toLowerCase())
+          return tag?.id
+        })
+        .filter((id): id is number => id !== undefined)
+
+      await conversationService.updateConversationTags(selectedConversation.id, tagIds)
+      toast({
+        title: "Success",
+        description: "Tags updated successfully!",
+      })
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update tags. Please try again.",
+      })
+    }
+  }
+
+  const handleCloseConversation = async () => {
+    if (!selectedConversation) return
+
+    if (!confirm('Are you sure you want to close this conversation?')) return
+
+    try {
+      await conversationService.updateConversationProperties(selectedConversation.id, {
+        status: 'closed'
+      })
+
+      toast({
+        title: "Success",
+        description: "Conversation closed successfully!",
+      })
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      console.error('Error closing conversation:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to close conversation. Please try again.",
+      })
+    }
+  }
+
+  const handleArchiveConversation = async () => {
+    if (!selectedConversation) return
+
+    if (!confirm('Are you sure you want to archive this conversation?')) return
+
+    try {
+      await conversationService.updateConversationProperties(selectedConversation.id, {
+        status: 'archived'
+      })
+
+      toast({
+        title: "Success",
+        description: "Conversation archived successfully!",
+      })
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      console.error('Error archiving conversation:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to archive conversation. Please try again.",
+      })
+    }
+  }
+
+  const conversations = [
     {
       id: 1,
       author: "Dean Taylor",
@@ -573,7 +916,7 @@ export default function TicketsContent() {
     }
   ]
 
-  // Generate additional mock tickets for scroll testing
+  // Generate additional mock conversations for scroll testing
   const additionalTickets = Array.from({ length: 35 }, (_, i) => {
     const names = [
       "Alice Johnson", "Bob Smith", "Charlie Brown", "Diana Prince", "Edward Norton",
@@ -608,7 +951,7 @@ export default function TicketsContent() {
       priority,
       department,
       source,
-      aiSummary: `${source} inquiry from ${name}. ${status} ticket requiring ${department.toLowerCase()} attention.`,
+      aiSummary: `${source} inquiry from ${name}. ${status} conversation requiring ${department.toLowerCase()} attention.`,
       conversation: [
         {
           id: "1",
@@ -632,48 +975,48 @@ export default function TicketsContent() {
     }
   })
 
-  const allTickets = [...tickets, ...additionalTickets]
+  const allTickets = [...conversations, ...additionalTickets]
 
-  // Filter and sort tickets
+  // Filter and sort conversations
   const getFilteredAndSortedTickets = () => {
     let filtered = allTickets
 
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
-      filtered = filtered.filter(ticket =>
-        ticket.id.toString().includes(query) ||
-        ticket.author.toLowerCase().includes(query) ||
-        ticket.title.toLowerCase().includes(query) ||
-        ticket.preview.toLowerCase().includes(query)
+      filtered = filtered.filter(conversation =>
+        conversation.id.toString().includes(query) ||
+        conversation.author.toLowerCase().includes(query) ||
+        conversation.title.toLowerCase().includes(query) ||
+        conversation.preview.toLowerCase().includes(query)
       )
     }
 
     // Apply source filter
     if (filterSource) {
-      filtered = filtered.filter(ticket => ticket.source === filterSource)
+      filtered = filtered.filter(conversation => conversation.source === filterSource)
     }
 
     // Apply priority filter
     if (filterPriority) {
-      filtered = filtered.filter(ticket => {
-        const priority = ticket.priority.toLowerCase().replace(' priority', '')
+      filtered = filtered.filter(conversation => {
+        const priority = conversation.priority.toLowerCase().replace(' priority', '')
         return priority === filterPriority
       })
     }
 
     // Apply status filter
     if (filterStatus) {
-      filtered = filtered.filter(ticket => {
-        const status = ticket.status.toLowerCase()
+      filtered = filtered.filter(conversation => {
+        const status = conversation.status.toLowerCase()
         return status === filterStatus
       })
     }
 
-    // Apply tag filter (check if ticket has any of the selected tags)
+    // Apply tag filter (check if conversation has any of the selected tags)
     if (filterTags.length > 0) {
-      filtered = filtered.filter(ticket => {
-        // Get ticket tags from the ticketActions (this is mock data, in real app would come from ticket data)
+      filtered = filtered.filter(conversation => {
+        // Get conversation tags from the ticketActions (this is mock data, in real app would come from conversation data)
         const ticketTags = ticketActions.tags || []
         return filterTags.some(tag => ticketTags.includes(tag))
       })
@@ -699,7 +1042,8 @@ export default function TicketsContent() {
     return filtered
   }
 
-  const filteredTickets = getFilteredAndSortedTickets()
+  // Use API conversations directly (filtering is done server-side)
+  const filteredTickets = apiConversations
 
   // Clear all filters function
   const clearAllFilters = () => {
@@ -708,20 +1052,66 @@ export default function TicketsContent() {
     setFilterStatus(null)
     setFilterTags([])
     setSortOrder('desc')
+    setSearchQuery('')
   }
 
   // Check if any filters are active
   const hasActiveFilters = filterSource || filterPriority || filterStatus || filterTags.length > 0
 
-  // Available tags (last 5 most recent)
-  const availableTags = ['payment', 'urgent', 'visa', 'billing', 'technical', 'bug', 'feature', 'refund', 'account', 'mobile']
-  const filteredAvailableTags = availableTags
+  // Get tag names for filtering dropdown
+  const availableTagNames = availableTags.map(t => t.name)
+  const filteredAvailableTags = availableTagNames
     .filter(tag => tag.toLowerCase().includes(tagSearchQuery.toLowerCase()))
     .slice(0, 5)
 
-  // Get currently selected ticket
-  const selectedTicket = allTickets.find(ticket => ticket.id === selectedTicketId)
-  const selectedTicketIndex = filteredTickets.findIndex(ticket => ticket.id === selectedTicketId)
+  // Get selected ticket index
+  const selectedTicketIndex = filteredTickets.findIndex(conversation => conversation.id === selectedConversationId)
+
+  // Messages state
+  const [conversationMessages, setConversationMessages] = useState<any[]>([])
+  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [messagesError, setMessagesError] = useState<string | null>(null)
+
+  // Fetch conversation details and messages in a single optimized API call
+  useEffect(() => {
+    const fetchConversationDetail = async () => {
+      if (!selectedConversationId) {
+        setConversationMessages([])
+        return
+      }
+
+      try {
+        setMessagesLoading(true)
+        setMessagesError(null)
+        // Use optimized endpoint that returns both conversation and messages
+        const detailData = await conversationService.getConversation(selectedConversationId)
+
+        // Transform messages to match component format
+        const transformedMessages = detailData.messages.map(msg => ({
+          id: msg.id,
+          message: msg.body,
+          isAgent: msg.is_agent,
+          time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          author: msg.author.name,
+          attachments: msg.attachments
+        }))
+
+        setConversationMessages(transformedMessages)
+      } catch (err) {
+        console.error('Error fetching conversation detail:', err)
+        setMessagesError(err instanceof Error ? err.message : 'Failed to fetch conversation detail')
+      } finally {
+        setMessagesLoading(false)
+      }
+    }
+
+    fetchConversationDetail()
+  }, [selectedConversationId])
+
+  // Mock AI summary for the conversation
+  const mockAiSummary = selectedConversation ?
+    `Customer ${selectedConversation.customer.name} has raised a ${selectedConversation.priority} priority issue regarding "${selectedConversation.title}". The conversation was started via ${selectedConversation.channel} channel and is currently in ${selectedConversation.status} status. ${selectedConversation.message_count} messages have been exchanged so far.`
+    : ""
 
   // Shared files mock data
   const sharedFiles = [
@@ -760,12 +1150,12 @@ export default function TicketsContent() {
     <div className="min-h-screen lg:h-screen bg-background">
       {/* Main Content Area with proper spacing */}
       <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen">
-        {/* Ticket List Sidebar - Mobile Responsive */}
+        {/* Conversation List Sidebar - Mobile Responsive */}
         <div className="w-full lg:w-96 bg-card flex flex-col lg:fixed lg:left-16 lg:top-0 h-auto lg:h-screen z-10 lg:shadow-lg">
           {/* Static Header - No Scroll */}
           <div className="p-3 sm:p-4 border-b border-border flex-shrink-0">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h2 className="text-base sm:text-lg font-semibold">Recent Tickets</h2>
+              <h2 className="text-base sm:text-lg font-semibold">Recent Conversations</h2>
             </div>
 
             {/* Search and Filter */}
@@ -773,7 +1163,7 @@ export default function TicketsContent() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by ticket ID, author, or title"
+                  placeholder="Search by conversation ID, author, or title"
                   className="pl-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -873,29 +1263,29 @@ export default function TicketsContent() {
                           <Circle className="mr-2 h-4 w-4 text-blue-500" />
                           New
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="open">
-                          <CircleDot className="mr-2 h-4 w-4 text-green-500" />
-                          Open
+                        <DropdownMenuRadioItem value="user_reply">
+                          <ArrowUp className="mr-2 h-4 w-4 text-green-500" />
+                          User Reply
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="agent_reply">
+                          <ArrowDown className="mr-2 h-4 w-4 text-blue-500" />
+                          Agent Reply
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="processing">
+                          <Loader className="mr-2 h-4 w-4 text-yellow-500" />
+                          Processing
                         </DropdownMenuRadioItem>
                         <DropdownMenuRadioItem value="closed">
                           <XCircle className="mr-2 h-4 w-4 text-gray-500" />
                           Closed
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="pending">
+                        <DropdownMenuRadioItem value="archived">
+                          <Archive className="mr-2 h-4 w-4 text-gray-500" />
+                          Archived
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="postponed">
                           <Clock className="mr-2 h-4 w-4 text-yellow-500" />
-                          Pending
-                        </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="resolved">
-                          <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                          Resolved
-                        </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="wait_agent">
-                          <Pause className="mr-2 h-4 w-4 text-orange-500" />
-                          Wait for Agent Reply
-                        </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="wait_user">
-                          <Clock className="mr-2 h-4 w-4 text-blue-500" />
-                          Wait for User Reply
+                          Postponed
                         </DropdownMenuRadioItem>
                       </DropdownMenuRadioGroup>
                     </DropdownMenuSubContent>
@@ -1014,7 +1404,7 @@ export default function TicketsContent() {
                 {/* Status filter */}
                 {filterStatus && (
                   <CustomBadge variant={getStatusColor(filterStatus) as "blue" | "green" | "yellow" | "gray"} className="text-xs h-6 px-2 gap-1">
-                    <CircleDot className="w-3 h-3" />
+                    {getStatusIcon(filterStatus)}
                     <span className="capitalize">{filterStatus.replace('_', ' ')}</span>
                     <button
                       onClick={() => setFilterStatus(null)}
@@ -1064,57 +1454,89 @@ export default function TicketsContent() {
               </div>
             )}
 
-            {/* My Open Tickets */}
+            {/* My Open Conversations */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">My Open tickets ({filteredTickets.length}{hasActiveFilters ? `/${allTickets.length}` : ''})</span>
+              <span className="text-sm font-medium">My Open conversations ({filteredTickets.length}{hasActiveFilters ? `/${totalConversations}` : ''})</span>
               <ChevronDown className="h-4 w-4" />
             </div>
           </div>
 
-          {/* Tickets List - Mobile Responsive */}
+          {/* Conversations List - Mobile Responsive */}
           <div className="flex-1 overflow-y-auto min-h-[50vh] lg:max-h-full">
-          {filteredTickets.map((ticket, index) => (
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader className="w-6 h-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading conversations...</span>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className="p-4 m-4 bg-destructive/10 border border-destructive rounded-lg">
+              <p className="text-sm text-destructive">Error: {error}</p>
+              <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !error && filteredTickets.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="mb-2">No conversations found</p>
+              {hasActiveFilters && (
+                <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                  Clear all filters
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Conversation List */}
+          {!isLoading && !error && filteredTickets.map((conversation, index) => (
             <div
-              key={ticket.id}
+              key={conversation.id}
               onClick={() => {
-                // Mobile: open modal, Desktop: set selected ticket
+                // Mobile: open modal, Desktop: set selected conversation
                 if (window.innerWidth < 1024) {
-                  openTicketModal(ticket.id)
+                  openTicketModal(conversation.id)
                 } else {
-                  setSelectedTicketId(ticket.id)
+                  setSelectedConversationId(conversation.id)
                 }
               }}
               className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${
-                ticket.id === selectedTicketId ? 'bg-muted' : ''
+                conversation.id === selectedConversationId ? 'bg-muted' : ''
               }`}
             >
               <div className={`flex items-start gap-3 transition-transform duration-200 ease-in-out ${
-                ticket.id === selectedTicketId ? 'translate-x-[5px]' : 'translate-x-0'
+                conversation.id === selectedConversationId ? 'translate-x-[5px]' : 'translate-x-0'
               }`}>
                 <Avatar className="h-8 w-8">
                   <AvatarFallback
                     className="text-white text-xs font-medium"
-                    style={{ backgroundColor: getAvatarColor(ticket.author) }}
+                    style={{ backgroundColor: getAvatarColor(conversation.customer.name) }}
                   >
-                    {getInitials(ticket.author)}
+                    {conversation.customer.initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium">{ticket.author}</span>
-                    <span className="text-xs text-muted-foreground">{ticket.time}</span>
+                    <span className="text-sm font-medium">{conversation.customer.name}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(conversation.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
-                  <p className="text-sm text-foreground mb-2 line-clamp-2">{ticket.title}</p>
+                  <p className="text-sm text-foreground mb-2 line-clamp-2">{conversation.title}</p>
                   <div className="flex flex-wrap gap-1">
-                    <CustomBadge variant={getSourceColor(ticket.source) as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-[10px] h-4 px-1">
-                      {getSourceIcon(ticket.source)}
-                      <span className="ml-1 capitalize">{ticket.source.replace('_', ' ')}</span>
+                    <CustomBadge variant={getSourceColor(conversation.channel) as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-[10px] h-4 px-1">
+                      {getSourceIcon(conversation.channel)}
+                      <span className="ml-1 capitalize">{conversation.channel.replace('_', ' ')}</span>
                     </CustomBadge>
-                    <CustomBadge variant={ticket.status === 'Open' ? 'green' : 'blue'} className="text-[10px] h-4">
-                      {ticket.status}
+                    <CustomBadge variant={getStatusColor(conversation.status) as "blue" | "green" | "yellow" | "gray"} className="text-[10px] h-4 px-1 gap-0.5">
+                      {getStatusIcon(conversation.status)}
+                      <span className="capitalize">{conversation.status.replace('_', ' ')}</span>
                     </CustomBadge>
-                    <CustomBadge variant="red-dot" className="text-[10px] h-4">
-                      {ticket.priority}
+                    <CustomBadge variant={getPriorityColor(conversation.priority) as "gray" | "yellow" | "red" | "red-dot"} className="text-[10px] h-4">
+                      {conversation.priority}
                     </CustomBadge>
                   </div>
                 </div>
@@ -1126,34 +1548,28 @@ export default function TicketsContent() {
 
         {/* Desktop layout - hidden on mobile */}
         <div className="hidden lg:flex flex-1 flex-col lg:ml-[448px]">
-          {selectedTicket && (
+          {selectedConversation && (
             <>
-              {/* Ticket Header - Full Row */}
+              {/* Conversation Header - Full Row */}
               <div className="p-4 border-b border-border bg-card">
-                <h1 className="text-xl font-semibold mb-3">{selectedTicket.title}</h1>
+                <h1 className="text-xl font-semibold mb-3">{selectedConversation.title}</h1>
                 <div className="flex gap-2">
-                  <CustomBadge variant={getSourceColor(selectedTicket.source) as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-xs h-6 px-3">
-                    {getSourceIcon(selectedTicket.source)}
-                    <span className="ml-1 capitalize">{selectedTicket.source.replace('_', ' ')}</span>
+                  <CustomBadge variant={getSourceColor(selectedConversation.channel) as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-xs h-6 px-3">
+                    {getSourceIcon(selectedConversation.channel)}
+                    <span className="ml-1 capitalize">{selectedConversation.channel.replace('_', ' ')}</span>
                   </CustomBadge>
 
                   {/* Clickable Status Badge */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="focus:outline-none" disabled={loadingStates.status}>
-                        <CustomBadge variant={getStatusColor(ticketHeader.status) as "blue" | "green" | "yellow" | "gray"} className="text-xs h-6 cursor-pointer hover:opacity-80 disabled:opacity-60">
+                        <CustomBadge variant={getStatusColor(ticketHeader.status) as "blue" | "green" | "yellow" | "gray"} className="text-xs h-6 px-3 gap-1 cursor-pointer hover:opacity-80 disabled:opacity-60">
                           {loadingStates.status ? (
-                            <Loader className="w-3 h-3 mr-1 animate-spin" />
+                            <Loader className="w-3 h-3 animate-spin" />
                           ) : (
-                            <>
-                              {ticketHeader.status === 'new' && <Circle className="w-3 h-3 mr-1" />}
-                              {ticketHeader.status === 'open' && <CircleDot className="w-3 h-3 mr-1" />}
-                              {ticketHeader.status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
-                              {ticketHeader.status === 'resolved' && <CheckCircle className="w-3 h-3 mr-1" />}
-                              {ticketHeader.status === 'closed' && <XCircle className="w-3 h-3 mr-1" />}
-                            </>
+                            getStatusIcon(ticketHeader.status)
                           )}
-                          <span className="capitalize">{loadingStates.status ? 'Updating...' : ticketHeader.status}</span>
+                          <span className="capitalize">{loadingStates.status ? 'Updating...' : ticketHeader.status.replace('_', ' ')}</span>
                         </CustomBadge>
                       </button>
                     </DropdownMenuTrigger>
@@ -1167,11 +1583,7 @@ export default function TicketsContent() {
                           className="cursor-pointer"
                           disabled={loadingStates.status}
                         >
-                          {status.value === 'new' && <Circle className="mr-2 h-4 w-4 text-blue-500" />}
-                          {status.value === 'open' && <CircleDot className="mr-2 h-4 w-4 text-green-500" />}
-                          {status.value === 'pending' && <Clock className="mr-2 h-4 w-4 text-yellow-500" />}
-                          {status.value === 'resolved' && <CheckCircle className="mr-2 h-4 w-4 text-green-600" />}
-                          {status.value === 'closed' && <XCircle className="mr-2 h-4 w-4 text-gray-500" />}
+                          <span className="mr-2">{getStatusIcon(status.value)}</span>
                           {status.label}
                         </DropdownMenuItem>
                       ))}
@@ -1261,7 +1673,7 @@ export default function TicketsContent() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">AI Summary</h3>
-                          {selectedTicket.aiSummary && selectedTicket.aiSummary.length > 120 && (
+                          {mockAiSummary && mockAiSummary.length > 120 && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1283,11 +1695,11 @@ export default function TicketsContent() {
                           )}
                         </div>
                         <p className={`text-sm text-blue-800 dark:text-blue-200 leading-relaxed ${
-                          !isSummaryExpanded && selectedTicket.aiSummary && selectedTicket.aiSummary.length > 120
+                          !isSummaryExpanded && mockAiSummary && mockAiSummary.length > 120
                             ? 'line-clamp-2'
                             : ''
                         }`}>
-                          {selectedTicket.aiSummary}
+                          {mockAiSummary}
                         </p>
                       </div>
                     </div>
@@ -1295,8 +1707,16 @@ export default function TicketsContent() {
 
                   {/* Conversation */}
                   <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                {selectedTicket.conversation?.map((message) => {
-                  const isChat = selectedTicket.source === 'whatsapp' || selectedTicket.source === 'webchat'
+                {messagesLoading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="text-sm text-muted-foreground">Loading messages...</div>
+                  </div>
+                ) : messagesError ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="text-sm text-red-600">Error: {messagesError}</div>
+                  </div>
+                ) : conversationMessages.map((message) => {
+                  const isChat = selectedConversation?.channel === 'whatsapp' || selectedConversation?.channel === 'telegram'
 
                   if (isChat) {
                     return (
@@ -1339,7 +1759,7 @@ export default function TicketsContent() {
                       </div>
 
                       {/* Attachments */}
-                      {message.attachments && (
+                      {message.attachments && message.attachments.length > 0 && (
                         <div>
                           <h4 className="font-medium mb-3">{message.attachments.length} Attachments</h4>
                           <div className="flex gap-4">
@@ -1382,7 +1802,7 @@ export default function TicketsContent() {
                       </Avatar>
                       <div className="flex-1">
                         <span className="text-xs font-medium">Reply to: </span>
-                        <span className="text-xs">{selectedTicket.author} ({selectedTicket.visitor?.email})</span>
+                        <span className="text-xs">{selectedConversation.author} ({selectedConversation.visitor?.email})</span>
                       </div>
                     </div>
 
@@ -1447,32 +1867,52 @@ export default function TicketsContent() {
 
                 {/* Actions Column - Mobile Responsive */}
                 <div className="w-full lg:w-96 bg-background p-3 space-y-2 overflow-y-auto order-1 lg:order-2">
-            <TicketActions
+            <ConversationActions
               currentPriority={ticketActions.priority}
               currentStatus={ticketActions.status}
               currentDepartment={ticketActions.department}
               currentAssignees={ticketActions.assignees}
               currentTags={ticketActions.tags}
+              availableDepartments={availableDepartments}
+              availableTags={availableTagNames}
+              availableUsers={availableUsers}
               isExpanded={isActionsExpanded}
               onToggle={() => setIsActionsExpanded(!isActionsExpanded)}
-              onPriorityChange={(priority) => setTicketActions(prev => ({ ...prev, priority }))}
-              onStatusChange={(status) => setTicketActions(prev => ({ ...prev, status }))}
-              onDepartmentChange={(department) => setTicketActions(prev => ({ ...prev, department }))}
-              onAssigneesChange={(assignees) => setTicketActions(prev => ({ ...prev, assignees }))}
-              onTagsChange={(tags) => setTicketActions(prev => ({ ...prev, tags }))}
-              hasChanges={hasChanges}
-              onSave={handleSaveTicketActions}
+              onPriorityChange={handleActionsPriorityChange}
+              onStatusChange={handleActionsStatusChange}
+              onDepartmentChange={handleActionsDepartmentChange}
+              onAssigneesChange={handleActionsAssigneesChange}
+              onTagsChange={handleActionsTagsChange}
             />
-            <VisitorInformation visitor={selectedTicket?.visitor} />
+            {selectedConversation?.customer && (
+              <VisitorInformation
+                visitor={{
+                  name: selectedConversation.customer.name,
+                  email: selectedConversation.customer.email,
+                  phone: selectedConversation.customer.phone || "N/A",
+                  location: "N/A",
+                  localTime: "",
+                  language: selectedConversation.customer.language || "",
+                  ip: selectedConversation.ip || "N/A",
+                  os: selectedConversation.operating_system || "N/A",
+                  browser: selectedConversation.browser || "N/A",
+                  country: undefined,
+                  externalIDs: selectedConversation.customer.external_ids || [],
+                  timezone: selectedConversation.customer.timezone,
+                  clientId: selectedConversation.customer.id
+                }}
+                currentConversationId={selectedConversation.id}
+              />
+            )}
                 </div>
               </div>
             </>
           )}
         </div>
 
-        {/* Ticket Modal */}
-        <TicketModal
-          ticket={selectedTicketId ? filteredTickets.find(t => t.id === selectedTicketId) || null : null}
+        {/* Conversation Modal */}
+        <ConversationModal
+          conversation={selectedConversationId ? filteredTickets.find(t => t.id === selectedConversationId) || null : null}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onStatusChange={handleStatusChange}

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { TicketCard } from '@/components/tickets/TicketCard'
+import { TicketCard } from '@/components/conversations/TicketCard'
 
 const meta: Meta<typeof TicketCard> = {
-  title: 'Tickets/TicketCard',
+  title: 'Conversations/TicketCard',
   component: TicketCard,
   parameters: {
     layout: 'centered',
@@ -30,7 +30,7 @@ const sampleTicket = {
 
 export const Default: Story = {
   args: {
-    ticket: sampleTicket,
+    conversation: sampleTicket,
     selected: false,
     onClick: () => {},
   },
@@ -38,7 +38,7 @@ export const Default: Story = {
 
 export const Selected: Story = {
   args: {
-    ticket: sampleTicket,
+    conversation: sampleTicket,
     selected: true,
     onClick: () => {},
   },
@@ -46,7 +46,7 @@ export const Selected: Story = {
 
 export const NewTicket: Story = {
   args: {
-    ticket: {
+    conversation: {
       ...sampleTicket,
       id: 2,
       author: 'Jenny Wilson',

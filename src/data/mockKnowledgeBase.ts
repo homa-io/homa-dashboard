@@ -301,7 +301,7 @@ Our platform comes with several predefined roles:
 ### Agent
 - Standard user access
 - Customer interaction
-- Ticket management
+- Conversation management
 - Basic reporting
 
 ### Viewer

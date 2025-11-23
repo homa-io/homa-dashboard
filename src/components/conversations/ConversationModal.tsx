@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { VisitorInformation } from "./VisitorInformation"
-import { TicketActions } from "./TicketActions"
+import { ConversationActions } from "./ConversationActions"
 import { WysiwygEditor } from "./WysiwygEditor"
 import { CannedMessages } from "./CannedMessages"
 import { 
@@ -43,65 +43,52 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { getAvatarColor, getInitials } from "@/lib/avatar-colors"
+import type { Conversation } from "@/types/conversation.types"
 
-// Use the correct ticket interface that matches the data from the main page
-interface Ticket {
-  id: number;
-  title: string;
-  customer: string;
-  email: string;
-  priority: string;
-  status: string;
-  time: string;
-  preview?: string;
-  tags?: string[];
-  department?: string;
-  assignees?: string[];
-  source?: string;
-}
+// Use the correct conversation interface from types
 
-interface TicketModalProps {
-  ticket: Ticket | null
+interface ConversationModalProps {
+  conversation: Conversation | null
   isOpen: boolean
   onClose: () => void
   onStatusChange?: (ticketId: number, newStatus: string) => void
 }
 
-export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketModalProps) {
+export function ConversationModal({ conversation, isOpen, onClose, onStatusChange }: ConversationModalProps) {
   const [isActionsExpanded, setIsActionsExpanded] = useState(false)
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
   const [replyText, setReplyText] = useState(() => {
-    if (!ticket?.customer) return "Hi there,\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue. Let me look into this matter immediately and provide you with a solution.\n\nPlease let me know if you need any additional information."
-    return "Hi " + (ticket.customer.split(' ')[0] || "there") + ",\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue. Let me look into this matter immediately and provide you with a solution.\n\nPlease let me know if you need any additional information."
+    if (!conversation?.customer?.name) return "Hi there,\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue. Let me look into this matter immediately and provide you with a solution.\n\nPlease let me know if you need any additional information."
+    return "Hi " + (conversation.customer.name.split(' ')[0] || "there") + ",\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue. Let me look into this matter immediately and provide you with a solution.\n\nPlease let me know if you need any additional information."
   })
-  const [ticketActions, setTicketActions] = useState({
-    priority: ticket?.priority || "medium",
-    status: ticket?.status || "new", 
+  const [conversationActions, setConversationActions] = useState({
+    priority: conversation?.priority || "medium",
+    status: conversation?.status || "new", 
     department: "Support Department",
     assignees: ["1", "2"],
     tags: ["support", "customer-inquiry"]
   })
 
-  // Ticket header state (same as tickets page)
+  // Conversation header state (same as conversations page)
   const [ticketHeader, setTicketHeader] = useState({
-    priority: ticket?.priority || "medium",
-    status: ticket?.status || "new",
-    department: ticket?.department || "Support Department"
+    priority: conversation?.priority || "medium",
+    status: conversation?.status || "new",
+    department: conversation?.department || "Support Department"
   })
 
-  // Loading states for ticket header changes
+  // Loading states for conversation header changes
   const [loadingStates, setLoadingStates] = useState({
     status: false,
     priority: false,
     department: false
   })
   
-  // Return early if no ticket is provided (after all hooks)
-  if (!ticket) {
+  // Return early if no conversation is provided (after all hooks)
+  if (!conversation) {
     return null
   }
 
-  // Available options (same as tickets page)
+  // Available options (same as conversations page)
   const availableStatuses = [
     { value: "new", label: "New" },
     { value: "open", label: "Open" },
@@ -125,7 +112,7 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
     "Billing Department"
   ]
 
-  // Handle ticket header changes (same as tickets page)
+  // Handle conversation header changes (same as conversations page)
   const handleTicketHeaderChange = async (field: 'status' | 'priority' | 'department', value: string) => {
     setLoadingStates(prev => ({ ...prev, [field]: true }))
     
@@ -137,7 +124,7 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
     
     // Call parent onStatusChange if status changed
     if (field === 'status' && onStatusChange) {
-      onStatusChange(ticket.id, value)
+      onStatusChange(conversation.id, value)
     }
   }
 
@@ -173,7 +160,7 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
     }
   }
 
-  if (!ticket) return null
+  if (!conversation) return null
 
   const getSourceIcon = (source: string) => {
     switch (source) {
@@ -187,9 +174,9 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
   }
 
   const handleSaveTicketActions = () => {
-    console.log('Saving ticket actions:', ticketActions)
-    if (onStatusChange && ticketActions.status !== ticket.status) {
-      onStatusChange(ticket.id, ticketActions.status)
+    console.log('Saving conversation actions:', conversationActions)
+    if (onStatusChange && conversationActions.status !== conversation.status) {
+      onStatusChange(conversation.id, conversationActions.status)
     }
   }
 
@@ -197,11 +184,11 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
     setReplyText(message)
   }
 
-  // Mock visitor data based on ticket
+  // Mock visitor data based on conversation
   const mockVisitor = {
-    name: ticket.customer,
-    email: ticket.email,
-    phone: "Unknown",
+    name: conversation.customer?.name || "Unknown",
+    email: conversation.customer?.email || "Unknown",
+    phone: conversation.customer?.phone || "Unknown",
     location: "Location not provided",
     localTime: "Current time",
     language: "English",
@@ -211,14 +198,14 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
     country: "Unknown"
   }
 
-  // Mock messages based on ticket
+  // Mock messages based on conversation
   const mockMessages = [
     {
       id: 1,
-      author: ticket.customer || "Customer",
-      initials: getInitials(ticket.customer || "Customer"),
-      time: ticket.time,
-      message: ticket.title + "\n\nThis is the detailed description of the issue. The customer is experiencing problems and needs assistance with resolving this matter."
+      author: conversation.customer?.name || "Customer",
+      initials: getInitials(conversation.customer?.name || "Customer"),
+      time: new Date(conversation.created_at).toLocaleTimeString(),
+      message: conversation.title + "\n\nThis is the detailed description of the issue. The customer is experiencing problems and needs assistance with resolving this matter."
     },
     {
       id: 2,
@@ -233,7 +220,7 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[98vw] sm:max-w-[95vw] max-h-[85vh] sm:max-h-[90vh] w-full p-0 rounded-lg sm:rounded-xl overflow-hidden [&>button]:hidden my-auto">
         <div className="flex flex-col h-full max-h-[85vh] sm:max-h-[90vh]">
-          {/* Ticket Header - Mobile Responsive */}
+          {/* Conversation Header - Mobile Responsive */}
           <div className="p-3 sm:p-4 border-b border-border bg-card relative">
             <Button
               variant="ghost"
@@ -243,11 +230,11 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
             >
               <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
-            <DialogTitle className="text-base sm:text-xl font-semibold mb-2 sm:mb-3 pr-10 sm:pr-12">{ticket.title}</DialogTitle>
+            <DialogTitle className="text-base sm:text-xl font-semibold mb-2 sm:mb-3 pr-10 sm:pr-12">{conversation.title}</DialogTitle>
             <div className="flex flex-wrap gap-1 sm:gap-2">
-              <CustomBadge variant={getSourceColor(ticket.source || 'email') as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-[10px] sm:text-xs h-5 sm:h-6 px-2 sm:px-3">
-                {getSourceIcon(ticket.source || 'email')}
-                <span className="ml-1 capitalize">{(ticket.source || 'email').replace('_', ' ')}</span>
+              <CustomBadge variant={getSourceColor(conversation.channel || 'email') as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-[10px] sm:text-xs h-5 sm:h-6 px-2 sm:px-3">
+                {getSourceIcon(conversation.channel || 'email')}
+                <span className="ml-1 capitalize">{(conversation.channel || 'email').replace('_', ' ')}</span>
               </CustomBadge>
               
               {/* Clickable Status Badge */}
@@ -395,7 +382,7 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
                   {isSummaryExpanded && (
                     <CardContent className="p-3 sm:p-6 pt-0">
                       <p className="text-xs sm:text-sm text-muted-foreground">
-                        Customer experiencing issues with {ticket.title.toLowerCase()}. This is a {ticket.priority}-priority ticket that requires immediate attention. The customer has provided details about their problem and is waiting for a resolution.
+                        Customer experiencing issues with {conversation.title.toLowerCase()}. This is a {conversation.priority}-priority conversation that requires immediate attention. The customer has provided details about their problem and is waiting for a resolution.
                       </p>
                     </CardContent>
                   )}
@@ -444,8 +431,8 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
                         <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1">
                           <span className="text-xs font-medium">Reply to:</span>
                           <div className="text-xs truncate">
-                            <span className="font-medium">{ticket.customer || 'Customer'}</span>
-                            <span className="text-muted-foreground"> ({ticket.email})</span>
+                            <span className="font-medium">{conversation.customer?.name || 'Customer'}</span>
+                            <span className="text-muted-foreground"> ({conversation.customer?.email})</span>
                           </div>
                         </div>
                       </div>
@@ -473,22 +460,22 @@ export function TicketModal({ ticket, isOpen, onClose, onStatusChange }: TicketM
 
               {/* Right Sidebar - Hidden on Mobile */}
               <div className="hidden lg:block lg:w-80 space-y-4">
-                <TicketActions
-                  currentPriority={ticketActions.priority}
-                  currentStatus={ticketActions.status}
-                  currentDepartment={ticketActions.department}
-                  currentAssignees={ticketActions.assignees}
-                  currentTags={ticketActions.tags}
+                <ConversationActions
+                  currentPriority={conversationActions.priority}
+                  currentStatus={conversationActions.status}
+                  currentDepartment={conversationActions.department}
+                  currentAssignees={conversationActions.assignees}
+                  currentTags={conversationActions.tags}
                   isExpanded={isActionsExpanded}
                   onToggle={() => setIsActionsExpanded(!isActionsExpanded)}
-                  onPriorityChange={(priority) => setTicketActions(prev => ({ ...prev, priority }))}
-                  onStatusChange={(status) => setTicketActions(prev => ({ ...prev, status }))}
-                  onDepartmentChange={(department) => setTicketActions(prev => ({ ...prev, department }))}
-                  onAssigneesChange={(assignees) => setTicketActions(prev => ({ ...prev, assignees }))}
-                  onTagsChange={(tags) => setTicketActions(prev => ({ ...prev, tags }))}
-                  hasChanges={JSON.stringify(ticketActions) !== JSON.stringify({
-                    priority: ticket?.priority || "medium",
-                    status: ticket?.status || "new",
+                  onPriorityChange={(priority) => setConversationActions(prev => ({ ...prev, priority }))}
+                  onStatusChange={(status) => setConversationActions(prev => ({ ...prev, status }))}
+                  onDepartmentChange={(department) => setConversationActions(prev => ({ ...prev, department }))}
+                  onAssigneesChange={(assignees) => setConversationActions(prev => ({ ...prev, assignees }))}
+                  onTagsChange={(tags) => setConversationActions(prev => ({ ...prev, tags }))}
+                  hasChanges={JSON.stringify(conversationActions) !== JSON.stringify({
+                    priority: conversation?.priority || "medium",
+                    status: conversation?.status || "new",
                     department: "Support Department", 
                     assignees: ["1", "2"],
                     tags: ["support", "customer-inquiry"]

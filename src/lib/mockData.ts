@@ -1,6 +1,6 @@
-import { Ticket } from '@/types/ticket.types'
+import { Conversation } from '@/types/conversation.types'
 
-export const mockTickets: Ticket[] = [
+export const mockConversations: Conversation[] = [
   {
     id: 'TK-0001',
     title: 'Unable to access dashboard after login',
@@ -173,13 +173,13 @@ export const mockActivities = [
   {
     id: '3',
     type: 'new',
-    message: 'New ticket from John Doe',
+    message: 'New conversation from John Doe',
     time: '1h ago'
   },
   {
     id: '4',
     type: 'assign',
-    message: 'Ticket assigned to Sarah J.',
+    message: 'Conversation assigned to Sarah J.',
     time: '2h ago'
   },
   {

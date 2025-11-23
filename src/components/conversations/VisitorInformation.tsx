@@ -1,14 +1,15 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { CountryFlagBadge } from "@/components/ui/country-flag-badge"
-import { ExternalLink, CreditCard, Receipt, Repeat, User, Mail, Phone, MapPin, Clock, Globe, Monitor, ChevronRight, Edit3, Smartphone, Laptop, Flag, Search, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react"
+import { ExternalLink, CreditCard, Receipt, Repeat, User, Mail, Phone, MapPin, Clock, Globe, Monitor, ChevronRight, Edit3, Smartphone, Laptop, Flag, Search, ChevronLeft, ChevronRight as ChevronRightIcon, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { conversationService, type PreviousConversation } from "@/services/conversation.service"
 
 interface LineItem {
   description: string
@@ -19,6 +20,12 @@ interface UsageLimit {
   name: string
   used: number
   total: number
+}
+
+interface ExternalID {
+  id: number
+  type: 'email' | 'phone' | 'whatsapp' | 'slack' | 'telegram' | 'web' | 'chat'
+  value: string
 }
 
 interface VisitorInfo {
@@ -32,64 +39,154 @@ interface VisitorInfo {
   os: string
   browser: string
   country?: string
+  externalIDs?: ExternalID[]
+  timezone?: string | null
+  clientId?: string
 }
 
 interface VisitorInformationProps {
   visitor: VisitorInfo
+  currentConversationId?: number
 }
 
-export function VisitorInformation({ visitor }: VisitorInformationProps) {
+export function VisitorInformation({ visitor, currentConversationId }: VisitorInformationProps) {
   const [showPreviousTickets, setShowPreviousTickets] = useState(false)
   const [ticketSearchQuery, setTicketSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [allConversations, setAllConversations] = useState<PreviousConversation[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const ticketsPerPage = 5
-  
-  // Mock function to get previous tickets for the same user
-  const getPreviousTickets = (email: string) => {
-    const mockPreviousTickets = [
-      { id: 12345, title: "Account verification issue", status: "resolved", priority: "medium", date: "2024-06-15" },
-      { id: 12340, title: "Password reset request", status: "resolved", priority: "low", date: "2024-06-10" },
-      { id: 12335, title: "Billing inquiry", status: "closed", priority: "low", date: "2024-06-05" },
-      { id: 12330, title: "Feature request", status: "pending", priority: "medium", date: "2024-06-01" },
-      { id: 12325, title: "Technical support", status: "resolved", priority: "high", date: "2024-05-28" },
-      { id: 12320, title: "Mobile app bug report", status: "resolved", priority: "high", date: "2024-05-20" },
-      { id: 12315, title: "API integration help", status: "closed", priority: "medium", date: "2024-05-15" },
-      { id: 12310, title: "Account suspension appeal", status: "resolved", priority: "urgent", date: "2024-05-10" },
-      { id: 12305, title: "Data export request", status: "closed", priority: "low", date: "2024-05-05" },
-      { id: 12300, title: "Payment method update", status: "resolved", priority: "medium", date: "2024-05-01" },
-    ]
-    
-    // Filter tickets for the specific user (in real app, this would be an API call)
-    return mockPreviousTickets
-  }
-  
-  // Filter tickets based on search query
-  const getFilteredTickets = () => {
-    const allTickets = getPreviousTickets(visitor.email)
-    if (!ticketSearchQuery.trim()) {
-      return allTickets
+
+  // Fetch previous conversations when dialog opens
+  useEffect(() => {
+    if (showPreviousTickets && visitor.clientId) {
+      const fetchPreviousConversations = async () => {
+        setIsLoading(true)
+        setError(null)
+
+        try {
+          const response = await conversationService.getClientPreviousConversations(
+            visitor.clientId,
+            100,
+            currentConversationId
+          )
+          setAllConversations(response.data || [])
+        } catch (err) {
+          console.error('Error fetching previous conversations:', err)
+          setError(err instanceof Error ? err.message : 'Failed to load conversations')
+          setAllConversations([])
+        } finally {
+          setIsLoading(false)
+        }
+      }
+
+      fetchPreviousConversations()
     }
-    
+  }, [showPreviousTickets, visitor.clientId, currentConversationId])
+  
+  // Filter conversations based on search query
+  const getFilteredTickets = () => {
+    if (!ticketSearchQuery.trim()) {
+      return allConversations
+    }
+
     const query = ticketSearchQuery.toLowerCase().trim()
-    return allTickets.filter(ticket => 
-      ticket.id.toString().includes(query) ||
-      ticket.title.toLowerCase().includes(query) ||
-      ticket.status.toLowerCase().includes(query) ||
-      ticket.priority.toLowerCase().includes(query)
+    return allConversations.filter(conversation =>
+      conversation.id.toString().includes(query) ||
+      conversation.conversation_number.toLowerCase().includes(query) ||
+      conversation.title.toLowerCase().includes(query) ||
+      conversation.status.toLowerCase().includes(query) ||
+      conversation.priority.toLowerCase().includes(query)
     )
   }
-  
-  // Get paginated tickets
+
+  // Get paginated conversations
   const getPaginatedTickets = () => {
     const filteredTickets = getFilteredTickets()
     const startIndex = (currentPage - 1) * ticketsPerPage
     const endIndex = startIndex + ticketsPerPage
     return {
-      tickets: filteredTickets.slice(startIndex, endIndex),
+      conversations: filteredTickets.slice(startIndex, endIndex),
       totalTickets: filteredTickets.length,
       totalPages: Math.ceil(filteredTickets.length / ticketsPerPage)
     }
   }
+  const getTimezoneWithOffset = (timezone: string | null | undefined): string => {
+    if (!timezone || timezone === "N/A") return "N/A"
+
+    try {
+      // Get current time in the specified timezone
+      const now = new Date()
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        timeZoneName: 'longOffset'
+      })
+
+      const parts = formatter.formatToParts(now)
+      const offsetPart = parts.find(part => part.type === 'timeZoneName')
+
+      if (offsetPart && offsetPart.value.includes('GMT')) {
+        const offset = offsetPart.value.replace('GMT', 'UTC')
+        return `${timezone} (${offset})`
+      }
+
+      // Fallback: calculate offset manually
+      const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }))
+      const tzDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
+      const offsetMinutes = (tzDate.getTime() - utcDate.getTime()) / (1000 * 60)
+      const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60)
+      const offsetMins = Math.abs(offsetMinutes) % 60
+      const sign = offsetMinutes >= 0 ? '+' : '-'
+
+      if (offsetMins === 0) {
+        return `${timezone} (UTC${sign}${offsetHours})`
+      } else {
+        return `${timezone} (UTC${sign}${offsetHours}:${offsetMins.toString().padStart(2, '0')})`
+      }
+    } catch (error) {
+      return timezone
+    }
+  }
+
+  const getLanguageName = (code: string | null | undefined): string => {
+    if (!code || code === "N/A") return "N/A"
+
+    const languageMap: Record<string, string> = {
+      'en': 'English',
+      'es': 'Spanish',
+      'fr': 'French',
+      'de': 'German',
+      'it': 'Italian',
+      'pt': 'Portuguese',
+      'ru': 'Russian',
+      'zh': 'Chinese',
+      'ja': 'Japanese',
+      'ko': 'Korean',
+      'ar': 'Arabic',
+      'hi': 'Hindi',
+      'nl': 'Dutch',
+      'sv': 'Swedish',
+      'no': 'Norwegian',
+      'da': 'Danish',
+      'fi': 'Finnish',
+      'pl': 'Polish',
+      'tr': 'Turkish',
+      'th': 'Thai',
+      'vi': 'Vietnamese',
+      'id': 'Indonesian',
+      'ms': 'Malay',
+      'he': 'Hebrew',
+      'cs': 'Czech',
+      'el': 'Greek',
+      'hu': 'Hungarian',
+      'ro': 'Romanian',
+      'uk': 'Ukrainian'
+    }
+
+    return languageMap[code.toLowerCase()] || code.toUpperCase()
+  }
+
   const getBrowserIcon = (browser: string) => {
     // Using Globe icon for all browsers since specific browser icons don't exist in lucide-react
     return Globe
@@ -223,8 +320,8 @@ Browser: ${visitor.browser}
 Account Status: Active
 Member Since: 2023-01-15
 Last Login: 2024-06-23 08:00:00
-Total Tickets: 15
-Resolved Tickets: 12
+Total Conversations: 15
+Resolved Conversations: 12
 Average Response Time: 2.5 hours
 
 Generated: ${timestamp}`
@@ -460,33 +557,28 @@ Generated: ${timestamp}`
               </div>
               <span className="text-xs font-medium">{visitor.phone || "Unknown"}</span>
             </div>
-            <div className="flex items-center justify-between group">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <MapPin className="w-3 h-3" />
                 <span className="text-xs">Location</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-medium">{visitor.location}</span>
-                <button className="text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-200 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ExternalLink className="w-3 h-3" />
-                </button>
-              </div>
+              <span className="text-xs font-medium">{visitor.location}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="w-3 h-3" />
-                <span className="text-xs">Local time</span>
+                <span className="text-xs">Timezone</span>
               </div>
-              <span className="text-xs font-medium">{visitor.localTime}</span>
+              <span className="text-xs font-medium">{getTimezoneWithOffset(visitor.timezone)}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Globe className="w-3 h-3" />
                 <span className="text-xs">Language</span>
               </div>
-              <button className="text-xs text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-200 hover:underline font-medium">
-                {visitor.language}
-              </button>
+              <span className="text-xs font-medium">
+                {getLanguageName(visitor.language)}
+              </span>
             </div>
             {visitor.country && (
               <div className="flex items-center justify-between">
@@ -500,18 +592,18 @@ Generated: ${timestamp}`
           </div>
         </div>
 
-        {/* Previous Tickets */}
+        {/* Previous Conversations */}
         <div>
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Previous Tickets</h4>
+          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Previous Conversations</h4>
           <Dialog open={showPreviousTickets} onOpenChange={setShowPreviousTickets}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="w-full h-9 text-sm">
-                View Previous Tickets ({getPreviousTickets(visitor.email).length})
+                View Previous Conversations
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[80vh]">
               <DialogHeader>
-                <DialogTitle>Previous Tickets - {visitor.name}</DialogTitle>
+                <DialogTitle>Previous Conversations - {visitor.name}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 {/* Search Box */}
@@ -519,7 +611,7 @@ Generated: ${timestamp}`
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
-                    placeholder="Search tickets by ID, title, status, or priority..."
+                    placeholder="Search conversations by ID, title, status, or priority..."
                     value={ticketSearchQuery}
                     onChange={(e) => {
                       setTicketSearchQuery(e.target.value)
@@ -529,59 +621,76 @@ Generated: ${timestamp}`
                   />
                 </div>
                 
-                {/* Tickets List */}
+                {/* Conversations List */}
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {(() => {
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-sm text-muted-foreground">Loading conversations...</span>
+                    </div>
+                  ) : error ? (
+                    <div className="text-center py-8 text-destructive">
+                      <p className="text-sm">Error: {error}</p>
+                    </div>
+                  ) : (() => {
                     const paginatedData = getPaginatedTickets()
-                    
+
                     return (
                       <>
-                        {paginatedData.tickets.map((ticket) => (
-                          <Link
-                            key={ticket.id}
-                            href={`/tickets?ticket_id=${ticket.id}`}
-                            target="_blank"
-                            className="flex items-center justify-between w-full p-3 text-left hover:bg-muted/50 rounded-md transition-colors group border border-border block"
-                            onClick={() => setShowPreviousTickets(false)}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm font-medium text-muted-foreground">#{ticket.id}</span>
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-xs h-5 px-2 ${
-                                    ticket.status === 'resolved' ? 'border-green-200 text-green-700 bg-green-50' :
-                                    ticket.status === 'pending' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' :
-                                    ticket.status === 'open' ? 'border-blue-200 text-blue-700 bg-blue-50' :
-                                    ticket.status === 'closed' ? 'border-gray-200 text-gray-700 bg-gray-50' :
-                                    'border-gray-200 text-gray-700 bg-gray-50'
-                                  }`}
-                                >
-                                  {ticket.status}
-                                </Badge>
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-xs h-5 px-2 ${
-                                    ticket.priority === 'urgent' ? 'border-red-200 text-red-700 bg-red-50' :
-                                    ticket.priority === 'high' ? 'border-orange-200 text-orange-700 bg-orange-50' :
-                                    ticket.priority === 'medium' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' :
-                                    'border-gray-200 text-gray-700 bg-gray-50'
-                                  }`}
-                                >
-                                  {ticket.priority}
-                                </Badge>
+                        {paginatedData.conversations.map((conversation) => {
+                          // Format date
+                          const formattedDate = new Date(conversation.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })
+
+                          return (
+                            <Link
+                              key={conversation.id}
+                              href={`/conversations?ticket_id=${conversation.id}`}
+                              target="_blank"
+                              className="flex items-center justify-between w-full p-3 text-left hover:bg-muted/50 rounded-md transition-colors group border border-border block"
+                              onClick={() => setShowPreviousTickets(false)}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate mb-2">{conversation.title}</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs h-5 px-2 ${
+                                      conversation.status === 'resolved' ? 'border-green-200 text-green-700 bg-green-50' :
+                                      conversation.status === 'pending' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' :
+                                      conversation.status === 'open' ? 'border-blue-200 text-blue-700 bg-blue-50' :
+                                      conversation.status === 'closed' ? 'border-gray-200 text-gray-700 bg-gray-50' :
+                                      'border-gray-200 text-gray-700 bg-gray-50'
+                                    }`}
+                                  >
+                                    {conversation.status}
+                                  </Badge>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs h-5 px-2 ${
+                                      conversation.priority === 'urgent' ? 'border-red-200 text-red-700 bg-red-50' :
+                                      conversation.priority === 'high' ? 'border-orange-200 text-orange-700 bg-orange-50' :
+                                      conversation.priority === 'medium' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' :
+                                      'border-gray-200 text-gray-700 bg-gray-50'
+                                    }`}
+                                  >
+                                    {conversation.priority}
+                                  </Badge>
+                                  <p className="text-xs text-muted-foreground">{formattedDate}</p>
+                                </div>
                               </div>
-                              <p className="text-sm font-medium truncate">{ticket.title}</p>
-                              <p className="text-xs text-muted-foreground">{ticket.date}</p>
-                            </div>
-                            <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                          </Link>
-                        ))}
-                        
-                        {paginatedData.tickets.length === 0 && (
+                              <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                            </Link>
+                          )
+                        })}
+
+                        {paginatedData.conversations.length === 0 && !isLoading && !error && (
                           <div className="text-center py-8 text-muted-foreground">
                             <p className="text-sm">
-                              {ticketSearchQuery.trim() ? 'No tickets match your search' : 'No previous tickets found'}
+                              {ticketSearchQuery.trim() ? 'No conversations match your search' : 'No previous conversations found'}
                             </p>
                           </div>
                         )}
@@ -599,7 +708,7 @@ Generated: ${timestamp}`
                   return (
                     <div className="flex items-center justify-between border-t pt-4">
                       <div className="text-xs text-muted-foreground">
-                        Showing {Math.min((currentPage - 1) * ticketsPerPage + 1, paginatedData.totalTickets)} to {Math.min(currentPage * ticketsPerPage, paginatedData.totalTickets)} of {paginatedData.totalTickets} tickets
+                        Showing {Math.min((currentPage - 1) * ticketsPerPage + 1, paginatedData.totalTickets)} to {Math.min(currentPage * ticketsPerPage, paginatedData.totalTickets)} of {paginatedData.totalTickets} conversations
                       </div>
                       <div className="flex items-center gap-2">
                         <Button

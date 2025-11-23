@@ -142,7 +142,7 @@ export const BorderedVariants: Story = {
   ),
 }
 
-// Ticket System Example
+// Conversation System Example
 export const TicketSystemExample: Story = {
   render: () => (
     <div className="flex flex-wrap gap-2">

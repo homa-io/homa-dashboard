@@ -368,13 +368,13 @@ export default function ProfilePage() {
                       <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm font-medium">Responded Tickets</p>
+                      <p className="text-xs sm:text-sm font-medium">Responded Conversations</p>
                       <p className="text-xs text-muted-foreground">This month</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-lg sm:text-xl font-bold">287</p>
-                    <p className="text-xs text-muted-foreground">tickets</p>
+                    <p className="text-xs text-muted-foreground">conversations</p>
                   </div>
                 </div>
               </div>

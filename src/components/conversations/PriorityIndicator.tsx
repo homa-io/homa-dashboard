@@ -1,6 +1,6 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
-import { TicketPriority } from '@/types/ticket.types'
+import { TicketPriority } from '@/types/conversation.types'
 
 interface PriorityIndicatorProps {
   priority: TicketPriority

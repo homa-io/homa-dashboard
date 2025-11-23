@@ -36,14 +36,14 @@ export interface CannedMessage {
   category: string
 }
 
-export interface TicketStatus {
+export interface ConversationStatus {
   id: string
   name: string
   color: string
   default: boolean
 }
 
-export interface TicketPriority {
+export interface ConversationPriority {
   id: string
   name: string
   color: string
@@ -94,7 +94,7 @@ export interface LocalizationSettings {
 export type SettingsTab = 
   | 'general' 
   | 'customer-attributes' 
-  | 'ticket-attributes' 
+  | 'conversation-attributes' 
   | 'integrations' 
   | 'plugins' 
   | 'canned-messages'

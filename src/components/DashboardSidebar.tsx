@@ -41,7 +41,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
 
   const mainNavItems: MenuItem[] = [
     { icon: Home, label: "Dashboard", href: "/" },
-    { icon: MessageSquare, label: "Tickets", href: "/tickets" },
+    { icon: MessageSquare, label: "Conversations", href: "/conversations" },
     { icon: Users, label: "Customers", href: "/customers" },
     { icon: BarChart3, label: "Analytics", href: "/analytics" },
     { icon: BookOpen, label: "Knowledge Base", href: "/knowledge-base/manage" },

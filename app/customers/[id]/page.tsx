@@ -17,7 +17,7 @@ import {
   Building,
   Calendar,
   DollarSign,
-  Ticket,
+  Conversation,
   Edit3,
   Save,
   X,
@@ -507,8 +507,8 @@ export default function CustomerDetailPage({ params, searchParams }: CustomerDet
               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4 sm:gap-6 lg:gap-4">
                 <div className="flex sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between sm:justify-start lg:justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Ticket className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Tickets</span>
+                    <Conversation className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Conversations</span>
                   </div>
                   <span className="font-semibold text-gray-900 dark:text-white">{displayData.totalTickets}</span>
                 </div>
@@ -546,41 +546,41 @@ export default function CustomerDetailPage({ params, searchParams }: CustomerDet
             </CardContent>
           </Card>
 
-          {/* Recent Tickets */}
+          {/* Recent Conversations */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Recent Tickets</span>
+                <span>Recent Conversations</span>
                 <Badge variant="outline">{customerTickets.length}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {customerTickets.length > 0 ? (
-                customerTickets.map((ticket) => (
-                  <div key={ticket.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                customerTickets.map((conversation) => (
+                  <div key={conversation.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-2 gap-2">
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate flex-1">
-                        {ticket.title}
+                        {conversation.title}
                       </h4>
-                      <CustomBadge variant={priorityColors[ticket.priority]} className="text-xs self-start">
-                        {ticket.priority}
+                      <CustomBadge variant={priorityColors[conversation.priority]} className="text-xs self-start">
+                        {conversation.priority}
                       </CustomBadge>
                     </div>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-gray-500 dark:text-gray-400 gap-2">
-                      <CustomBadge variant={ticketStatusColors[ticket.status]} className="text-xs">
-                        {ticket.status}
+                      <CustomBadge variant={ticketStatusColors[conversation.status]} className="text-xs">
+                        {conversation.status}
                       </CustomBadge>
-                      <span className="text-xs">{formatDate(ticket.createdAt)}</span>
+                      <span className="text-xs">{formatDate(conversation.createdAt)}</span>
                     </div>
-                    {ticket.assignee && (
+                    {conversation.assignee && (
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        Assigned to: {ticket.assignee}
+                        Assigned to: {conversation.assignee}
                       </p>
                     )}
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 dark:text-gray-400 text-sm">No tickets found</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">No conversations found</p>
               )}
             </CardContent>
           </Card>

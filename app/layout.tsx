@@ -3,6 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { DashboardLayoutWrapper } from "../src/components/DashboardLayoutWrapper"
 import { AuthProvider } from "../src/contexts/AuthContext"
+import { Toaster } from "../src/components/ui/toaster"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -48,6 +49,7 @@ export default function RootLayout({
           <DashboardLayoutWrapper>
             {children}
           </DashboardLayoutWrapper>
+          <Toaster />
         </AuthProvider>
       </body>
     </html>

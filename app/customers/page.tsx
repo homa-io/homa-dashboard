@@ -14,7 +14,7 @@ import {
   MoreVertical,
   Building,
   Calendar,
-  Ticket,
+  Conversation,
   Eye,
   Edit,
   Trash2,
@@ -123,10 +123,10 @@ const CustomerTableRow = memo<{
         </div>
       </TableCell>
     )}
-    {visibleColumns.tickets && (
+    {visibleColumns.conversations && (
       <TableCell className="text-sm hidden md:table-cell">
         <div className="flex items-center">
-          <Ticket className="h-4 w-4 mr-1 text-gray-400" />
+          <Conversation className="h-4 w-4 mr-1 text-gray-400" />
           {customer.totalTickets}
         </div>
       </TableCell>
@@ -180,7 +180,7 @@ export default function CustomersPage() {
   const [sortBy, setSortBy] = useState<string>('name')
   const [searchQuery, setSearchQuery] = useState('')
   
-  // Individual filter states (following tickets pattern)
+  // Individual filter states (following conversations pattern)
   const [filterTags, setFilterTags] = useState<string[]>([])
   const [filterSource, setFilterSource] = useState<string | null>(null)
   
@@ -191,7 +191,7 @@ export default function CustomersPage() {
     company: false,
     source: true,
     tags: true,
-    tickets: true,
+    conversations: true,
     lastActivity: true,
     address: false,
     joinDate: false,
@@ -438,13 +438,13 @@ export default function CustomersPage() {
                 Tags
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={visibleColumns.tickets}
+                checked={visibleColumns.conversations}
                 onCheckedChange={(checked) =>
-                  setVisibleColumns(prev => ({ ...prev, tickets: checked }))
+                  setVisibleColumns(prev => ({ ...prev, conversations: checked }))
                 }
               >
-                <Ticket className="h-4 w-4 mr-2" />
-                Tickets
+                <Conversation className="h-4 w-4 mr-2" />
+                Conversations
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={visibleColumns.lastActivity}
@@ -538,7 +538,7 @@ export default function CustomersPage() {
               {visibleColumns.company && <TableHead className="hidden lg:table-cell">Company</TableHead>}
               {visibleColumns.source && <TableHead className="hidden sm:table-cell">Source</TableHead>}
               {visibleColumns.tags && <TableHead className="hidden lg:table-cell">Tags</TableHead>}
-              {visibleColumns.tickets && <TableHead className="hidden md:table-cell">Tickets</TableHead>}
+              {visibleColumns.conversations && <TableHead className="hidden md:table-cell">Conversations</TableHead>}
               {visibleColumns.lastActivity && <TableHead className="hidden lg:table-cell">Last Activity</TableHead>}
               {visibleColumns.address && <TableHead className="hidden xl:table-cell">Address</TableHead>}
               {visibleColumns.joinDate && <TableHead className="hidden xl:table-cell">Join Date</TableHead>}

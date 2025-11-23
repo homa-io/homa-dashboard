@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { 
   Home, 
-  Ticket, 
+  Conversation, 
   Users, 
   BarChart3, 
   Settings, 
@@ -28,10 +28,10 @@ const menuItems = [
     section: 'main'
   },
   {
-    id: 'tickets',
-    label: 'Tickets',
-    icon: Ticket,
-    href: '/tickets',
+    id: 'conversations',
+    label: 'Conversations',
+    icon: Conversation,
+    href: '/conversations',
     section: 'main'
   },
   {
@@ -66,7 +66,7 @@ const menuItems = [
 
 export function Sidebar({ className }: SidebarProps) {
   const [isExpanded, setIsExpanded] = useState(true)
-  const [activeItem, setActiveItem] = useState('tickets')
+  const [activeItem, setActiveItem] = useState('conversations')
 
   const mainItems = menuItems.filter(item => item.section === 'main')
   const supportItems = menuItems.filter(item => item.section === 'support')
