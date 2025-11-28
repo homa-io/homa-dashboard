@@ -1,157 +1,112 @@
 /**
  * Customer service layer
  * Handles all customer-related API operations
+ * Backend API: /api/admin/clients
  */
 
 import { apiClient, type ApiResponse, type PaginatedResponse } from './api-client'
-import type { Customer, CustomerFilters } from '@/types/customer.types'
+import type { ExternalID } from '@/types/conversation.types'
 
-export interface CreateCustomerRequest {
+// Backend Client schema
+export interface Client {
+  id: string // UUID
   name: string
-  email: string
-  phone?: string
-  company?: string
-  tags?: string[]
-  address?: {
-    street: string
-    city: string
-    state: string
-    zipCode: string
-    country: string
-  }
-  customFields?: Record<string, string | number | boolean | string[]>
+  data: Record<string, any> // Custom fields (flexible JSON)
+  language: string | null
+  timezone: string | null
+  external_ids: ExternalID[]
+  created_at: string // ISO 8601
+  updated_at: string // ISO 8601
 }
 
-export interface UpdateCustomerRequest extends Partial<CreateCustomerRequest> {
-  status?: 'active' | 'inactive' | 'pending'
+export interface CreateClientRequest {
+  name: string
+  data?: Record<string, any>
+  language?: string
+  timezone?: string
+  external_ids?: Array<{
+    type: 'email' | 'phone' | 'whatsapp' | 'slack' | 'telegram' | 'web' | 'chat'
+    value: string
+  }>
 }
 
-export interface CustomerListParams {
+export interface UpdateClientRequest {
+  name?: string
+  data?: Record<string, any>
+  language?: string
+  timezone?: string
+  external_ids?: Array<{
+    type: 'email' | 'phone' | 'whatsapp' | 'slack' | 'telegram' | 'web' | 'chat'
+    value: string
+  }>
+}
+
+export interface ClientListParams {
   page?: number
   limit?: number
   search?: string
-  status?: string[]
-  tags?: string[]
-  sortBy?: 'name' | 'email' | 'company' | 'created' | 'value'
-  sortOrder?: 'asc' | 'desc'
-}
-
-export interface CustomerStatsResponse {
-  total: number
-  active: number
-  inactive: number
-  pending: number
-  totalValue: number
-  averageValue: number
-  growth: number
+  sort_by?: string
+  sort_order?: 'asc' | 'desc'
 }
 
 class CustomerService {
-  private readonly basePath = '/customers'
+  private readonly basePath = '/api/admin/clients'
 
   /**
-   * Get paginated list of customers with filters
+   * Get paginated list of clients with filters
    */
-  async getCustomers(params: CustomerListParams = {}): Promise<ApiResponse<PaginatedResponse<Customer>>> {
+  async getClients(params: ClientListParams = {}): Promise<ApiResponse<PaginatedResponse<Client>>> {
     const searchParams = new URLSearchParams()
-    
+
     if (params.page) searchParams.set('page', params.page.toString())
     if (params.limit) searchParams.set('limit', params.limit.toString())
     if (params.search) searchParams.set('search', params.search)
-    if (params.status?.length) searchParams.set('status', params.status.join(','))
-    if (params.tags?.length) searchParams.set('tags', params.tags.join(','))
-    if (params.sortBy) searchParams.set('sortBy', params.sortBy)
-    if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder)
+    if (params.sort_by) searchParams.set('sort_by', params.sort_by)
+    if (params.sort_order) searchParams.set('sort_order', params.sort_order)
 
     const queryString = searchParams.toString()
     const endpoint = queryString ? `${this.basePath}?${queryString}` : this.basePath
-    
-    return apiClient.get<PaginatedResponse<Customer>>(endpoint)
+
+    return apiClient.get<PaginatedResponse<Client>>(endpoint)
   }
 
   /**
-   * Get a single customer by ID
+   * Search clients by query
    */
-  async getCustomer(id: string): Promise<ApiResponse<Customer>> {
-    return apiClient.get<Customer>(`${this.basePath}/${id}`)
-  }
-
-  /**
-   * Create a new customer
-   */
-  async createCustomer(customer: CreateCustomerRequest): Promise<ApiResponse<Customer>> {
-    return apiClient.post<Customer>(this.basePath, customer)
-  }
-
-  /**
-   * Update an existing customer
-   */
-  async updateCustomer(id: string, updates: UpdateCustomerRequest): Promise<ApiResponse<Customer>> {
-    return apiClient.patch<Customer>(`${this.basePath}/${id}`, updates)
-  }
-
-  /**
-   * Delete a customer
-   */
-  async deleteCustomer(id: string): Promise<ApiResponse<void>> {
-    return apiClient.delete<void>(`${this.basePath}/${id}`)
-  }
-
-  /**
-   * Get customer statistics
-   */
-  async getCustomerStats(): Promise<ApiResponse<CustomerStatsResponse>> {
-    return apiClient.get<CustomerStatsResponse>(`${this.basePath}/stats`)
-  }
-
-  /**
-   * Get customer conversations
-   */
-  async getCustomerTickets(customerId: string, params: { page?: number; limit?: number } = {}): Promise<ApiResponse<PaginatedResponse<any>>> {
+  async searchClients(query: string, limit = 10): Promise<ApiResponse<Client[]>> {
     const searchParams = new URLSearchParams()
-    if (params.page) searchParams.set('page', params.page.toString())
-    if (params.limit) searchParams.set('limit', params.limit.toString())
-    
-    const queryString = searchParams.toString()
-    const endpoint = queryString 
-      ? `${this.basePath}/${customerId}/conversations?${queryString}`
-      : `${this.basePath}/${customerId}/conversations`
-    
-    return apiClient.get(endpoint)
-  }
-
-  /**
-   * Search customers by query
-   */
-  async searchCustomers(query: string, limit = 10): Promise<ApiResponse<Customer[]>> {
-    const searchParams = new URLSearchParams()
-    searchParams.set('q', query)
+    searchParams.set('search', query)
     searchParams.set('limit', limit.toString())
-    
-    return apiClient.get<Customer[]>(`${this.basePath}/search?${searchParams.toString()}`)
+
+    return apiClient.get<Client[]>(`${this.basePath}?${searchParams.toString()}`)
   }
 
   /**
-   * Bulk update customers
+   * Get a single client by ID
    */
-  async bulkUpdateCustomers(
-    ids: string[], 
-    updates: Partial<UpdateCustomerRequest>
-  ): Promise<ApiResponse<Customer[]>> {
-    return apiClient.patch<Customer[]>(`${this.basePath}/bulk`, { ids, updates })
+  async getClient(id: string): Promise<ApiResponse<Client>> {
+    return apiClient.get<Client>(`${this.basePath}/${id}`)
   }
 
   /**
-   * Export customers data
+   * Create a new client
    */
-  async exportCustomers(
-    format: 'csv' | 'xlsx' | 'json',
-    filters?: CustomerFilters
-  ): Promise<ApiResponse<{ downloadUrl: string }>> {
-    return apiClient.post<{ downloadUrl: string }>(`${this.basePath}/export`, {
-      format,
-      filters,
-    })
+  async createClient(client: CreateClientRequest): Promise<ApiResponse<Client>> {
+    return apiClient.post<Client>(this.basePath, client)
+  }
+
+  /**
+   * Update an existing client
+   */
+  async updateClient(id: string, updates: UpdateClientRequest): Promise<ApiResponse<Client>> {
+    return apiClient.put<Client>(`${this.basePath}/${id}`, updates)
+  }
+
+  /**
+   * Delete a client
+   */
+  async deleteClient(id: string): Promise<ApiResponse<void>> {
+    return apiClient.delete<void>(`${this.basePath}/${id}`)
   }
 }
 

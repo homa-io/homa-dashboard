@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback, memo } from "react"
-import Link from "next/link"
+import { useState, useMemo, useCallback, memo, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,47 +8,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Search,
-  Filter,
   Plus,
   MoreVertical,
-  Building,
   Calendar,
-  Conversation,
   Eye,
   Edit,
   Trash2,
-  ArrowUpDown,
   Tag,
   Globe,
   Columns3,
-  X,
-  Check,
-  MessageCircle,
-  Monitor,
   Mail,
-  Phone
+  Phone,
+  Loader2
 } from "lucide-react"
-import { mockCustomers, mockCustomFields } from "@/data/mockCustomers"
-import { Customer, CustomerFilters } from "@/types/customer.types"
-import { StatusBadge, SourceBadge } from "@/components/badges"
-import { searchCustomers } from "@/lib/search-utils"
-import { filterByTags } from "@/lib/badge-utils"
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger
+  DropdownMenuCheckboxItem
 } from "@/components/ui/dropdown-menu"
-import { CustomBadge } from "@/components/ui/custom-badge"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import {
   Table,
   TableBody,
@@ -58,198 +37,290 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  CreateCustomerModal,
+  EditCustomerModal,
+  CustomerConversationsModal
+} from "@/components/customers"
+import { customerService, type Client } from "@/services/customer.service"
+import { toast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 // Memoized table row component for better performance
 const CustomerTableRow = memo<{
-  customer: Customer
+  customer: Client
   visibleColumns: Record<string, boolean>
   onViewCustomer: (id: string) => void
   onEditCustomer: (id: string) => void
+  onDeleteCustomer: (id: string, name: string) => void
   getInitials: (name: string) => string
   formatDate: (date: string) => string
+  getPrimaryEmail: (client: Client) => string
+  getPrimaryPhone: (client: Client) => string
 }>(({
   customer,
   visibleColumns,
   onViewCustomer,
   onEditCustomer,
+  onDeleteCustomer,
   getInitials,
-  formatDate
-}) => (
-  <TableRow>
-    <TableCell>
-      <div className="flex items-center space-x-2 sm:space-x-3">
-        <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
-          <AvatarImage src={customer.avatar} />
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-            {getInitials(customer.name)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0">
-          <Link 
-            href={`/customers/${customer.id}`}
-            className="font-medium text-blue-600 hover:text-blue-500 hover:underline text-sm sm:text-base block truncate"
-          >
-            {customer.name}
-          </Link>
-          <div className="text-xs text-gray-500 mt-1">
-            <StatusBadge status={customer.status} type="customer" size="sm" />
+  formatDate,
+  getPrimaryEmail,
+  getPrimaryPhone
+}) => {
+  const primaryEmail = getPrimaryEmail(customer)
+  const primaryPhone = getPrimaryPhone(customer)
+
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+              {getInitials(customer.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <div className="font-medium text-sm sm:text-base block truncate">
+              {customer.name}
+            </div>
+            <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+              {primaryEmail && (
+                <div className="flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  <span className="truncate">{primaryEmail}</span>
+                </div>
+              )}
+              {primaryPhone && (
+                <div className="flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  <span className="truncate">{primaryPhone}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </TableCell>
-    {visibleColumns.company && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
-        {customer.company || '-'}
       </TableCell>
-    )}
-    {visibleColumns.source && (
-      <TableCell className="hidden sm:table-cell">
-        <SourceBadge source={customer.source} size="sm" />
+      {visibleColumns.language && (
+        <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
+          {customer.language || '-'}
+        </TableCell>
+      )}
+      {visibleColumns.timezone && (
+        <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
+          {customer.timezone || '-'}
+        </TableCell>
+      )}
+      {visibleColumns.externalIds && (
+        <TableCell className="hidden sm:table-cell">
+          <div className="flex flex-wrap gap-1">
+            {customer.external_ids.slice(0, 2).map((extId, index) => (
+              <Badge key={index} variant="secondary" className="text-xs capitalize">
+                {extId.type}
+              </Badge>
+            ))}
+            {customer.external_ids.length > 2 && (
+              <Badge variant="outline" className="text-xs">
+                +{customer.external_ids.length - 2}
+              </Badge>
+            )}
+          </div>
+        </TableCell>
+      )}
+      {visibleColumns.createdAt && (
+        <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
+          {formatDate(customer.created_at)}
+        </TableCell>
+      )}
+      {visibleColumns.updatedAt && (
+        <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden xl:table-cell">
+          {formatDate(customer.updated_at)}
+        </TableCell>
+      )}
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onViewCustomer(customer.id)}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Conversations
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEditCustomer(customer.id)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Customer
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => onDeleteCustomer(customer.id, customer.name)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Customer
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
-    )}
-    {visibleColumns.tags && (
-      <TableCell className="hidden lg:table-cell">
-        <div className="flex flex-wrap gap-1">
-          {customer.tags.slice(0, 2).map((tag, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-          {customer.tags.length > 2 && (
-            <Badge variant="outline" className="text-xs">
-              +{customer.tags.length - 2}
-            </Badge>
-          )}
-        </div>
-      </TableCell>
-    )}
-    {visibleColumns.conversations && (
-      <TableCell className="text-sm hidden md:table-cell">
-        <div className="flex items-center">
-          <Conversation className="h-4 w-4 mr-1 text-gray-400" />
-          {customer.totalTickets}
-        </div>
-      </TableCell>
-    )}
-    {visibleColumns.lastActivity && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
-        {formatDate(customer.lastActivity)}
-      </TableCell>
-    )}
-    {visibleColumns.address && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden xl:table-cell">
-        {customer.address ? `${customer.address.city}, ${customer.address.state}` : '-'}
-      </TableCell>
-    )}
-    {visibleColumns.joinDate && (
-      <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden xl:table-cell">
-        {formatDate(customer.createdAt)}
-      </TableCell>
-    )}
-    <TableCell>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onViewCustomer(customer.id)}>
-            <Eye className="h-4 w-4 mr-2" />
-            View Details
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onEditCustomer(customer.id)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Customer
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-600">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Customer
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </TableCell>
-  </TableRow>
-))
+    </TableRow>
+  )
+})
 
 CustomerTableRow.displayName = 'CustomerTableRow'
 
 export default function CustomersPage() {
-  const [customers] = useState<Customer[]>(mockCustomers)
+  // Data state
+  const [customers, setCustomers] = useState<Client[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [totalCustomers, setTotalCustomers] = useState(0)
+
+  // Sorting and filtering
   const [sortBy, setSortBy] = useState<string>('name')
   const [searchQuery, setSearchQuery] = useState('')
-  
-  // Individual filter states (following conversations pattern)
-  const [filterTags, setFilterTags] = useState<string[]>([])
-  const [filterSource, setFilterSource] = useState<string | null>(null)
-  
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+
+  // Modal states
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [conversationsModalOpen, setConversationsModalOpen] = useState(false)
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
+  const [selectedCustomerName, setSelectedCustomerName] = useState<string | null>(null)
+
+  // Delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [customerToDelete, setCustomerToDelete] = useState<{ id: string; name: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
   const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false)
-  const [tagSearchQuery, setTagSearchQuery] = useState('')
   const [visibleColumns, setVisibleColumns] = useState({
-    company: false,
-    source: true,
-    tags: true,
-    conversations: true,
-    lastActivity: true,
-    address: false,
-    joinDate: false,
-    customFields: false
+    language: false,
+    timezone: false,
+    externalIds: true,
+    createdAt: true,
+    updatedAt: false
   })
 
-  // Optimized filtering and sorting with centralized utilities
-  const filteredAndSortedCustomers = useMemo(() => {
-    // Apply search filter using centralized utility
-    let filtered = searchCustomers(customers, searchQuery)
+  // Fetch customers from API
+  const fetchCustomers = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const response = await customerService.getClients({
+        search: debouncedSearchQuery || undefined,
+        sort_by: sortBy === 'created' ? 'created_at' : sortBy,
+        sort_order: 'desc',
+        limit: 100 // Fetch first 100 customers
+      })
 
-    // Apply tags filter using centralized utility
-    filtered = filterByTags(filtered, filterTags)
-
-    // Source filter
-    if (filterSource) {
-      filtered = filtered.filter(customer => customer.source === filterSource)
-    }
-
-    // Sort customers
-    return filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name)
-        case 'company':
-          return (a.company || '').localeCompare(b.company || '')
-        case 'created':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        default:
-          return 0
+      if (response.success && response.data) {
+        setCustomers(response.data.data)
+        setTotalCustomers(response.data.meta?.total || 0)
+      } else {
+        toast({
+          title: "Error",
+          description: response.error?.message || "Failed to load customers",
+          variant: "destructive"
+        })
       }
-    })
-  }, [customers, searchQuery, filterTags, filterSource, sortBy])
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while loading customers",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [debouncedSearchQuery, sortBy])
 
-  // Check if any filters are active
-  const hasActiveFilters = filterTags.length > 0 || filterSource
+  // Load customers on mount and when filters change
+  useEffect(() => {
+    fetchCustomers()
+  }, [fetchCustomers])
 
-  // Clear all filters function
-  const clearAllFilters = () => {
-    setFilterTags([])
-    setFilterSource(null)
-    setSearchQuery('')
-  }
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 300)
 
-  // Available tags
-  const availableTags = ['VIP', 'Enterprise', 'Pro', 'New', 'Healthcare', 'Finance', 'Tech', 'Retail']
-  const filteredAvailableTags = availableTags
-    .filter(tag => tag.toLowerCase().includes(tagSearchQuery.toLowerCase()))
-    .slice(0, 5)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Helper functions
+  const getPrimaryEmail = useCallback((client: Client) => {
+    const emailId = client.external_ids.find(id => id.type === 'email')
+    return emailId?.value || ''
+  }, [])
+
+  const getPrimaryPhone = useCallback((client: Client) => {
+    const phoneId = client.external_ids.find(id => id.type === 'phone' || id.type === 'whatsapp')
+    return phoneId?.value || ''
+  }, [])
 
   // Memoized callback functions for better performance
   const handleViewCustomer = useCallback((customerId: string) => {
-    window.location.href = `/customers/${customerId}`
-  }, [])
+    const customer = customers.find(c => c.id === customerId)
+    setSelectedCustomerId(customerId)
+    setSelectedCustomerName(customer?.name || null)
+    setConversationsModalOpen(true)
+  }, [customers])
 
   const handleEditCustomer = useCallback((customerId: string) => {
-    window.location.href = `/customers/${customerId}?edit=true`
+    setSelectedCustomerId(customerId)
+    setEditModalOpen(true)
   }, [])
+
+  const handleDeleteCustomer = useCallback((customerId: string, customerName: string) => {
+    setCustomerToDelete({ id: customerId, name: customerName })
+    setDeleteDialogOpen(true)
+  }, [])
+
+  const confirmDelete = async () => {
+    if (!customerToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const response = await customerService.deleteClient(customerToDelete.id)
+
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Customer deleted successfully"
+        })
+        setDeleteDialogOpen(false)
+        setCustomerToDelete(null)
+        fetchCustomers() // Refresh the list
+      } else {
+        toast({
+          title: "Error",
+          description: response.error?.message || "Failed to delete customer",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -273,7 +344,10 @@ export default function CustomersPage() {
             Manage your customer database and relationships
           </p>
         </div>
-        <Button className="w-full sm:w-auto">
+        <Button
+          className="w-full sm:w-auto"
+          onClick={() => setCreateModalOpen(true)}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Customer
         </Button>
@@ -302,103 +376,6 @@ export default function CustomersPage() {
           </SelectContent>
         </Select>
 
-        <div className="flex gap-2 sm:gap-4">
-        <DropdownMenu open={filterDropdownOpen} onOpenChange={setFilterDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="flex-1 sm:flex-initial">
-              <Filter className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Filters</span>
-              <span className="sm:hidden">Filter</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Filter & Sort</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            
-            {/* Filter by Source */}
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <Globe className="mr-2 h-4 w-4" />
-                <span>Source</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                <DropdownMenuRadioGroup value={filterSource || ''} onValueChange={(value) => setFilterSource(value || null)}>
-                  <DropdownMenuRadioItem value="">
-                    <Globe className="mr-2 h-4 w-4 opacity-50" />
-                    All Sources
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="webform">
-                    <Globe className="mr-2 h-4 w-4" />
-                    Web Form
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="webchat">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Web Chat
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="email">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Email
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="whatsapp">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    WhatsApp
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="phone_call">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Phone Call
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            
-            {/* Filter by Tags */}
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <Tag className="mr-2 h-4 w-4" />
-                <span>Tags</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-56">
-                <Command>
-                  <CommandInput 
-                    placeholder="Search tags..." 
-                    value={tagSearchQuery}
-                    onValueChange={setTagSearchQuery}
-                  />
-                  <CommandList>
-                    <CommandEmpty>No tags found.</CommandEmpty>
-                    <CommandGroup>
-                      {filteredAvailableTags.map((tag) => (
-                        <CommandItem key={tag} onSelect={() => {
-                          if (filterTags.includes(tag)) {
-                            setFilterTags(filterTags.filter(t => t !== tag))
-                          } else {
-                            setFilterTags([...filterTags, tag])
-                          }
-                        }}>
-                          <div className="flex items-center gap-2 w-full">
-                            <div className={`w-4 h-4 border rounded ${filterTags.includes(tag) ? 'bg-primary border-primary' : 'border-input'} flex items-center justify-center`}>
-                              {filterTags.includes(tag) && <Check className="w-3 h-3 text-white" />}
-                            </div>
-                            <span>{tag}</span>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            
-            <DropdownMenuSeparator />
-            
-            {/* Clear Filters */}
-            <DropdownMenuItem onClick={clearAllFilters}>
-              <X className="mr-2 h-4 w-4" />
-              Clear All Filters
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         <DropdownMenu open={columnsDropdownOpen} onOpenChange={setColumnsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="flex-1 sm:flex-initial">
@@ -411,173 +388,171 @@ export default function CustomersPage() {
             <div className="px-2 py-2">
               <h4 className="font-semibold text-sm mb-2">Show Columns</h4>
               <DropdownMenuCheckboxItem
-                checked={visibleColumns.company}
+                checked={visibleColumns.language}
                 onCheckedChange={(checked) =>
-                  setVisibleColumns(prev => ({ ...prev, company: checked }))
-                }
-              >
-                <Building className="h-4 w-4 mr-2" />
-                Company
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.source}
-                onCheckedChange={(checked) => 
-                  setVisibleColumns(prev => ({ ...prev, source: checked }))
+                  setVisibleColumns(prev => ({ ...prev, language: checked }))
                 }
               >
                 <Globe className="h-4 w-4 mr-2" />
-                Source
+                Language
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={visibleColumns.tags}
-                onCheckedChange={(checked) => 
-                  setVisibleColumns(prev => ({ ...prev, tags: checked }))
+                checked={visibleColumns.timezone}
+                onCheckedChange={(checked) =>
+                  setVisibleColumns(prev => ({ ...prev, timezone: checked }))
+                }
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                Timezone
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={visibleColumns.externalIds}
+                onCheckedChange={(checked) =>
+                  setVisibleColumns(prev => ({ ...prev, externalIds: checked }))
                 }
               >
                 <Tag className="h-4 w-4 mr-2" />
-                Tags
+                External IDs
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={visibleColumns.conversations}
+                checked={visibleColumns.createdAt}
                 onCheckedChange={(checked) =>
-                  setVisibleColumns(prev => ({ ...prev, conversations: checked }))
-                }
-              >
-                <Conversation className="h-4 w-4 mr-2" />
-                Conversations
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.lastActivity}
-                onCheckedChange={(checked) =>
-                  setVisibleColumns(prev => ({ ...prev, lastActivity: checked }))
+                  setVisibleColumns(prev => ({ ...prev, createdAt: checked }))
                 }
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                Last Activity
+                Created At
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={visibleColumns.address}
-                onCheckedChange={(checked) => 
-                  setVisibleColumns(prev => ({ ...prev, address: checked }))
-                }
-              >
-                <Building className="h-4 w-4 mr-2" />
-                Address
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.joinDate}
-                onCheckedChange={(checked) => 
-                  setVisibleColumns(prev => ({ ...prev, joinDate: checked }))
+                checked={visibleColumns.updatedAt}
+                onCheckedChange={(checked) =>
+                  setVisibleColumns(prev => ({ ...prev, updatedAt: checked }))
                 }
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                Join Date
+                Updated At
               </DropdownMenuCheckboxItem>
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
-        </div>
       </div>
-
-      {/* Active Filter Badges */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-1 mb-4">
-          {/* Source filter */}
-          {filterSource && (
-            <CustomBadge variant="blue" className="text-xs h-6 px-2 gap-1">
-              <Globe className="w-3 h-3" />
-              <span className="capitalize">{filterSource}</span>
-              <button
-                onClick={() => setFilterSource(null)}
-                className="text-current hover:opacity-70 ml-1"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </CustomBadge>
-          )}
-          
-          {/* Tag filters */}
-          {filterTags.map(tag => (
-            <div key={`tag-${tag}`} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-xs">
-              <Tag className="w-3 h-3" />
-              <span className="capitalize">{tag}</span>
-              <button
-                onClick={() => setFilterTags(filterTags.filter(t => t !== tag))}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-          
-          {/* Clear all filters button - show if multiple filters are active */}
-          {((filterSource ? 1 : 0) + (filterTags.length > 0 ? 1 : 0)) > 1 && (
-            <button
-              onClick={clearAllFilters}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
-            >
-              Clear all
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Showing {filteredAndSortedCustomers.length} of {customers.length} customers
+          {isLoading ? (
+            'Loading customers...'
+          ) : (
+            `Showing ${customers.length} of ${totalCustomers} customers`
+          )}
         </p>
       </div>
 
       {/* Customers Table */}
-      <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[600px] sm:min-w-[800px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px] sm:w-[250px]">Customer</TableHead>
-              {visibleColumns.company && <TableHead className="hidden lg:table-cell">Company</TableHead>}
-              {visibleColumns.source && <TableHead className="hidden sm:table-cell">Source</TableHead>}
-              {visibleColumns.tags && <TableHead className="hidden lg:table-cell">Tags</TableHead>}
-              {visibleColumns.conversations && <TableHead className="hidden md:table-cell">Conversations</TableHead>}
-              {visibleColumns.lastActivity && <TableHead className="hidden lg:table-cell">Last Activity</TableHead>}
-              {visibleColumns.address && <TableHead className="hidden xl:table-cell">Address</TableHead>}
-              {visibleColumns.joinDate && <TableHead className="hidden xl:table-cell">Join Date</TableHead>}
-              <TableHead className="w-[50px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredAndSortedCustomers.map((customer) => (
-              <CustomerTableRow
-                key={customer.id}
-                customer={customer}
-                visibleColumns={visibleColumns}
-                onViewCustomer={handleViewCustomer}
-                onEditCustomer={handleEditCustomer}
-                getInitials={getInitials}
-                formatDate={formatDate}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Empty State */}
-      {filteredAndSortedCustomers.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12 border rounded-md">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : customers.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 border rounded-md">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               No customers found
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Try adjusting your filters or add your first customer.
+              {searchQuery
+                ? 'Try adjusting your search or add a new customer.'
+                : 'Get started by adding your first customer.'}
             </p>
-            <Button>
+            <Button onClick={() => setCreateModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Customer
             </Button>
           </div>
         </div>
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="min-w-[600px] sm:min-w-[800px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px] sm:w-[250px]">Customer</TableHead>
+                {visibleColumns.language && <TableHead className="hidden lg:table-cell">Language</TableHead>}
+                {visibleColumns.timezone && <TableHead className="hidden lg:table-cell">Timezone</TableHead>}
+                {visibleColumns.externalIds && <TableHead className="hidden sm:table-cell">External IDs</TableHead>}
+                {visibleColumns.createdAt && <TableHead className="hidden lg:table-cell">Created At</TableHead>}
+                {visibleColumns.updatedAt && <TableHead className="hidden xl:table-cell">Updated At</TableHead>}
+                <TableHead className="w-[50px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {customers.map((customer) => (
+                <CustomerTableRow
+                  key={customer.id}
+                  customer={customer}
+                  visibleColumns={visibleColumns}
+                  onViewCustomer={handleViewCustomer}
+                  onEditCustomer={handleEditCustomer}
+                  onDeleteCustomer={handleDeleteCustomer}
+                  getInitials={getInitials}
+                  formatDate={formatDate}
+                  getPrimaryEmail={getPrimaryEmail}
+                  getPrimaryPhone={getPrimaryPhone}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
+
+      {/* Modals */}
+      <CreateCustomerModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onSuccess={fetchCustomers}
+      />
+
+      <EditCustomerModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        customerId={selectedCustomerId}
+        onSuccess={fetchCustomers}
+      />
+
+      <CustomerConversationsModal
+        open={conversationsModalOpen}
+        onOpenChange={setConversationsModalOpen}
+        customerId={selectedCustomerId}
+        customerName={selectedCustomerName || undefined}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the customer "{customerToDelete?.name}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

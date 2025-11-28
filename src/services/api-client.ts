@@ -15,16 +15,19 @@ export interface ApiResponse<T> {
   data: T
   success: boolean
   message?: string
+  meta?: Meta
+}
+
+export interface Meta {
+  page?: number
+  limit?: number
+  total?: number
+  total_pages?: number
 }
 
 export interface PaginatedResponse<T> {
   data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    pages: number
-  }
+  meta: Meta
 }
 
 export interface RequestConfig {
