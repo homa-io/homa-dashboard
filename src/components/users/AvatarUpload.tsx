@@ -218,6 +218,8 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, disabled, userName
                   onChange={(c) => setCrop(c)}
                   onComplete={(c) => setCompletedCrop(c)}
                   aspect={1}
+                  locked={false}
+                  keepSelection
                   circularCrop
                 >
                   <img

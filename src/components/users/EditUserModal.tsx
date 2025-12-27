@@ -90,15 +90,24 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
 
     setIsLoading(true)
     try {
-      const updateData: any = {}
+      // Backend requires all fields, not just changed ones
+      const updateData: any = {
+        name: formData.name,
+        last_name: formData.last_name,
+        display_name: formData.display_name,
+        email: formData.email,
+        type: formData.type,
+      }
 
-      if (formData.name !== user?.name) updateData.name = formData.name
-      if (formData.last_name !== user?.last_name) updateData.last_name = formData.last_name
-      if (formData.display_name !== user?.display_name) updateData.display_name = formData.display_name
-      if (formData.email !== user?.email) updateData.email = formData.email
-      if (formData.type !== user?.type) updateData.type = formData.type
-      if (formData.password) updateData.password = formData.password
-      if (formData.avatar !== (user?.avatar || "")) updateData.avatar = formData.avatar || null
+      // Only include password if provided
+      if (formData.password) {
+        updateData.password = formData.password
+      }
+
+      // Include avatar (can be null to remove)
+      if (formData.avatar !== (user?.avatar || "")) {
+        updateData.avatar = formData.avatar || null
+      }
 
       const response = await updateUser(userId, updateData)
 
