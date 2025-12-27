@@ -1,21 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { 
+import {
   Plus,
   Edit,
   Trash2,
   Save,
   X,
   Tag,
-  Hash,
-  Palette,
-  Search
+  Search,
+  Loader2
 } from "lucide-react"
 import {
   Dialog,
@@ -25,6 +24,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,28 +41,65 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { mockKnowledgeBaseTags, mockKnowledgeBaseArticles } from "@/data/mockKnowledgeBase.working"
-import { KnowledgeBaseTag } from "@/types/knowledge-base.simple.types"
+import { toast } from "@/hooks/use-toast"
+import {
+  getKBTags,
+  createKBTag,
+  updateKBTag,
+  deleteKBTag,
+  type KBTag,
+} from "@/services/knowledge-base.service"
 
-export function TagManager() {
-  const [tags, setTags] = useState(mockKnowledgeBaseTags)
+interface TagManagerProps {
+  onDataChange?: () => void
+}
+
+export function TagManager({ onDataChange }: TagManagerProps) {
+  const [tags, setTags] = useState<KBTag[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [editingTag, setEditingTag] = useState<KnowledgeBaseTag | null>(null)
+  const [editingTag, setEditingTag] = useState<KBTag | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [tagToDelete, setTagToDelete] = useState<KBTag | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     color: '#10B981'
   })
 
+  const fetchTags = useCallback(async () => {
+    try {
+      const response = await getKBTags()
+      if (response.success && response.data) {
+        setTags(response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load tags",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchTags()
+  }, [fetchTags])
+
   const filteredTags = tags.filter(tag =>
     tag.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleEdit = (tag: KnowledgeBaseTag) => {
+  const handleEdit = (tag: KBTag) => {
     setEditingTag(tag)
     setFormData({
       name: tag.name,
-      color: tag.color
+      color: tag.color || '#10B981'
     })
     setIsDialogOpen(true)
   }
@@ -67,63 +113,97 @@ export function TagManager() {
     setIsDialogOpen(true)
   }
 
-  const handleSave = () => {
-    if (editingTag) {
-      // Update existing tag
-      setTags(prev => prev.map(tag => 
-        tag.id === editingTag.id 
-          ? { ...tag, ...formData }
-          : tag
-      ))
-    } else {
-      // Create new tag
-      const newTag: KnowledgeBaseTag = {
-        id: `tag-${Date.now()}`,
-        ...formData,
-        usageCount: 0
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Tag name is required",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      if (editingTag) {
+        const response = await updateKBTag(editingTag.id, formData)
+        if (response.success) {
+          toast({
+            title: "Success",
+            description: "Tag updated successfully",
+          })
+        }
+      } else {
+        const response = await createKBTag(formData)
+        if (response.success) {
+          toast({
+            title: "Success",
+            description: "Tag created successfully",
+          })
+        }
       }
-      setTags(prev => [...prev, newTag])
+      setIsDialogOpen(false)
+      fetchTags()
+      onDataChange?.()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to save tag",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
     }
-    setIsDialogOpen(false)
-    resetForm()
   }
 
-  const handleDelete = (tagId: string) => {
-    if (confirm('Are you sure you want to delete this tag?')) {
-      setTags(prev => prev.filter(tag => tag.id !== tagId))
+  const handleDeleteClick = (tag: KBTag) => {
+    setTagToDelete(tag)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!tagToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const response = await deleteKBTag(tagToDelete.id)
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Tag deleted successfully",
+        })
+        setDeleteDialogOpen(false)
+        setTagToDelete(null)
+        fetchTags()
+        onDataChange?.()
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete tag",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      color: '#10B981'
-    })
-    setEditingTag(null)
-  }
-
-  const getUsageCount = (tagId: string) => {
-    return mockKnowledgeBaseArticles.filter(article => 
-      article.tags.some(tag => tag.id === tagId)
-    ).length
-  }
-
-  const predefinedColors = [
-    '#EF4444', '#F59E0B', '#10B981', '#3B82F6', 
+  const commonColors = [
+    '#EF4444', '#F59E0B', '#10B981', '#3B82F6',
     '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6',
     '#F97316', '#84CC16', '#06B6D4', '#0EA5E9',
-    '#DC2626', '#E11D48', '#7C3AED', '#059669'
+    '#DC2626', '#CA8A04', '#059669', '#2563EB'
   ]
 
   return (
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <CardTitle>Tags Management</CardTitle>
               <CardDescription>
-                Create and manage tags to help categorize and find articles
+                Create and manage tags for organizing articles
               </CardDescription>
             </div>
             <Button onClick={handleCreate}>
@@ -134,80 +214,39 @@ export function TagManager() {
         </CardHeader>
         <CardContent>
           {/* Search */}
-          <div className="flex gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tags..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search tags..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
 
-          {/* Tags Grid View */}
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-3">
-              {filteredTags.map((tag) => (
-                <div
-                  key={tag.id}
-                  className="group relative bg-muted/30 rounded-lg p-3 border hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      <span className="font-medium">{tag.name}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {getUsageCount(tag.id)}
-                      </Badge>
-                    </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(tag)}
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(tag.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-
-            {filteredTags.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Tag className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>{searchTerm ? 'No tags found matching your search.' : 'No tags found.'}</p>
+          ) : filteredTags.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Tag className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>{searchTerm ? 'No tags match your search.' : 'No tags found.'}</p>
+              {!searchTerm && (
                 <Button className="mt-4" onClick={handleCreate}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create {searchTerm ? 'First' : 'New'} Tag
+                  Create First Tag
                 </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Tags Table View (Alternative) */}
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">Detailed View</h3>
+              )}
+            </div>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Tag</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead>Usage</TableHead>
                   <TableHead>Color</TableHead>
-                  <TableHead>Usage Count</TableHead>
                   <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -215,23 +254,31 @@ export function TagManager() {
                 {filteredTags.map((tag) => (
                   <TableRow key={tag.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: tag.color }}
-                        />
-                        <span className="font-medium">{tag.name}</span>
-                      </div>
+                      <Badge
+                        className="text-white"
+                        style={{ backgroundColor: tag.color || '#10B981' }}
+                      >
+                        {tag.name}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {tag.color}
+                        {tag.slug}
                       </code>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {getUsageCount(tag.id)} articles
-                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {tag.usage_count || 0} articles
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-6 h-6 rounded border"
+                          style={{ backgroundColor: tag.color || '#10B981' }}
+                        />
+                        <code className="text-xs">{tag.color || '#10B981'}</code>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -245,7 +292,7 @@ export function TagManager() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(tag.id)}
+                          onClick={() => handleDeleteClick(tag)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -256,37 +303,37 @@ export function TagManager() {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Tag Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {editingTag ? 'Edit Tag' : 'Create New Tag'}
             </DialogTitle>
             <DialogDescription>
-              Tags help users find related articles quickly
+              Tags help categorize and filter your articles
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="tagName">Tag Name</Label>
+              <Label htmlFor="name">Name</Label>
               <Input
-                id="tagName"
+                id="name"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Getting Started"
+                placeholder="e.g., Getting Started"
                 className="mt-1"
               />
             </div>
 
             <div>
               <Label>Color</Label>
-              <div className="mt-2 space-y-3">
+              <div className="mt-1 space-y-2">
                 <div className="flex items-center gap-2">
                   <Input
                     type="color"
@@ -301,17 +348,15 @@ export function TagManager() {
                     className="flex-1"
                   />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {predefinedColors.map((color) => (
+                <div className="flex flex-wrap gap-1">
+                  {commonColors.map((color) => (
                     <Button
                       key={color}
                       variant="outline"
                       size="sm"
-                      className="w-8 h-8 p-0 border-2"
-                      style={{ 
-                        backgroundColor: color,
-                        borderColor: formData.color === color ? '#000' : 'transparent'
-                      }}
+                      type="button"
+                      className="w-8 h-8 p-0"
+                      style={{ backgroundColor: color }}
                       onClick={() => setFormData(prev => ({ ...prev, color }))}
                     />
                   ))}
@@ -322,31 +367,10 @@ export function TagManager() {
             {/* Preview */}
             <div>
               <Label>Preview</Label>
-              <div className="mt-2 flex gap-2">
-                <Badge 
-                  variant="secondary" 
-                  style={{ 
-                    backgroundColor: `${formData.color}20`, 
-                    borderColor: formData.color,
-                    color: formData.color
-                  }}
-                >
-                  {formData.name || 'Tag Name'}
-                </Badge>
-                <Badge 
-                  variant="outline"
-                  style={{ 
-                    borderColor: formData.color,
-                    color: formData.color
-                  }}
-                >
-                  {formData.name || 'Tag Name'}
-                </Badge>
-                <Badge 
-                  style={{ 
-                    backgroundColor: formData.color,
-                    color: 'white'
-                  }}
+              <div className="mt-2 p-4 border rounded-lg bg-muted/30">
+                <Badge
+                  className="text-white"
+                  style={{ backgroundColor: formData.color }}
                 >
                   {formData.name || 'Tag Name'}
                 </Badge>
@@ -355,17 +379,55 @@ export function TagManager() {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSaving}>
               <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!formData.name.trim()}>
-              <Save className="w-4 h-4 mr-2" />
-              {editingTag ? 'Update' : 'Create'} Tag
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {editingTag ? 'Update' : 'Create'} Tag
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the tag "{tagToDelete?.name}" and remove it from all articles. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

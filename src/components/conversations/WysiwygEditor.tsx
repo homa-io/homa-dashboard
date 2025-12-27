@@ -8,9 +8,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
-import { Mic, Languages, Sparkles, Reply, Send, Volume2, MicOff, CheckCircle, AlertCircle, Loader2, BookOpen, Search, ExternalLink, Bold, Italic, Underline, List, ListOrdered, Link2, FileText, RefreshCw, MessageSquare } from "lucide-react"
+import { Mic, Languages, Sparkles, Reply, Send, Volume2, MicOff, CheckCircle, AlertCircle, Loader2, BookOpen, Search, ExternalLink, Bold, Italic, Underline, List, ListOrdered, Link2, FileText, RefreshCw, MessageSquare, ChevronDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { cannedMessagesService, CannedMessage } from "@/services/canned-messages.service"
+import { aiService, SUPPORTED_LANGUAGES, SMART_REPLY_TONES, type RevisionFormat, type SmartReplyResponse } from "@/services/ai.service"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Editor implementation - using textarea for React 19 compatibility
 
@@ -18,21 +21,21 @@ interface WysiwygEditorProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
-  onSend?: () => void
+  onSend?: (message?: string) => void  // Optional message param for direct send
   onFastReply?: () => void
   className?: string
   minHeight?: string
   disabled?: boolean
+  userLastMessage?: string // Last message from the user for smart reply
 }
 
 interface AIReview {
   originalText: string
   suggestedText: string
-  corrections: Array<{
-    original: string
-    corrected: string
-    reason: string
-  }>
+  detectedUserLanguage?: string
+  detectedAgentLanguage?: string
+  wasTranslated?: boolean
+  improvements?: string[]
 }
 
 interface KnowledgeBaseArticle {
@@ -96,7 +99,8 @@ export function WysiwygEditor({
   onFastReply,
   className,
   minHeight = "150px",
-  disabled = false
+  disabled = false,
+  userLastMessage = ""
 }: WysiwygEditorProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [isTranslating, setIsTranslating] = useState(false)
@@ -104,6 +108,10 @@ export function WysiwygEditor({
   const [showPreview, setShowPreview] = useState(false)
   const [aiReview, setAiReview] = useState<AIReview | null>(null)
   const [isLoadingAI, setIsLoadingAI] = useState(false)
+  const [selectedVersion, setSelectedVersion] = useState<'original' | 'improved'>('improved')
+  const [smartReplyTone, setSmartReplyTone] = useState<string>('')
+  const [smartReplyLanguage, setSmartReplyLanguage] = useState<string>('')
+  const [isRegenerating, setIsRegenerating] = useState(false)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false)
   const [knowledgeBaseSearch, setKnowledgeBaseSearch] = useState('')
@@ -113,6 +121,7 @@ export function WysiwygEditor({
   const [linkUrl, setLinkUrl] = useState('')
   const [linkText, setLinkText] = useState('')
   const [isRevising, setIsRevising] = useState(false)
+  const [revisionFormats, setRevisionFormats] = useState<RevisionFormat[]>([])
   // Slash command state
   const [showSlashMenu, setShowSlashMenu] = useState(false)
   const [slashQuery, setSlashQuery] = useState('')
@@ -202,6 +211,21 @@ export function WysiwygEditor({
     loadCannedMessages()
   }, [])
 
+  // Load revision formats on mount
+  useEffect(() => {
+    const loadRevisionFormats = async () => {
+      try {
+        const response = await aiService.getFormats()
+        if (response.success && response.data) {
+          setRevisionFormats(response.data)
+        }
+      } catch (error) {
+        console.error('Failed to load revision formats:', error)
+      }
+    }
+    loadRevisionFormats()
+  }, [])
+
   // Filter canned messages based on slash query (memoized)
   const filteredCannedMessages = useMemo(() => {
     return cannedMessages.filter(msg => {
@@ -273,18 +297,50 @@ export function WysiwygEditor({
     }
   }
 
-  const handleAITranslate = async () => {
-    if (!value.trim()) return
+  // Helper function to replace editor content in an undo-friendly way
+  const replaceEditorContent = (newContent: string) => {
+    if (!editorRef.current) return
+
+    // Focus the editor
+    editorRef.current.focus()
+
+    // Select all content
+    const selection = window.getSelection()
+    const range = document.createRange()
+    range.selectNodeContents(editorRef.current)
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+
+    // Use execCommand to insert text (this is undoable)
+    // insertText doesn't support HTML, so we use insertHTML for formatted content
+    document.execCommand('insertText', false, newContent)
+
+    // Update our tracking refs
+    lastEmittedValueRef.current = newContent
+    onChange(newContent)
+  }
+
+  const handleAITranslate = async (targetLanguage: string) => {
+    // Get the current text from editor
+    const textContent = editorRef.current?.innerText?.trim() || value.replace(/<[^>]*>/g, '').trim()
+    if (!textContent) return
 
     setIsTranslating(true)
-    // Simulate AI translation
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      const response = await aiService.translate({
+        text: textContent,
+        language: targetLanguage,
+      })
 
-    // Mock translation - in reality, this would call an AI service
-    const translatedText = value + " [AI Translated to English]"
-    lastEmittedValueRef.current = translatedText
-    onChange(translatedText)
-    setIsTranslating(false)
+      if (response.success && response.data) {
+        // Update the editor with translated text (undo-friendly)
+        replaceEditorContent(response.data.translated_text)
+      }
+    } catch (error) {
+      console.error('Translation failed:', error)
+    } finally {
+      setIsTranslating(false)
+    }
   }
 
   const handleAIGenerate = async () => {
@@ -304,48 +360,122 @@ export function WysiwygEditor({
     if (onChangeTimerRef.current) {
       clearTimeout(onChangeTimerRef.current)
     }
-    const currentContent = editorRef.current?.innerHTML || pendingContentRef.current || value
-    if (!currentContent.trim()) return
+    const currentContent = editorRef.current?.innerText?.trim() || value.replace(/<[^>]*>/g, '').trim()
+    if (!currentContent) return
 
     // Sync content immediately
-    if (currentContent !== value) {
-      onChange(currentContent)
+    const htmlContent = editorRef.current?.innerHTML || pendingContentRef.current || value
+    if (htmlContent !== value) {
+      onChange(htmlContent)
     }
 
+    // Reset tone and language for fresh modal
+    setSmartReplyTone('')
+    setSmartReplyLanguage('')
     setIsLoadingAI(true)
     setShowPreview(true)
-    
-    // Simulate AI review
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // Mock AI review
-    const mockReview: AIReview = {
-      originalText: value,
-      suggestedText: value.replace(/cant/g, "can't").replace(/wont/g, "won't").replace(/\s+/g, " ").trim(),
-      corrections: [
-        { original: "cant", corrected: "can't", reason: "Contraction correction" },
-        { original: "Multiple spaces", corrected: "Single space", reason: "Formatting improvement" }
-      ]
+    setSelectedVersion('improved') // Default to improved version
+
+    try {
+      // Call smart reply API
+      const response = await aiService.smartReply({
+        agent_message: currentContent,
+        user_last_message: userLastMessage || ''
+      })
+
+      if (response.success && response.data) {
+        const review: AIReview = {
+          originalText: response.data.original_text,
+          suggestedText: response.data.improved_text,
+          detectedUserLanguage: response.data.detected_user_language,
+          detectedAgentLanguage: response.data.detected_agent_language,
+          wasTranslated: response.data.was_translated,
+          improvements: response.data.improvements
+        }
+        setAiReview(review)
+        // Set the detected language as default for the language selector
+        if (response.data.detected_user_language) {
+          setSmartReplyLanguage(response.data.detected_user_language)
+        }
+      } else {
+        // Fallback if API fails - just use original
+        setAiReview({
+          originalText: currentContent,
+          suggestedText: currentContent,
+          improvements: []
+        })
+      }
+    } catch (error) {
+      console.error('Smart reply failed:', error)
+      // Fallback on error
+      setAiReview({
+        originalText: currentContent,
+        suggestedText: currentContent,
+        improvements: []
+      })
+    } finally {
+      setIsLoadingAI(false)
     }
-    
-    setAiReview(mockReview)
-    setIsLoadingAI(false)
   }
 
-  const acceptAIReview = () => {
+  // Regenerate the smart reply with new tone/language
+  const handleRegenerateSmartReply = async () => {
+    if (!aiReview) return
+
+    setIsRegenerating(true)
+    try {
+      const response = await aiService.smartReply({
+        agent_message: aiReview.originalText,
+        user_last_message: userLastMessage || '',
+        tone: smartReplyTone || undefined,
+        target_language: smartReplyLanguage || undefined
+      })
+
+      if (response.success && response.data) {
+        const review: AIReview = {
+          originalText: response.data.original_text,
+          suggestedText: response.data.improved_text,
+          detectedUserLanguage: response.data.detected_user_language,
+          detectedAgentLanguage: response.data.detected_agent_language,
+          wasTranslated: response.data.was_translated,
+          improvements: response.data.improvements
+        }
+        setAiReview(review)
+        setSelectedVersion('improved')
+      }
+    } catch (error) {
+      console.error('Smart reply regeneration failed:', error)
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
+  const sendSelectedVersion = () => {
     if (aiReview) {
-      lastEmittedValueRef.current = aiReview.suggestedText
-      onChange(aiReview.suggestedText)
+      const textToSend = selectedVersion === 'improved' ? aiReview.suggestedText : aiReview.originalText
+      lastEmittedValueRef.current = textToSend
+
+      // Also update the editor content directly so it's in sync
+      if (editorRef.current) {
+        editorRef.current.innerHTML = textToSend
+      }
+
+      onChange(textToSend)
       setShowPreview(false)
       setAiReview(null)
-      onSend?.()
+      setSmartReplyTone('')
+      setSmartReplyLanguage('')
+
+      // Pass the message directly to onSend to bypass stale state issues
+      onSend?.(textToSend)
     }
   }
 
-  const rejectAIReview = () => {
+  const cancelPreview = () => {
     setShowPreview(false)
     setAiReview(null)
-    onSend?.()
+    setSmartReplyTone('')
+    setSmartReplyLanguage('')
   }
 
   const handleFastReply = () => {
@@ -755,24 +885,27 @@ export function WysiwygEditor({
     setLinkText('')
   }
 
-  const handleReviseResponse = async () => {
-    if (!value.trim()) return
+  const handleReviseResponse = async (format: string) => {
+    // Get the current text from editor
+    const textContent = editorRef.current?.innerText?.trim() || value.replace(/<[^>]*>/g, '').trim()
+    if (!textContent) return
 
     setIsRevising(true)
-    // Simulate AI revision
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      const response = await aiService.revise({
+        text: textContent,
+        format: format,
+      })
 
-    // Mock AI revision - in reality, this would call an AI service
-    const revisedText = value
-      .replace(/cant/g, "can't")
-      .replace(/wont/g, "won't")
-      .replace(/dont/g, "don't")
-      .replace(/\s+/g, " ")
-      .trim()
-
-    lastEmittedValueRef.current = revisedText
-    onChange(revisedText)
-    setIsRevising(false)
+      if (response.success && response.data) {
+        // Update the editor with revised text (undo-friendly)
+        replaceEditorContent(response.data.revised_text)
+      }
+    } catch (error) {
+      console.error('Revision failed:', error)
+    } finally {
+      setIsRevising(false)
+    }
   }
 
   // Filter canned messages for template modal search (memoized)
@@ -922,20 +1055,37 @@ export function WysiwygEditor({
             {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleAITranslate}
-            className="h-8 px-2"
-            disabled={isTranslating || !value.trim()}
-            title="Translate"
-          >
-            {isTranslating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Languages className="h-4 w-4" />
-            )}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2"
+                disabled={isTranslating || (!hasContent && !value.trim())}
+                title="Translate"
+              >
+                {isTranslating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Languages className="h-4 w-4" />
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <DropdownMenuItem
+                  key={lang.code}
+                  onClick={() => handleAITranslate(lang.name)}
+                  className="cursor-pointer"
+                >
+                  {lang.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Button
             variant="ghost"
@@ -952,20 +1102,38 @@ export function WysiwygEditor({
             )}
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleReviseResponse}
-            className="h-8 px-2"
-            disabled={isRevising || !value.trim()}
-            title="Revise Response"
-          >
-            {isRevising ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2"
+                disabled={isRevising || (!hasContent && !value.trim())}
+                title="Rewrite/Revise Response"
+              >
+                {isRevising ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {revisionFormats.map((format) => (
+                <DropdownMenuItem
+                  key={format.id}
+                  onClick={() => handleReviseResponse(format.id)}
+                  className="cursor-pointer flex flex-col items-start"
+                >
+                  <span className="font-medium">{format.name}</span>
+                  <span className="text-xs text-muted-foreground">{format.description}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
 
@@ -1170,40 +1338,179 @@ export function WysiwygEditor({
 
       {/* Preview and AI Review Modal */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Review Message Before Sending</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Smart Reply - Choose Your Message
+            </DialogTitle>
           </DialogHeader>
-          
-          <div className="space-y-4">
-            {isLoadingAI ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mr-2" />
-                <span>AI is reviewing your message...</span>
+
+          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+            {isLoadingAI || isRegenerating ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                <span className="text-lg font-medium">
+                  {isRegenerating ? 'Regenerating with new settings...' : 'AI is analyzing your message...'}
+                </span>
+                <span className="text-sm text-muted-foreground mt-1">Checking language, grammar, and more</span>
               </div>
             ) : aiReview ? (
               <>
-                <div>
-                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    Improved Message:
-                  </h4>
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-md text-sm">
-                    <div dangerouslySetInnerHTML={{ __html: aiReview.suggestedText }} />
+                {/* Tone and Language Selectors */}
+                <div className="flex flex-wrap gap-4 pt-2 pb-3 border-b">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Tone:</span>
+                    <Select value={smartReplyTone || "auto"} onValueChange={(v) => setSmartReplyTone(v === "auto" ? "" : v)}>
+                      <SelectTrigger className="w-[160px] h-8">
+                        <SelectValue placeholder="Auto-detect" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Auto-detect</SelectItem>
+                        {SMART_REPLY_TONES.map((tone) => (
+                          <SelectItem key={tone.id} value={tone.id}>
+                            {tone.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Language:</span>
+                    <Select value={smartReplyLanguage || "auto"} onValueChange={(v) => setSmartReplyLanguage(v === "auto" ? "" : v)}>
+                      <SelectTrigger className="w-[160px] h-8">
+                        <SelectValue placeholder="Auto-detect" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Auto-detect</SelectItem>
+                        {SUPPORTED_LANGUAGES.map((lang) => (
+                          <SelectItem key={lang.code} value={lang.name}>
+                            {lang.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRegenerateSmartReply}
+                    disabled={isRegenerating}
+                    className="h-8"
+                  >
+                    <RefreshCw className={cn("h-4 w-4 mr-1", isRegenerating && "animate-spin")} />
+                    Regenerate
+                  </Button>
+                </div>
+
+                {/* Language & Translation Info */}
+                {(aiReview.wasTranslated || aiReview.detectedUserLanguage) && (
+                  <div className="flex flex-wrap gap-2 pb-2">
+                    {aiReview.detectedUserLanguage && (
+                      <Badge variant="outline" className="text-xs">
+                        <Languages className="h-3 w-3 mr-1" />
+                        User language: {aiReview.detectedUserLanguage}
+                      </Badge>
+                    )}
+                    {aiReview.detectedAgentLanguage && aiReview.detectedAgentLanguage !== aiReview.detectedUserLanguage && (
+                      <Badge variant="outline" className="text-xs">
+                        Your language: {aiReview.detectedAgentLanguage}
+                      </Badge>
+                    )}
+                    {aiReview.wasTranslated && (
+                      <Badge className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-100">
+                        Translated to match user language
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                {/* Two selectable message boxes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Original Message */}
+                  <div
+                    onClick={() => setSelectedVersion('original')}
+                    className={cn(
+                      "p-4 rounded-lg border-2 cursor-pointer transition-all",
+                      selectedVersion === 'original'
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-border hover:border-muted-foreground/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4" />
+                        Your Original
+                      </h4>
+                      {selectedVersion === 'original' && (
+                        <Badge className="bg-primary text-primary-foreground">
+                          <Check className="h-3 w-3 mr-1" />
+                          Selected
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-sm text-foreground whitespace-pre-wrap min-h-[200px] max-h-[50vh] overflow-y-auto">
+                      {aiReview.originalText}
+                    </div>
+                  </div>
+
+                  {/* AI Improved Message */}
+                  <div
+                    onClick={() => setSelectedVersion('improved')}
+                    className={cn(
+                      "p-4 rounded-lg border-2 cursor-pointer transition-all",
+                      selectedVersion === 'improved'
+                        ? "border-green-500 bg-green-50 dark:bg-green-950/20 ring-2 ring-green-500/20"
+                        : "border-border hover:border-muted-foreground/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <Sparkles className="h-4 w-4" />
+                        AI Improved
+                      </h4>
+                      {selectedVersion === 'improved' && (
+                        <Badge className="bg-green-600 text-white">
+                          <Check className="h-3 w-3 mr-1" />
+                          Selected
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-sm text-foreground whitespace-pre-wrap min-h-[200px] max-h-[50vh] overflow-y-auto">
+                      {aiReview.suggestedText}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={rejectAIReview}>
-                    Send Original
-                  </Button>
-                  <Button onClick={acceptAIReview}>
-                    Accept & Send
-                  </Button>
-                </div>
+                {/* Improvements List */}
+                {aiReview.improvements && aiReview.improvements.length > 0 && (
+                  <div className="pt-2">
+                    <h5 className="text-xs font-medium text-muted-foreground mb-2">Improvements made:</h5>
+                    <div className="flex flex-wrap gap-1">
+                      {aiReview.improvements.map((improvement, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {improvement}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             ) : null}
           </div>
+
+          {/* Action Buttons - Fixed at bottom */}
+          {aiReview && !isLoadingAI && !isRegenerating && (
+            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+              <Button variant="outline" onClick={cancelPreview}>
+                Cancel
+              </Button>
+              <Button onClick={sendSelectedVersion}>
+                <Send className="h-4 w-4 mr-2" />
+                Send {selectedVersion === 'improved' ? 'Improved' : 'Original'}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

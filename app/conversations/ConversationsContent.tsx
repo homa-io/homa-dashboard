@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CustomBadge } from '@/components/ui/custom-badge'
 import { Button } from '@/components/ui/button'
@@ -172,13 +172,15 @@ export default function ConversationsContent() {
   }, [selectedConversation])
 
   // Handle send reply
-  const handleSendReply = async () => {
-    if (!selectedConversation || !replyText.trim() || isSending) return
+  const handleSendReply = async (directMessage?: string) => {
+    // Use direct message if provided (from Smart Reply), otherwise use replyText state
+    const messageToSend = directMessage || replyText
+    if (!selectedConversation || !messageToSend.trim() || isSending) return
 
     setIsSending(true)
     const conversationId = selectedConversation.id
     try {
-      await conversationService.sendMessage(conversationId, replyText.trim())
+      await conversationService.sendMessage(conversationId, messageToSend.trim())
 
       toast({
         title: "Reply sent",
@@ -1210,6 +1212,13 @@ export default function ConversationsContent() {
     fetchConversationDetail()
   }, [selectedConversationId])
 
+  // Get the last user message for smart reply feature
+  const lastUserMessage = useMemo(() => {
+    // Find the last message from the user (not agent)
+    const userMessages = conversationMessages.filter(msg => !msg.isAgent)
+    return userMessages.length > 0 ? userMessages[userMessages.length - 1]?.message || '' : ''
+  }, [conversationMessages])
+
   // Mock AI summary for the conversation
   const mockAiSummary = selectedConversation ?
     `Customer ${selectedConversation.customer.name} has raised a ${selectedConversation.priority} priority issue regarding "${selectedConversation.title}". The conversation was started via ${selectedConversation.channel} channel and is currently in ${selectedConversation.status} status. ${selectedConversation.message_count} messages have been exchanged so far.`
@@ -1918,6 +1927,7 @@ export default function ConversationsContent() {
                   onFastReply={handleFastReply}
                   disabled={isSending}
                   className="mb-4"
+                  userLastMessage={lastUserMessage}
                 />
 
                   </div>

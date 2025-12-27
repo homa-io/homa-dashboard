@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import "@/styles/editor.css"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { 
+import {
   ArrowLeft,
   Save,
   Eye,
@@ -32,7 +32,12 @@ import {
   Heading1,
   Heading2,
   Undo,
-  Redo
+  Redo,
+  Loader2,
+  Trash2,
+  GripVertical,
+  Sparkles,
+  Star
 } from "lucide-react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
@@ -42,27 +47,71 @@ import Youtube from "@tiptap/extension-youtube"
 import Placeholder from "@tiptap/extension-placeholder"
 import TextAlign from "@tiptap/extension-text-align"
 import UnderlineExtension from "@tiptap/extension-underline"
-import { mockKnowledgeBaseCategories, mockKnowledgeBaseTags } from "@/data/mockKnowledgeBase.working"
-import { KnowledgeBaseArticle } from "@/types/knowledge-base.simple.types"
+import { toast } from "@/hooks/use-toast"
+import { getMediaUrl } from "@/services/api-client"
+import {
+  createKBArticle,
+  updateKBArticle,
+  uploadKBMedia,
+  generateArticleSummary,
+  type KBArticle,
+  type KBCategory,
+  type KBTag,
+  type KBMedia,
+} from "@/services/knowledge-base.service"
 
-interface ArticleEditorProps {
-  article?: KnowledgeBaseArticle | null
-  onClose: () => void
-  onSave: (data: any) => void
+interface MediaItem {
+  id?: string
+  type: 'image' | 'video'
+  url: string
+  title: string
+  description?: string
+  sort_order: number
+  is_primary?: boolean
+  isNew?: boolean
+  file?: File
 }
 
-export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) {
+interface ArticleEditorProps {
+  article?: KBArticle | null
+  categories: KBCategory[]
+  tags: KBTag[]
+  onClose: () => void
+  onSave: () => void
+}
+
+export function ArticleEditor({ article, categories, tags, onClose, onSave }: ArticleEditorProps) {
   const [title, setTitle] = useState(article?.title || '')
   const [slug, setSlug] = useState(article?.slug || '')
-  const [excerpt, setExcerpt] = useState(article?.excerpt || '')
-  const [categoryId, setCategoryId] = useState(article?.categoryId || '')
+  const [summary, setSummary] = useState(article?.summary || '')
+  const [categoryId, setCategoryId] = useState(article?.category_id || '')
   const [selectedTags, setSelectedTags] = useState<string[]>(
-    article?.tags.map(t => t.id) || []
+    article?.tags?.map(t => t.id) || []
   )
-  const [status, setStatus] = useState(article?.status || 'draft')
+  const [status, setStatus] = useState<'draft' | 'published' | 'archived'>(article?.status || 'draft')
   const [featured, setFeatured] = useState(article?.featured || false)
-  const [featuredImageUrl, setFeaturedImageUrl] = useState(article?.featuredImage?.url || '')
+  const [featuredImageUrl, setFeaturedImageUrl] = useState(article?.featured_image || '')
   const [showPreview, setShowPreview] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingFeatured, setIsUploadingFeatured] = useState(false)
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false)
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
+
+  // Media gallery state
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>(
+    article?.media?.map(m => ({
+      id: m.id,
+      type: m.type as 'image' | 'video',
+      url: m.url,
+      title: m.title,
+      description: m.description,
+      sort_order: m.sort_order,
+      is_primary: m.is_primary,
+    })) || []
+  )
+
+  const featuredImageRef = useRef<HTMLInputElement>(null)
+  const mediaUploadRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({
     extensions: [
@@ -103,20 +152,147 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
     }
   }
 
-  const handleSave = () => {
-    const content = editor?.getHTML() || ''
-    const data = {
-      title,
-      slug,
-      excerpt,
-      content,
-      categoryId,
-      tags: selectedTags,
-      status,
-      featured,
-      featuredImage: featuredImageUrl ? { url: featuredImageUrl } : null,
+  const handleSave = async () => {
+    if (!title.trim()) {
+      toast({
+        title: "Error",
+        description: "Article title is required",
+        variant: "destructive",
+      })
+      return
     }
-    onSave(data)
+
+    const content = editor?.getHTML() || ''
+
+    setIsSaving(true)
+    try {
+      const data = {
+        title,
+        content,
+        summary,
+        featured_image: featuredImageUrl || undefined,
+        category_id: categoryId || undefined,
+        status,
+        featured,
+        tag_ids: selectedTags,
+        media: mediaItems.map((item, index) => ({
+          id: item.id,
+          type: item.type,
+          url: item.url,
+          title: item.title || `Media ${index + 1}`,
+          description: item.description,
+          sort_order: index,
+          is_primary: item.is_primary || false,
+        })),
+      }
+
+      if (article) {
+        const response = await updateKBArticle(article.id, data)
+        if (response.success) {
+          toast({
+            title: "Success",
+            description: "Article updated successfully",
+          })
+        }
+      } else {
+        const response = await createKBArticle(data)
+        if (response.success) {
+          toast({
+            title: "Success",
+            description: "Article created successfully",
+          })
+        }
+      }
+      onSave()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to save article",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleFeaturedImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingFeatured(true)
+    try {
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64 = reader.result as string
+        const response = await uploadKBMedia(base64, 'image')
+        if (response.success && response.data) {
+          setFeaturedImageUrl(response.data.url)
+          toast({
+            title: "Success",
+            description: "Featured image uploaded",
+          })
+        }
+        setIsUploadingFeatured(false)
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      })
+      setIsUploadingFeatured(false)
+    }
+  }
+
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setIsUploadingMedia(true)
+    try {
+      for (const file of Array.from(files)) {
+        const isVideo = file.type.startsWith('video/')
+        const reader = new FileReader()
+        reader.onloadend = async () => {
+          const base64 = reader.result as string
+          const response = await uploadKBMedia(base64, isVideo ? 'video' : 'image')
+          if (response.success && response.data) {
+            setMediaItems(prev => [...prev, {
+              type: isVideo ? 'video' : 'image',
+              url: response.data!.url,
+              title: file.name,
+              sort_order: prev.length,
+              isNew: true,
+            }])
+          }
+        }
+        reader.readAsDataURL(file)
+      }
+      toast({
+        title: "Success",
+        description: `${files.length} file(s) uploaded`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload media",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploadingMedia(false)
+    }
+  }
+
+  const removeMediaItem = (index: number) => {
+    setMediaItems(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const togglePrimaryMedia = (index: number) => {
+    setMediaItems(prev => prev.map((item, i) => ({
+      ...item,
+      is_primary: i === index ? !item.is_primary : false
+    })))
   }
 
   const addImage = useCallback(() => {
@@ -154,11 +330,48 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
   }, [editor])
 
   const toggleTag = (tagId: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tagId) 
+    setSelectedTags(prev =>
+      prev.includes(tagId)
         ? prev.filter(id => id !== tagId)
         : [...prev, tagId]
     )
+  }
+
+  const handleGenerateSummary = async () => {
+    const content = editor?.getHTML() || ''
+
+    if (!content || content === '<p></p>') {
+      toast({
+        title: "Error",
+        description: "Please add some content before generating a summary",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsGeneratingSummary(true)
+    try {
+      const response = await generateArticleSummary({
+        title: title || 'Untitled Article',
+        content,
+      })
+
+      if (response.success && response.data) {
+        setSummary(response.data.summary)
+        toast({
+          title: "Success",
+          description: "Summary generated successfully",
+        })
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to generate summary",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingSummary(false)
+    }
   }
 
   if (!editor) {
@@ -189,9 +402,18 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
               <Eye className="w-4 h-4 mr-1 sm:mr-2" />
               Preview
             </Button>
-            <Button onClick={handleSave} size="sm" className="flex-1 sm:flex-none">
-              <Save className="w-4 h-4 mr-1 sm:mr-2" />
-              Save
+            <Button onClick={handleSave} size="sm" className="flex-1 sm:flex-none" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1 sm:mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-1 sm:mr-2" />
+                  Save
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -225,11 +447,33 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
                   />
                 </div>
                 <div>
-                  <Label htmlFor="excerpt">Excerpt</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="summary">Summary</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleGenerateSummary}
+                      disabled={isGeneratingSummary}
+                      className="h-7 px-2 text-xs"
+                    >
+                      {isGeneratingSummary ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          Auto Generate
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   <Textarea
-                    id="excerpt"
-                    value={excerpt}
-                    onChange={(e) => setExcerpt(e.target.value)}
+                    id="summary"
+                    value={summary}
+                    onChange={(e) => setSummary(e.target.value)}
                     placeholder="Brief description of the article..."
                     className="mt-1 resize-none"
                     rows={3}
@@ -421,9 +665,9 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
                     className="w-full mt-1 px-3 py-2 border rounded-md"
                   >
                     <option value="">Select Category</option>
-                    {mockKnowledgeBaseCategories.map((category) => (
+                    {categories.map((category) => (
                       <option key={category.id} value={category.id}>
-                        {category.name}
+                        {category.icon} {category.name}
                       </option>
                     ))}
                   </select>
@@ -451,7 +695,7 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
                   {featuredImageUrl ? (
                     <div className="relative">
                       <img
-                        src={featuredImageUrl}
+                        src={getMediaUrl(featuredImageUrl)}
                         alt="Featured"
                         className="w-full h-32 object-cover rounded-lg"
                       />
@@ -465,13 +709,29 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
                       </Button>
                     </div>
                   ) : (
-                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">No image selected</p>
+                    <div
+                      className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => featuredImageRef.current?.click()}
+                    >
+                      {isUploadingFeatured ? (
+                        <Loader2 className="w-8 h-8 mx-auto mb-2 text-primary animate-spin" />
+                      ) : (
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {isUploadingFeatured ? 'Uploading...' : 'Click to upload image'}
+                      </p>
                     </div>
                   )}
+                  <input
+                    ref={featuredImageRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFeaturedImageUpload}
+                  />
                   <Input
-                    placeholder="Enter image URL..."
+                    placeholder="Or enter image URL..."
                     value={featuredImageUrl}
                     onChange={(e) => setFeaturedImageUrl(e.target.value)}
                   />
@@ -486,16 +746,127 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {mockKnowledgeBaseTags.map((tag) => (
+                  {tags.map((tag) => (
                     <Badge
                       key={tag.id}
                       variant={selectedTags.includes(tag.id) ? "default" : "outline"}
                       className="cursor-pointer"
+                      style={selectedTags.includes(tag.id) ? { backgroundColor: tag.color } : undefined}
                       onClick={() => toggleTag(tag.id)}
                     >
                       {tag.name}
                     </Badge>
                   ))}
+                  {tags.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No tags available</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Media Gallery - Mobile Responsive */}
+            <Card>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Media Gallery</CardTitle>
+                <CardDescription>Add images and videos to this article</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {/* Upload Button */}
+                  <div
+                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => mediaUploadRef.current?.click()}
+                  >
+                    {isUploadingMedia ? (
+                      <Loader2 className="w-8 h-8 mx-auto mb-2 text-primary animate-spin" />
+                    ) : (
+                      <Plus className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      {isUploadingMedia ? 'Uploading...' : 'Click to add images or videos'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Supports multiple files
+                    </p>
+                  </div>
+                  <input
+                    ref={mediaUploadRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleMediaUpload}
+                  />
+
+                  {/* Media Items */}
+                  {mediaItems.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {mediaItems.map((item, index) => (
+                        <div
+                          key={item.id || index}
+                          className={`relative group aspect-video bg-muted rounded-lg overflow-hidden ${item.is_primary ? 'ring-2 ring-yellow-500' : ''}`}
+                        >
+                          {item.type === 'image' ? (
+                            <img
+                              src={getMediaUrl(item.url)}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <video
+                              src={getMediaUrl(item.url)}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <Button
+                              variant={item.is_primary ? "default" : "secondary"}
+                              size="sm"
+                              onClick={() => togglePrimaryMedia(index)}
+                              title={item.is_primary ? "Remove as primary" : "Set as primary"}
+                            >
+                              <Star className={`w-4 h-4 ${item.is_primary ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeMediaItem(index)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          {/* Primary indicator */}
+                          {item.is_primary && (
+                            <div className="absolute top-1 right-1">
+                              <Badge className="bg-yellow-500 text-white text-xs">
+                                <Star className="w-3 h-3 mr-1 fill-current" />
+                                Primary
+                              </Badge>
+                            </div>
+                          )}
+                          <div className="absolute bottom-1 left-1">
+                            {item.type === 'video' ? (
+                              <Badge variant="secondary" className="text-xs">
+                                <Video className="w-3 h-3 mr-1" />
+                                Video
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">
+                                <ImageIcon className="w-3 h-3 mr-1" />
+                                Image
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {mediaItems.length === 0 && (
+                    <p className="text-center text-sm text-muted-foreground py-2">
+                      No media added yet
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -513,8 +884,8 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
             {/* Article Header */}
             <div className="mb-4 sm:mb-6">
               {featuredImageUrl && (
-                <img 
-                  src={featuredImageUrl} 
+                <img
+                  src={getMediaUrl(featuredImageUrl)}
                   alt={title}
                   className="w-full h-40 sm:h-64 object-cover rounded-lg mb-4 sm:mb-6"
                 />
@@ -522,14 +893,19 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
               <h1 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-3">
                 {title || 'Untitled Article'}
               </h1>
-              {excerpt && (
-                <p className="text-sm sm:text-lg text-muted-foreground mb-3 sm:mb-4">{excerpt}</p>
+              {summary && (
+                <p className="text-sm sm:text-lg text-muted-foreground mb-3 sm:mb-4">{summary}</p>
               )}
               <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 {selectedTags.map(tagId => {
-                  const tag = mockKnowledgeBaseTags.find(t => t.id === tagId)
+                  const tag = tags.find(t => t.id === tagId)
                   return tag ? (
-                    <Badge key={tagId} variant="secondary" className="text-xs sm:text-sm">
+                    <Badge
+                      key={tagId}
+                      variant="secondary"
+                      className="text-xs sm:text-sm text-white"
+                      style={{ backgroundColor: tag.color }}
+                    >
                       {tag.name}
                     </Badge>
                   ) : null
@@ -537,7 +913,7 @@ export function ArticleEditor({ article, onClose, onSave }: ArticleEditorProps) 
               </div>
               {categoryId && (
                 <div className="text-xs sm:text-sm text-muted-foreground">
-                  Category: {mockKnowledgeBaseCategories.find(c => c.id === categoryId)?.name}
+                  Category: {categories.find(c => c.id === categoryId)?.icon} {categories.find(c => c.id === categoryId)?.name}
                 </div>
               )}
             </div>
