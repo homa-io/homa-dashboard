@@ -189,3 +189,25 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient()
+
+/**
+ * Get the full URL for a media/upload path from the backend
+ * Converts relative paths like /uploads/avatars/... to full URLs
+ */
+export function getMediaUrl(path: string | null | undefined): string {
+  if (!path) return ''
+
+  // If it's already an absolute URL, return as is
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path
+  }
+
+  // If it's a data URL (base64), return as is
+  if (path.startsWith('data:')) {
+    return path
+  }
+
+  // Prepend the API base URL
+  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://api.getevo.dev'
+  return `${baseURL}${path.startsWith('/') ? '' : '/'}${path}`
+}

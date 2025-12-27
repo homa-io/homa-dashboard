@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { CreateUserModal, EditUserModal } from "@/components/users"
 import { getUsers, deleteUser, blockUser, unblockUser } from "@/services/users"
+import { getMediaUrl } from "@/services/api-client"
 import { toast } from "@/hooks/use-toast"
 import type { User, UserType, UserStatus } from "@/types/user"
 
@@ -366,7 +367,7 @@ export default function UsersPage() {
                   <TableCell>
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-8 w-8">
-                        {user.avatar && <AvatarImage src={user.avatar} alt={user.display_name} />}
+                        {user.avatar && <AvatarImage src={getMediaUrl(user.avatar)} alt={user.display_name} />}
                         <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                           {getInitials(user.name, user.last_name)}
                         </AvatarFallback>
