@@ -1,586 +1,694 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { notFound } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect, useCallback } from "react"
+import { useRouter, useParams } from "next/navigation"
+import Link from "next/link"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AvatarUpload } from "@/components/shared/AvatarUpload"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import {
   ArrowLeft,
   Mail,
   Phone,
-  Building,
   Calendar,
-  DollarSign,
-  Conversation,
   Edit3,
   Save,
   X,
-  MapPin,
-  Tag,
   User,
-  Globe
+  Globe,
+  MessageSquare,
+  Plus,
+  Trash2,
+  Loader2,
+  ExternalLink,
+  AlertCircle,
+  Clock,
+  Hash,
+  Settings
 } from "lucide-react"
-import { mockCustomers, mockCustomerTickets, mockCustomFields } from "@/data/mockCustomers"
-import { Customer, CustomerTicket, CustomField } from "@/types/customer.types"
-import { CustomBadge } from "@/components/ui/custom-badge"
+import { customerService, type Client } from "@/services/customer.service"
+import { conversationService, type PreviousConversation } from "@/services/conversation.service"
+import { toast } from "@/hooks/use-toast"
+import { StatusBadge } from "@/components/badges"
+import { TimezoneCombobox } from "@/components/ui/timezone-combobox"
+import { LanguageCombobox, LANGUAGES } from "@/components/ui/language-combobox"
+import { DynamicAttributeForm } from "@/components/customers"
 
-const statusColors = {
-  active: 'green',
-  inactive: 'red',
-  pending: 'yellow'
-} as const
-
-const ticketStatusColors = {
-  open: 'red',
-  'in-progress': 'yellow',
-  resolved: 'green',
-  closed: 'gray'
-} as const
-
-const priorityColors = {
-  low: 'green',
-  medium: 'yellow',
-  high: 'red',
-  urgent: 'red'
-} as const
-
-interface CustomerDetailPageProps {
-  params: {
-    id: string
-  }
-  searchParams: {
-    edit?: string
-  }
+interface ExternalIDInput {
+  id?: number
+  type: 'email' | 'phone' | 'whatsapp' | 'slack' | 'telegram' | 'web' | 'chat'
+  value: string
 }
 
-export default function CustomerDetailPage({ params, searchParams }: CustomerDetailPageProps) {
-  const customer = mockCustomers.find(c => c.id === params.id)
-  const customerTickets = mockCustomerTickets[params.id] || []
-  const isEditMode = searchParams.edit === 'true'
-  
-  const [editData, setEditData] = useState<Customer>(customer || {} as Customer)
-  const [isEditing, setIsEditing] = useState(isEditMode)
+// Helper to get language name from code
+const getLanguageName = (code: string): string => {
+  const lang = LANGUAGES.find(l => l.code === code)
+  return lang ? lang.name : code
+}
 
-  if (!customer) {
-    notFound()
-  }
+export default function CustomerDetailPage() {
+  const router = useRouter()
+  const params = useParams()
+  const customerId = params.id as string
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
+  // Customer data state
+  const [customer, setCustomer] = useState<Client | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Edit form state
+  const [editName, setEditName] = useState("")
+  const [editLanguage, setEditLanguage] = useState("")
+  const [editTimezone, setEditTimezone] = useState("")
+  const [editCustomData, setEditCustomData] = useState<Record<string, any>>({})
+  const [editExternalIds, setEditExternalIds] = useState<ExternalIDInput[]>([])
+
+  // Conversations state
+  const [conversations, setConversations] = useState<PreviousConversation[]>([])
+  const [conversationsLoading, setConversationsLoading] = useState(true)
+  const [conversationsTotal, setConversationsTotal] = useState(0)
+
+  // Load customer data
+  const loadCustomer = useCallback(async () => {
+    if (!customerId) return
+
+    setIsLoading(true)
+    try {
+      const response = await customerService.getClient(customerId)
+
+      if (response.success && response.data) {
+        setCustomer(response.data)
+        // Initialize edit form with current values
+        setEditName(response.data.name)
+        setEditLanguage(response.data.language || "")
+        setEditTimezone(response.data.timezone || "")
+        setEditCustomData(response.data.data || {})
+        setEditExternalIds((response.data.external_ids || []).map(id => ({
+          id: id.id,
+          type: id.type as ExternalIDInput['type'],
+          value: id.value
+        })))
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load customer data",
+          variant: "destructive"
+        })
+        router.push('/customers')
+      }
+    } catch (error) {
+      console.error('Error loading customer:', error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      })
+      router.push('/customers')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [customerId, router])
+
+  // Load conversations
+  const loadConversations = useCallback(async () => {
+    if (!customerId) return
+
+    setConversationsLoading(true)
+    try {
+      const response = await conversationService.getClientPreviousConversations(
+        customerId,
+        50
+      )
+
+      setConversations(response.data || [])
+      setConversationsTotal(response.total || 0)
+    } catch (error) {
+      console.error('Error loading conversations:', error)
+      setConversations([])
+      setConversationsTotal(0)
+    } finally {
+      setConversationsLoading(false)
+    }
+  }, [customerId])
+
+  useEffect(() => {
+    loadCustomer()
+    loadConversations()
+  }, [loadCustomer, loadConversations])
+
+  // Helper functions
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'short',
+      day: 'numeric'
     })
   }
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase()
+  const getPrimaryEmail = () => {
+    const emailId = (customer?.external_ids || []).find(id => id.type === 'email')
+    return emailId?.value || ''
   }
 
-  const handleSave = () => {
-    // In a real app, this would make an API call
-    console.log('Saving customer data:', editData)
+  const getPrimaryPhone = () => {
+    const phoneId = (customer?.external_ids || []).find(id => id.type === 'phone' || id.type === 'whatsapp')
+    return phoneId?.value || ''
+  }
+
+  // Edit handlers
+  const handleStartEdit = () => {
+    if (customer) {
+      setEditName(customer.name)
+      setEditLanguage(customer.language || "")
+      setEditTimezone(customer.timezone || "")
+      setEditCustomData(customer.data || {})
+      setEditExternalIds((customer.external_ids || []).map(id => ({
+        id: id.id,
+        type: id.type as ExternalIDInput['type'],
+        value: id.value
+      })))
+    }
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = () => {
     setIsEditing(false)
   }
 
-  const handleCancel = () => {
-    setEditData(customer)
-    setIsEditing(false)
+  const handleAddExternalId = () => {
+    setEditExternalIds([...editExternalIds, { type: 'email', value: '' }])
   }
 
-  const updateEditData = (field: string, value: any) => {
-    setEditData(prev => ({ ...prev, [field]: value }))
+  const handleRemoveExternalId = (index: number) => {
+    setEditExternalIds(editExternalIds.filter((_, i) => i !== index))
   }
 
-  const updateCustomField = (fieldName: string, value: any) => {
-    setEditData(prev => ({
-      ...prev,
-      customFields: { ...prev.customFields, [fieldName]: value }
-    }))
+  const handleExternalIdChange = (
+    index: number,
+    field: 'type' | 'value',
+    value: string
+  ) => {
+    const updated = [...editExternalIds]
+    if (field === 'type') {
+      updated[index].type = value as ExternalIDInput['type']
+    } else {
+      updated[index].value = value
+    }
+    setEditExternalIds(updated)
   }
 
-  const updateAddress = (field: string, value: string) => {
-    setEditData(prev => ({
-      ...prev,
-      address: { ...prev.address!, [field]: value }
-    }))
+  // Avatar handlers
+  const handleAvatarUpload = async (base64Data: string) => {
+    if (!customerId) return
+
+    try {
+      const response = await customerService.uploadAvatar(customerId, base64Data)
+      if (response.success && response.data) {
+        // Update local state with new avatar URL
+        setCustomer(prev => prev ? { ...prev, avatar: response.data!.avatar } : null)
+        toast({
+          title: "Success",
+          description: "Avatar uploaded successfully"
+        })
+      } else {
+        throw new Error('Upload failed')
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error)
+      throw error
+    }
   }
 
-  const displayData = isEditing ? editData : customer
+  const handleAvatarDelete = async () => {
+    if (!customerId) return
+
+    try {
+      const response = await customerService.deleteAvatar(customerId)
+      if (response.success) {
+        // Update local state to remove avatar
+        setCustomer(prev => prev ? { ...prev, avatar: null } : null)
+        toast({
+          title: "Success",
+          description: "Avatar removed successfully"
+        })
+      } else {
+        throw new Error('Delete failed')
+      }
+    } catch (error) {
+      console.error('Avatar delete error:', error)
+      throw error
+    }
+  }
+
+  const handleSave = async () => {
+    if (!customerId || !editName.trim()) {
+      toast({
+        title: "Error",
+        description: "Name is required",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      // Filter out empty values from custom data
+      const filteredData = Object.fromEntries(
+        Object.entries(editCustomData).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+      )
+
+      // Filter out empty external IDs
+      const validExternalIds = editExternalIds.filter(id => id.value.trim() !== '')
+
+      // Build the update payload - always send data to allow clearing/updating
+      const updatePayload: {
+        name: string
+        language?: string
+        timezone?: string
+        data?: Record<string, unknown>
+        external_ids?: Array<{ type: string; value: string }>
+      } = {
+        name: editName.trim(),
+        language: editLanguage || undefined,
+        timezone: editTimezone || undefined,
+        data: filteredData, // Always send data, even if empty object
+        external_ids: validExternalIds.map(id => ({
+          type: id.type,
+          value: id.value
+        }))
+      }
+
+      const response = await customerService.updateClient(customerId, updatePayload)
+
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Customer updated successfully"
+        })
+        setIsEditing(false)
+        loadCustomer()
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update customer",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error updating customer:', error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (!customer) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
+        <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Customer Not Found</h2>
+        <p className="text-muted-foreground mb-4">The customer you're looking for doesn't exist.</p>
+        <Button onClick={() => router.push('/customers')}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Customers
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex-1 space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6 min-h-0">
+    <div className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => window.location.href = '/customers'}
-            className="flex-shrink-0"
+            onClick={() => router.push('/customers')}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-            <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
-              <AvatarImage src={displayData.avatar} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-sm sm:text-lg font-semibold">
-                {getInitials(displayData.name)}
+          {isEditing ? (
+            <AvatarUpload
+              currentAvatar={customer.avatar}
+              name={customer.name}
+              size="lg"
+              onUpload={handleAvatarUpload}
+              onDelete={customer.avatar ? handleAvatarDelete : undefined}
+            />
+          ) : (
+            <Avatar className="h-12 w-12">
+              {customer.avatar && (
+                <AvatarImage src={customer.avatar} alt={customer.name} />
+              )}
+              <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
+                {getInitials(customer.name)}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white truncate">
-                {displayData.name}
-              </h2>
-              <div className="flex flex-col gap-2 mt-1 sm:mt-2">
-                <CustomBadge variant={statusColors[displayData.status]} className="flex-shrink-0 self-start">
-                  {displayData.status}
-                </CustomBadge>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                  <span className="hidden sm:inline">Customer since </span>
-                  <span className="sm:hidden">Since </span>
-                  <span className="break-words">
-                    {new Date(displayData.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </span>
-                </p>
-              </div>
-            </div>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{customer.name}</h1>
+            <p className="text-sm text-muted-foreground">
+              Customer since {formatDate(customer.created_at)}
+            </p>
           </div>
         </div>
 
-        <div className="flex gap-2 w-full lg:w-auto">
+        <div className="flex gap-2">
           {!isEditing ? (
-            <Button onClick={() => setIsEditing(true)} className="w-full lg:w-auto">
+            <Button onClick={handleStartEdit}>
               <Edit3 className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Edit Customer</span>
-              <span className="sm:hidden">Edit</span>
+              Edit
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={handleCancel} className="flex-1 lg:flex-initial">
+              <Button variant="outline" onClick={handleCancelEdit} disabled={isSaving}>
                 <X className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
-              <Button onClick={handleSave} className="flex-1 lg:flex-initial">
-                <Save className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Save Changes</span>
-                <span className="sm:hidden">Save</span>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Save
               </Button>
             </>
           )}
         </div>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-        {/* Customer Information */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
-          {/* Basic Information */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Main Content - Customer Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Basic Information Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <User className="h-4 w-4 sm:h-5 sm:w-5" />
-                Basic Information
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Customer Information
               </CardTitle>
+              <CardDescription>Basic details and contact information</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
-              {/* Name and Status - Stack on mobile */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label htmlFor="name" className="text-xs sm:text-sm font-medium text-muted-foreground">Full Name</Label>
-                  {isEditing ? (
-                    <Input
-                      id="name"
-                      value={editData.name}
-                      onChange={(e) => updateEditData('name', e.target.value)}
-                      className="text-sm"
-                    />
-                  ) : (
-                    <p className="text-sm sm:text-base text-gray-900 dark:text-white font-medium">{displayData.name}</p>
-                  )}
-                </div>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label htmlFor="status" className="text-xs sm:text-sm font-medium text-muted-foreground">Status</Label>
-                  {isEditing ? (
-                    <Select value={editData.status} onValueChange={(value) => updateEditData('status', value)}>
-                      <SelectTrigger className="text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div>
-                      <CustomBadge variant={statusColors[displayData.status]}>
-                        {displayData.status}
-                      </CustomBadge>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Email and Phone - Stack on mobile */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label htmlFor="email" className="text-xs sm:text-sm font-medium text-muted-foreground">Email Address</Label>
-                  {isEditing ? (
-                    <Input
-                      id="email"
-                      type="email"
-                      value={editData.email}
-                      onChange={(e) => updateEditData('email', e.target.value)}
-                      className="text-sm"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <span className="text-sm sm:text-base text-gray-900 dark:text-white truncate">{displayData.email}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label htmlFor="phone" className="text-xs sm:text-sm font-medium text-muted-foreground">Phone Number</Label>
-                  {isEditing ? (
-                    <Input
-                      id="phone"
-                      value={editData.phone || ''}
-                      onChange={(e) => updateEditData('phone', e.target.value)}
-                      className="text-sm"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <span className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.phone || 'Not provided'}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Company */}
-              <div className="space-y-1.5 sm:space-y-2 pt-2 sm:pt-0">
-                <Label htmlFor="company" className="text-xs sm:text-sm font-medium text-muted-foreground">Company</Label>
+            <CardContent className="space-y-6">
+              {/* Name Field */}
+              <div className="grid gap-2">
+                <Label className="text-sm font-medium">Full Name</Label>
                 {isEditing ? (
                   <Input
-                    id="company"
-                    value={editData.company || ''}
-                    onChange={(e) => updateEditData('company', e.target.value)}
-                    className="text-sm"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Enter customer name"
                   />
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.company || 'Not provided'}</span>
-                  </div>
+                  <p className="text-sm py-2">{customer.name}</p>
                 )}
+              </div>
+
+              <Separator />
+
+              {/* Contact Information Grid */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    Email
+                  </Label>
+                  <p className="text-sm">{getPrimaryEmail() || '-'}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    Phone
+                  </Label>
+                  <p className="text-sm">{getPrimaryPhone() || '-'}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Regional Settings */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    Language
+                  </Label>
+                  {isEditing ? (
+                    <LanguageCombobox
+                      value={editLanguage}
+                      onValueChange={setEditLanguage}
+                      placeholder="Select language..."
+                    />
+                  ) : (
+                    <p className="text-sm">
+                      {customer.language ? getLanguageName(customer.language) : '-'}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    Timezone
+                  </Label>
+                  {isEditing ? (
+                    <TimezoneCombobox
+                      value={editTimezone}
+                      onValueChange={setEditTimezone}
+                      placeholder="Select timezone..."
+                    />
+                  ) : (
+                    <p className="text-sm">{customer.timezone || '-'}</p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Address Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                Address Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
-              {displayData.address ? (
-                <>
-                  {/* Street Address */}
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="street" className="text-xs sm:text-sm font-medium text-muted-foreground">Street Address</Label>
-                    {isEditing ? (
-                      <Input
-                        id="street"
-                        value={editData.address?.street || ''}
-                        onChange={(e) => updateAddress('street', e.target.value)}
-                        className="text-sm"
-                      />
-                    ) : (
-                      <p className="text-sm sm:text-base text-gray-900 dark:text-white break-words">{displayData.address.street}</p>
-                    )}
+          {/* External IDs Card */}
+          {(isEditing || (customer.external_ids && customer.external_ids.length > 0)) && (
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Hash className="h-5 w-5" />
+                      Contact Identifiers
+                    </CardTitle>
+                    <CardDescription>External IDs used across different channels</CardDescription>
                   </div>
-
-                  {/* City, State, ZIP - Stack on mobile */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="city" className="text-xs sm:text-sm font-medium text-muted-foreground">City</Label>
-                      {isEditing ? (
-                        <Input
-                          id="city"
-                          value={editData.address?.city || ''}
-                          onChange={(e) => updateAddress('city', e.target.value)}
-                          className="text-sm"
-                        />
-                      ) : (
-                        <p className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.address.city}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="state" className="text-xs sm:text-sm font-medium text-muted-foreground">State / Province</Label>
-                      {isEditing ? (
-                        <Input
-                          id="state"
-                          value={editData.address?.state || ''}
-                          onChange={(e) => updateAddress('state', e.target.value)}
-                          className="text-sm"
-                        />
-                      ) : (
-                        <p className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.address.state}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-1.5 sm:space-y-2 sm:col-span-2 lg:col-span-1">
-                      <Label htmlFor="zipCode" className="text-xs sm:text-sm font-medium text-muted-foreground">ZIP / Postal Code</Label>
-                      {isEditing ? (
-                        <Input
-                          id="zipCode"
-                          value={editData.address?.zipCode || ''}
-                          onChange={(e) => updateAddress('zipCode', e.target.value)}
-                          className="text-sm"
-                        />
-                      ) : (
-                        <p className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.address.zipCode}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Country */}
-                  <div className="space-y-1.5 sm:space-y-2 pt-2 sm:pt-0">
-                    <Label htmlFor="country" className="text-xs sm:text-sm font-medium text-muted-foreground">Country</Label>
-                    {isEditing ? (
-                      <Input
-                        id="country"
-                        value={editData.address?.country || ''}
-                        onChange={(e) => updateAddress('country', e.target.value)}
-                        className="text-sm"
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm sm:text-base text-gray-900 dark:text-white">{displayData.address.country}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Full Address Display on Mobile */}
-                  {!isEditing && (
-                    <div className="sm:hidden pt-3 mt-3 border-t">
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Full Address</p>
-                      <p className="text-sm text-gray-900 dark:text-white leading-relaxed">
-                        {displayData.address.street}<br />
-                        {displayData.address.city}, {displayData.address.state} {displayData.address.zipCode}<br />
-                        {displayData.address.country}
-                      </p>
-                    </div>
+                  {isEditing && (
+                    <Button variant="outline" size="sm" onClick={handleAddExternalId}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
                   )}
-                </>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No address information provided</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Custom Fields */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Tag className="h-4 w-4 sm:h-5 sm:w-5" />
-                Custom Fields
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {mockCustomFields.map((field) => (
-                  <div key={field.id} className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor={field.name} className="text-xs sm:text-sm font-medium text-muted-foreground">
-                      {field.label}
-                    </Label>
-                    {isEditing ? (
-                      field.type === 'select' ? (
-                        <Select 
-                          value={editData.customFields[field.name]?.toString() || ''} 
-                          onValueChange={(value) => updateCustomField(field.name, value)}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isEditing ? (
+                  <div className="space-y-3">
+                    {editExternalIds.map((externalId, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <Select
+                          value={externalId.type}
+                          onValueChange={(value) => handleExternalIdChange(index, 'type', value)}
                         >
-                          <SelectTrigger className="text-sm">
-                            <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {field.options?.map(option => (
-                              <SelectItem key={option} value={option}>{option}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : field.type === 'boolean' ? (
-                        <Select 
-                          value={editData.customFields[field.name]?.toString() || 'false'} 
-                          onValueChange={(value) => updateCustomField(field.name, value === 'true')}
-                        >
-                          <SelectTrigger className="text-sm">
+                          <SelectTrigger className="w-32">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="true">Yes</SelectItem>
-                            <SelectItem value="false">No</SelectItem>
+                            <SelectItem value="email">Email</SelectItem>
+                            <SelectItem value="phone">Phone</SelectItem>
+                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                            <SelectItem value="slack">Slack</SelectItem>
+                            <SelectItem value="telegram">Telegram</SelectItem>
+                            <SelectItem value="web">Web</SelectItem>
+                            <SelectItem value="chat">Chat</SelectItem>
                           </SelectContent>
                         </Select>
-                      ) : field.type === 'number' ? (
                         <Input
-                          id={field.name}
-                          type="number"
-                          value={editData.customFields[field.name] || ''}
-                          onChange={(e) => updateCustomField(field.name, Number(e.target.value))}
-                          placeholder={field.placeholder}
-                          className="text-sm"
+                          value={externalId.value}
+                          onChange={(e) => handleExternalIdChange(index, 'value', e.target.value)}
+                          placeholder="Enter value"
+                          className="flex-1"
                         />
-                      ) : (
-                        <Input
-                          id={field.name}
-                          value={editData.customFields[field.name] || ''}
-                          onChange={(e) => updateCustomField(field.name, e.target.value)}
-                          placeholder={field.placeholder}
-                          className="text-sm"
-                        />
-                      )
-                    ) : (
-                      <p className="text-sm sm:text-base text-gray-900 dark:text-white">
-                        {field.type === 'boolean' 
-                          ? (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                              displayData.customFields[field.name] 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {displayData.customFields[field.name] ? 'Yes' : 'No'}
-                            </span>
-                          )
-                          : field.type === 'number' && field.name === 'annual_revenue'
-                          ? (
-                            <span className="font-semibold">
-                              {formatCurrency(displayData.customFields[field.name] || 0)}
-                            </span>
-                          )
-                          : (displayData.customFields[field.name] || <span className="text-muted-foreground text-xs sm:text-sm">Not set</span>)
-                        }
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveExternalId(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                    {editExternalIds.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No contact IDs. Click "Add" to add email, phone, or other contact methods.
                       </p>
                     )}
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {(customer.external_ids || []).map((extId, index) => (
+                      <div key={index} className="flex items-center gap-2 bg-muted rounded-lg px-3 py-2">
+                        <Badge variant="secondary" className="capitalize text-xs">
+                          {extId.type}
+                        </Badge>
+                        <span className="text-sm">{extId.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Custom Attributes Card */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Custom Attributes
+              </CardTitle>
+              <CardDescription>Additional customer information based on your settings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isEditing ? (
+                <DynamicAttributeForm
+                  values={editCustomData}
+                  onChange={setEditCustomData}
+                />
+              ) : (
+                customer.data && Object.keys(customer.data).length > 0 ? (
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {Object.entries(customer.data).map(([key, value]) => (
+                      <div key={key} className="space-y-1">
+                        <Label className="text-xs text-muted-foreground capitalize">
+                          {key.replace(/_/g, ' ')}
+                        </Label>
+                        <p className="text-sm">{String(value)}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No custom attributes set. Click Edit to add attributes.
+                  </p>
+                )
+              )}
             </CardContent>
           </Card>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4 sm:space-y-6 lg:order-2 order-1">
-          {/* Quick Stats */}
+        <div className="space-y-6">
+          {/* Quick Stats Card */}
           <Card>
-            <CardHeader>
-              <CardTitle>Quick Stats</CardTitle>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Overview</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4 sm:gap-6 lg:gap-4">
-                <div className="flex sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between sm:justify-start lg:justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Conversation className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Conversations</span>
-                  </div>
-                  <span className="font-semibold text-gray-900 dark:text-white">{displayData.totalTickets}</span>
-                </div>
-                <div className="flex sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between sm:justify-start lg:justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Customer Value</span>
-                  </div>
-                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(displayData.value)}</span>
-                </div>
-                <div className="flex sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between sm:justify-start lg:justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Last Activity</span>
-                  </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 sm:mt-1 lg:mt-0">{formatDate(displayData.lastActivity)}</span>
-                </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Created</span>
+                <span className="text-sm font-medium">{formatDate(customer.created_at)}</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Last Updated</span>
+                <span className="text-sm font-medium">{formatDate(customer.updated_at)}</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Conversations</span>
+                <Badge variant="secondary">{conversationsTotal}</Badge>
               </div>
             </CardContent>
           </Card>
 
-          {/* Tags */}
+          {/* Conversation History Card */}
           <Card>
-            <CardHeader>
-              <CardTitle>Tags</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {displayData.tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Conversations */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Recent Conversations</span>
-                <Badge variant="outline">{customerTickets.length}</Badge>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Recent Conversations
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {customerTickets.length > 0 ? (
-                customerTickets.map((conversation) => (
-                  <div key={conversation.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-2 gap-2">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate flex-1">
-                        {conversation.title}
-                      </h4>
-                      <CustomBadge variant={priorityColors[conversation.priority]} className="text-xs self-start">
-                        {conversation.priority}
-                      </CustomBadge>
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-gray-500 dark:text-gray-400 gap-2">
-                      <CustomBadge variant={ticketStatusColors[conversation.status]} className="text-xs">
-                        {conversation.status}
-                      </CustomBadge>
-                      <span className="text-xs">{formatDate(conversation.createdAt)}</span>
-                    </div>
-                    {conversation.assignee && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        Assigned to: {conversation.assignee}
-                      </p>
-                    )}
-                  </div>
-                ))
+            <CardContent>
+              {conversationsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : conversations.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">No conversations yet</p>
+                </div>
               ) : (
-                <p className="text-gray-500 dark:text-gray-400 text-sm">No conversations found</p>
+                <div className="space-y-3">
+                  {conversations.slice(0, 10).map((conversation) => (
+                    <Link
+                      key={conversation.id}
+                      href={`/conversations?ticket_id=${conversation.id}`}
+                      className="block p-3 border rounded-lg hover:bg-accent transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-mono text-xs text-muted-foreground">
+                              #{conversation.conversation_number}
+                            </span>
+                            <StatusBadge status={conversation.status} type="conversation" size="sm" />
+                          </div>
+                          <p className="text-sm font-medium truncate">
+                            {conversation.title || 'Untitled'}
+                          </p>
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(conversation.created_at)}
+                          </div>
+                        </div>
+                        <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      </div>
+                    </Link>
+                  ))}
+                  {conversations.length > 10 && (
+                    <p className="text-xs text-muted-foreground text-center pt-2">
+                      +{conversations.length - 10} more conversations
+                    </p>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>

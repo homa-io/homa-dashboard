@@ -145,8 +145,8 @@ export function ConversationActions({
           )}
         </div>
       </div>
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-        isExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+      <div className={`transition-all duration-300 ease-in-out ${
+        isExpanded ? 'max-h-none opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
       }`}>
         <div className="p-4 space-y-6">
         {/* Priority */}

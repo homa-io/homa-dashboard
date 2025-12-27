@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useCallback, memo, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,7 +20,12 @@ import {
   Columns3,
   Mail,
   Phone,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -59,6 +65,7 @@ import {
 const CustomerTableRow = memo<{
   customer: Client
   visibleColumns: Record<string, boolean>
+  onRowClick: (id: string) => void
   onViewCustomer: (id: string) => void
   onEditCustomer: (id: string) => void
   onDeleteCustomer: (id: string, name: string) => void
@@ -69,6 +76,7 @@ const CustomerTableRow = memo<{
 }>(({
   customer,
   visibleColumns,
+  onRowClick,
   onViewCustomer,
   onEditCustomer,
   onDeleteCustomer,
@@ -81,7 +89,10 @@ const CustomerTableRow = memo<{
   const primaryPhone = getPrimaryPhone(customer)
 
   return (
-    <TableRow>
+    <TableRow
+      className="cursor-pointer hover:bg-muted/50"
+      onClick={() => onRowClick(customer.id)}
+    >
       <TableCell>
         <div className="flex items-center space-x-2 sm:space-x-3">
           <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
@@ -123,14 +134,14 @@ const CustomerTableRow = memo<{
       {visibleColumns.externalIds && (
         <TableCell className="hidden sm:table-cell">
           <div className="flex flex-wrap gap-1">
-            {customer.external_ids.slice(0, 2).map((extId, index) => (
+            {(customer.external_ids || []).slice(0, 2).map((extId, index) => (
               <Badge key={index} variant="secondary" className="text-xs capitalize">
                 {extId.type}
               </Badge>
             ))}
-            {customer.external_ids.length > 2 && (
+            {(customer.external_ids || []).length > 2 && (
               <Badge variant="outline" className="text-xs">
-                +{customer.external_ids.length - 2}
+                +{(customer.external_ids || []).length - 2}
               </Badge>
             )}
           </div>
@@ -146,7 +157,7 @@ const CustomerTableRow = memo<{
           {formatDate(customer.updated_at)}
         </TableCell>
       )}
-      <TableCell>
+      <TableCell onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">
@@ -180,13 +191,19 @@ const CustomerTableRow = memo<{
 CustomerTableRow.displayName = 'CustomerTableRow'
 
 export default function CustomersPage() {
+  const router = useRouter()
+
   // Data state
   const [customers, setCustomers] = useState<Client[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [totalCustomers, setTotalCustomers] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [currentPage, setCurrentPage] = useState(1)
+  const limit = 20 // Items per page
 
   // Sorting and filtering
   const [sortBy, setSortBy] = useState<string>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
 
@@ -205,11 +222,11 @@ export default function CustomersPage() {
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
   const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState({
-    language: false,
-    timezone: false,
+    language: true,
+    timezone: true,
     externalIds: true,
     createdAt: true,
-    updatedAt: false
+    updatedAt: true
   })
 
   // Fetch customers from API
@@ -217,33 +234,45 @@ export default function CustomersPage() {
     setIsLoading(true)
     try {
       const response = await customerService.getClients({
+        page: currentPage,
+        limit,
         search: debouncedSearchQuery || undefined,
         sort_by: sortBy === 'created' ? 'created_at' : sortBy,
-        sort_order: 'desc',
-        limit: 100 // Fetch first 100 customers
+        sort_order: sortOrder
       })
 
       if (response.success && response.data) {
-        setCustomers(response.data.data)
-        setTotalCustomers(response.data.meta?.total || 0)
+        // Response structure: { success: true, data: Client[], meta: {...} }
+        const clients = Array.isArray(response.data) ? response.data : []
+        setCustomers(clients)
+        setTotalCustomers(response.meta?.total || 0)
+        setTotalPages(response.meta?.total_pages || 1)
       } else {
+        setCustomers([])
         toast({
           title: "Error",
           description: response.error?.message || "Failed to load customers",
           variant: "destructive"
         })
       }
-    } catch (error) {
-      console.error('Error fetching customers:', error)
+    } catch (error: unknown) {
+      const apiError = error as { message?: string; status?: number }
+      console.error('Error fetching customers:', apiError)
+      setCustomers([])
       toast({
         title: "Error",
-        description: "An unexpected error occurred while loading customers",
+        description: apiError?.message || "An unexpected error occurred while loading customers",
         variant: "destructive"
       })
     } finally {
       setIsLoading(false)
     }
-  }, [debouncedSearchQuery, sortBy])
+  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage])
+
+  // Reset to page 1 when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [debouncedSearchQuery, sortBy, sortOrder])
 
   // Load customers on mount and when filters change
   useEffect(() => {
@@ -261,12 +290,12 @@ export default function CustomersPage() {
 
   // Helper functions
   const getPrimaryEmail = useCallback((client: Client) => {
-    const emailId = client.external_ids.find(id => id.type === 'email')
+    const emailId = (client.external_ids || []).find(id => id.type === 'email')
     return emailId?.value || ''
   }, [])
 
   const getPrimaryPhone = useCallback((client: Client) => {
-    const phoneId = client.external_ids.find(id => id.type === 'phone' || id.type === 'whatsapp')
+    const phoneId = (client.external_ids || []).find(id => id.type === 'phone' || id.type === 'whatsapp')
     return phoneId?.value || ''
   }, [])
 
@@ -287,6 +316,10 @@ export default function CustomersPage() {
     setCustomerToDelete({ id: customerId, name: customerName })
     setDeleteDialogOpen(true)
   }, [])
+
+  const handleRowClick = useCallback((customerId: string) => {
+    router.push(`/customers/${customerId}`)
+  }, [router])
 
   const confirmDelete = async () => {
     if (!customerToDelete) return
@@ -371,10 +404,19 @@ export default function CustomersPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="name">Sort by Name</SelectItem>
-            <SelectItem value="company">Sort by Company</SelectItem>
-            <SelectItem value="created">Sort by Created</SelectItem>
+            <SelectItem value="created_at">Sort by Created</SelectItem>
+            <SelectItem value="updated_at">Sort by Updated</SelectItem>
           </SelectContent>
         </Select>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+          title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+        >
+          {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+        </Button>
 
         <DropdownMenu open={columnsDropdownOpen} onOpenChange={setColumnsDropdownOpen}>
           <DropdownMenuTrigger asChild>
@@ -437,15 +479,66 @@ export default function CustomersPage() {
         </DropdownMenu>
       </div>
 
-      {/* Results Summary */}
-      <div className="flex items-center justify-between">
+      {/* Results Summary and Pagination */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {isLoading ? (
             'Loading customers...'
           ) : (
-            `Showing ${customers.length} of ${totalCustomers} customers`
+            `Showing ${((currentPage - 1) * limit) + 1}-${Math.min(currentPage * limit, totalCustomers)} of ${totalCustomers} customers`
           )}
         </p>
+
+        {!isLoading && totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {/* Show page numbers */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = currentPage - 2 + i
+                }
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    className="w-8 h-8 p-0"
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Customers Table */}
@@ -490,6 +583,7 @@ export default function CustomersPage() {
                   key={customer.id}
                   customer={customer}
                   visibleColumns={visibleColumns}
+                  onRowClick={handleRowClick}
                   onViewCustomer={handleViewCustomer}
                   onEditCustomer={handleEditCustomer}
                   onDeleteCustomer={handleDeleteCustomer}

@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectContent,
@@ -21,7 +21,10 @@ import {
 } from "@/components/ui/select"
 import { customerService } from "@/services/customer.service"
 import { toast } from "@/hooks/use-toast"
-import { Plus, X, Loader2 } from "lucide-react"
+import { Plus, X, Loader2, User, Mail, Settings } from "lucide-react"
+import { TimezoneCombobox } from "@/components/ui/timezone-combobox"
+import { LanguageCombobox } from "@/components/ui/language-combobox"
+import { DynamicAttributeForm } from "./DynamicAttributeForm"
 
 interface CreateCustomerModalProps {
   open: boolean
@@ -42,7 +45,7 @@ export function CreateCustomerModal({
   const [name, setName] = useState("")
   const [language, setLanguage] = useState("")
   const [timezone, setTimezone] = useState("")
-  const [dataJson, setDataJson] = useState("")
+  const [customData, setCustomData] = useState<Record<string, any>>({})
   const [externalIds, setExternalIds] = useState<ExternalIDInput[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -83,21 +86,10 @@ export function CreateCustomerModal({
     setIsSubmitting(true)
 
     try {
-      // Parse custom data JSON if provided
-      let parsedData: Record<string, any> | undefined
-      if (dataJson.trim()) {
-        try {
-          parsedData = JSON.parse(dataJson)
-        } catch (error) {
-          toast({
-            title: "Invalid JSON",
-            description: "The custom data field contains invalid JSON",
-            variant: "destructive"
-          })
-          setIsSubmitting(false)
-          return
-        }
-      }
+      // Filter out empty values from custom data
+      const filteredData = Object.fromEntries(
+        Object.entries(customData).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+      )
 
       // Filter out empty external IDs
       const validExternalIds = externalIds.filter(id => id.value.trim() !== '')
@@ -106,7 +98,7 @@ export function CreateCustomerModal({
         name: name.trim(),
         language: language || undefined,
         timezone: timezone || undefined,
-        data: parsedData,
+        data: Object.keys(filteredData).length > 0 ? filteredData : undefined,
         external_ids: validExternalIds.length > 0 ? validExternalIds : undefined
       })
 
@@ -120,7 +112,7 @@ export function CreateCustomerModal({
         setName("")
         setLanguage("")
         setTimezone("")
-        setDataJson("")
+        setCustomData({})
         setExternalIds([])
 
         onOpenChange(false)
@@ -148,7 +140,7 @@ export function CreateCustomerModal({
     setName("")
     setLanguage("")
     setTimezone("")
-    setDataJson("")
+    setCustomData({})
     setExternalIds([])
     onOpenChange(false)
   }
@@ -157,46 +149,61 @@ export function CreateCustomerModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Customer</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Create New Customer
+          </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter customer name"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="language">Language</Label>
-              <Input
-                id="language"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                placeholder="e.g., en, es, fr"
-              />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <User className="h-4 w-4" />
+              Basic Information
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone</Label>
+              <Label htmlFor="name">Name *</Label>
               <Input
-                id="timezone"
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                placeholder="e.g., America/New_York"
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter customer name"
+                required
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Language</Label>
+                <LanguageCombobox
+                  value={language}
+                  onValueChange={setLanguage}
+                  placeholder="Select language..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Timezone</Label>
+                <TimezoneCombobox
+                  value={timezone}
+                  onValueChange={setTimezone}
+                  placeholder="Select timezone..."
+                />
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
+          <Separator />
+
+          {/* Contact Identifiers */}
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>External IDs</Label>
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Mail className="h-4 w-4" />
+                Contact Identifiers
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -204,68 +211,70 @@ export function CreateCustomerModal({
                 onClick={handleAddExternalId}
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Add ID
+                Add
               </Button>
             </div>
 
-            {externalIds.map((externalId, index) => (
-              <div key={index} className="flex gap-2">
-                <Select
-                  value={externalId.type}
-                  onValueChange={(value) => handleExternalIdChange(index, 'type', value)}
-                >
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="phone">Phone</SelectItem>
-                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                    <SelectItem value="slack">Slack</SelectItem>
-                    <SelectItem value="telegram">Telegram</SelectItem>
-                    <SelectItem value="web">Web</SelectItem>
-                    <SelectItem value="chat">Chat</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Input
-                  value={externalId.value}
-                  onChange={(e) => handleExternalIdChange(index, 'value', e.target.value)}
-                  placeholder="Enter value"
-                  className="flex-1"
-                />
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveExternalId(index)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-
-            {externalIds.length === 0 && (
+            {externalIds.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No external IDs added. Click "Add ID" to add contact information.
+                No contact identifiers added. Click "Add" to add email, phone, or other contact methods.
               </p>
+            ) : (
+              <div className="space-y-2">
+                {externalIds.map((externalId, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Select
+                      value={externalId.type}
+                      onValueChange={(value) => handleExternalIdChange(index, 'type', value)}
+                    >
+                      <SelectTrigger className="w-[130px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="phone">Phone</SelectItem>
+                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                        <SelectItem value="slack">Slack</SelectItem>
+                        <SelectItem value="telegram">Telegram</SelectItem>
+                        <SelectItem value="web">Web</SelectItem>
+                        <SelectItem value="chat">Chat</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Input
+                      value={externalId.value}
+                      onChange={(e) => handleExternalIdChange(index, 'value', e.target.value)}
+                      placeholder="Enter value"
+                      className="flex-1"
+                    />
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveExternalId(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="data">Custom Data (JSON)</Label>
-            <Textarea
-              id="data"
-              value={dataJson}
-              onChange={(e) => setDataJson(e.target.value)}
-              placeholder='{"key": "value", "custom_field": "data"}'
-              rows={4}
-              className="font-mono text-sm"
+          <Separator />
+
+          {/* Custom Attributes */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Settings className="h-4 w-4" />
+              Custom Attributes
+            </div>
+
+            <DynamicAttributeForm
+              values={customData}
+              onChange={setCustomData}
             />
-            <p className="text-xs text-muted-foreground">
-              Optional: Add custom attributes as JSON object
-            </p>
           </div>
 
           <DialogFooter>

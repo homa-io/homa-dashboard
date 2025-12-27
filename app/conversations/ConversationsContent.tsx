@@ -6,7 +6,7 @@ import { CustomBadge } from '@/components/ui/custom-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Search, Filter, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Link, Download, FileText, Image as ImageIcon, ChevronDown, Reply, Mail, Globe, MessageCircle, Phone, Monitor, ChevronUp, Sparkles, Check, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, CircleDot, X, Tag, Building, Minus, AlertTriangle, Zap, Circle, Clock, CheckCircle, XCircle, Pause, Loader, Archive } from 'lucide-react'
 import { VisitorInformation } from '@/components/conversations/VisitorInformation'
 import { ConversationActions } from '@/components/conversations/ConversationActions'
-import { CannedMessages } from '@/components/conversations/CannedMessages'
 import { WysiwygEditor } from '@/components/conversations/WysiwygEditor'
 import { ConversationModal } from '@/components/conversations/ConversationModal'
 import { getAvatarColor, getInitials } from '@/lib/avatar-colors'
@@ -38,7 +37,7 @@ export default function ConversationsContent() {
   const { toast } = useToast()
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [replyText, setReplyText] = useState("Hi Dean,\n\nThank you for contacting us. We sure can help you. Shall we schedule a call tomorrow around 12.00pm. We can help you better if we are on a call.\n\nPlease let us know your availability.")
+  const [replyText, setReplyText] = useState("")
   const [isActionsExpanded, setIsActionsExpanded] = useState(false)
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
 
@@ -61,6 +60,7 @@ export default function ConversationsContent() {
   const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([])
   const [availableTags, setAvailableTags] = useState<Array<{ id: number; name: string; color: string }>>([])
   const [availableUsers, setAvailableUsers] = useState<Array<{ id: string; name: string; last_name: string; display_name: string; email: string; avatar: string | null }>>([])
+  const [isSending, setIsSending] = useState(false)
 
   // Get URL search parameters
   const searchParams = useSearchParams()
@@ -170,6 +170,108 @@ export default function ConversationsContent() {
       })
     }
   }, [selectedConversation])
+
+  // Handle send reply
+  const handleSendReply = async () => {
+    if (!selectedConversation || !replyText.trim() || isSending) return
+
+    setIsSending(true)
+    const conversationId = selectedConversation.id
+    try {
+      await conversationService.sendMessage(conversationId, replyText.trim())
+
+      toast({
+        title: "Reply sent",
+        description: "Your reply has been sent to the customer"
+      })
+      setReplyText("")
+
+      // Refresh conversations list
+      setRefreshTrigger(prev => prev + 1)
+
+      // Refresh the current conversation details and messages
+      try {
+        const detailData = await conversationService.getConversation(conversationId)
+
+        // Transform messages to match component format
+        const transformedMessages = detailData.messages.map(msg => ({
+          id: msg.id,
+          message: msg.body,
+          isAgent: msg.is_agent,
+          time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          author: msg.author.name,
+          attachments: msg.attachments
+        }))
+
+        setConversationMessages(transformedMessages)
+      } catch (err) {
+        console.error('Error refreshing conversation details:', err)
+      }
+    } catch (error) {
+      console.error('Error sending reply:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send reply. Please try again."
+      })
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  // Handle fast reply - send message and change status to agent_reply
+  const handleFastReply = async () => {
+    if (!selectedConversation || !replyText.trim() || isSending) return
+
+    setIsSending(true)
+    const conversationId = selectedConversation.id
+    try {
+      // Send the message
+      await conversationService.sendMessage(conversationId, replyText.trim())
+
+      // Update conversation status to agent_reply
+      await conversationService.updateConversationProperties(conversationId, {
+        status: 'agent_reply'
+      })
+
+      toast({
+        title: "Fast reply sent",
+        description: "Your reply has been sent and status changed to Agent Reply"
+      })
+      setReplyText("")
+
+      // Refresh conversations list
+      setRefreshTrigger(prev => prev + 1)
+
+      // Refresh the current conversation details and messages
+      try {
+        const detailData = await conversationService.getConversation(conversationId)
+
+        // Transform messages to match component format
+        const transformedMessages = detailData.messages.map(msg => ({
+          id: msg.id,
+          message: msg.body,
+          isAgent: msg.is_agent,
+          time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          author: msg.author.name,
+          attachments: msg.attachments
+        }))
+
+        setConversationMessages(transformedMessages)
+      } catch (err) {
+        console.error('Error refreshing conversation details:', err)
+      }
+    } catch (error) {
+      console.error('Error sending fast reply:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send fast reply. Please try again."
+      })
+    } finally {
+      setIsSending(false)
+    }
+  }
 
   const getSourceIcon = (source: string) => {
     switch (source) {
@@ -1141,9 +1243,6 @@ export default function ConversationsContent() {
     }
   ]
 
-  const handleCannedMessageSelect = (message: string) => {
-    setReplyText(message)
-  }
 
 
   return (
@@ -1793,75 +1892,34 @@ export default function ConversationsContent() {
                   <div className="bg-card rounded-lg border border-border p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Avatar className="h-6 w-6">
+                        <AvatarImage
+                          src={selectedConversation.customer.avatar_url || undefined}
+                          alt={selectedConversation.customer.name}
+                        />
                         <AvatarFallback
                           className="text-white text-xs font-medium"
-                          style={{ backgroundColor: getAvatarColor("Support Agent") }}
+                          style={{ backgroundColor: getAvatarColor(selectedConversation.customer.name) }}
                         >
-                          {getInitials("Support Agent")}
+                          {selectedConversation.customer.initials || getInitials(selectedConversation.customer.name)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <span className="text-xs font-medium">Reply to: </span>
-                        <span className="text-xs">{selectedConversation.author} ({selectedConversation.visitor?.email})</span>
+                        <span className="text-xs">{selectedConversation.customer.name}</span>
                       </div>
                     </div>
-
-                {/* Formatting Toolbar */}
-                <div className="flex items-center gap-1 mb-4 p-2 border border-border rounded-lg">
-                  <select className="text-sm border-none bg-transparent">
-                    <option>Paragraph</option>
-                  </select>
-                  <div className="w-px h-6 bg-border mx-2"></div>
-                  <Button variant="ghost" size="sm">
-                    <Bold className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Italic className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Underline className="h-4 w-4" />
-                  </Button>
-                  <div className="w-px h-6 bg-border mx-2"></div>
-                  <Button variant="ghost" size="sm">
-                    <AlignLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <AlignCenter className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <AlignRight className="h-4 w-4" />
-                  </Button>
-                  <div className="w-px h-6 bg-border mx-2"></div>
-                  <Button variant="ghost" size="sm">
-                    <List className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <ListOrdered className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Link className="h-4 w-4" />
-                  </Button>
-                </div>
 
                 {/* Reply Text Area */}
                 <WysiwygEditor
                   value={replyText}
                   onChange={setReplyText}
                   placeholder="Type your reply..."
-                  onSend={() => {
-                    console.log('Sending reply:', replyText)
-                    // Handle send logic here
-                  }}
-                  onFastReply={() => {
-                    console.log('Fast reply sent:', replyText)
-                    // Handle fast reply logic here
-                  }}
+                  onSend={handleSendReply}
+                  onFastReply={handleFastReply}
+                  disabled={isSending}
                   className="mb-4"
                 />
 
-                <div className="flex justify-start">
-                  <CannedMessages onMessageSelect={handleCannedMessageSelect} />
-                </div>
                   </div>
                 </div>
 

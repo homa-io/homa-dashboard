@@ -167,14 +167,21 @@ const data = {
       ],
     },
     {
+      title: "Administration",
+      url: "#",
+      icon: Shield,
+      items: [
+        {
+          title: "User Management",
+          url: "/users",
+        },
+      ],
+    },
+    {
       title: "Pages",
       url: "#",
       icon: BookOpen,
       items: [
-        {
-          title: "Users List",
-          url: "/users",
-        },
         {
           title: "Profile",
           url: "/profile",

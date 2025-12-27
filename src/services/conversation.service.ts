@@ -379,12 +379,27 @@ class ConversationService {
 
     const endpoint = `${this.baseURL}/api/agent/clients/${clientId}/conversations?${params.toString()}`
 
+    // Get auth token from cookies
+    const getAccessToken = () => {
+      if (typeof window === 'undefined') return null
+      const cookies = document.cookie.split('; ')
+      const tokenCookie = cookies.find(c => c.startsWith('access_token='))
+      return tokenCookie ? tokenCookie.split('=')[1] : null
+    }
+
+    const token = getAccessToken()
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
     try {
       const response = await fetch(endpoint, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       })
 
       if (!response.ok) {
@@ -528,6 +543,53 @@ class ConversationService {
       throw error
     }
   }
+
+  /**
+   * Send a message to a conversation
+   */
+  async sendMessage(conversationId: number, body: string): Promise<SendMessageResponse> {
+    const endpoint = `${this.baseURL}${this.basePath}/${conversationId}/messages`
+
+    // Get auth token from cookies
+    const getAccessToken = () => {
+      if (typeof window === 'undefined') return null
+      const cookies = document.cookie.split('; ')
+      const tokenCookie = cookies.find(c => c.startsWith('access_token='))
+      return tokenCookie ? tokenCookie.split('=')[1] : null
+    }
+
+    const token = getAccessToken()
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ body }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: ApiResponse<SendMessageResponse> = await response.json()
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error?.message || 'Failed to send message')
+      }
+
+      return result.data
+    } catch (error) {
+      console.error('Error sending message:', error)
+      throw error
+    }
+  }
 }
 
 // Types for previous conversations
@@ -584,6 +646,32 @@ export interface AssignConversationResponse {
     user_id?: string
     department_id?: number
   }>
+}
+
+// Types for sending messages
+export interface SendMessageResponse {
+  message: {
+    id: number
+    body: string
+    is_agent: boolean
+    is_system_message: boolean
+    created_at: string
+    author: {
+      id: string
+      name: string
+      type: 'agent'
+      avatar_url: string | null
+      initials: string
+    }
+    attachments: Array<{
+      id: number
+      name: string
+      size: number
+      type: string
+      url: string
+      created_at: string
+    }>
+  }
 }
 
 export const conversationService = new ConversationService()

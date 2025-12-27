@@ -527,7 +527,7 @@ Generated: ${timestamp}`
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <User className="w-4 h-4" />
-            Visitor Information
+            Customer
           </h3>
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
             <Edit3 className="w-3 h-3 mr-1" />
@@ -598,7 +598,7 @@ Generated: ${timestamp}`
           <Dialog open={showPreviousTickets} onOpenChange={setShowPreviousTickets}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="w-full h-9 text-sm">
-                View Previous Conversations
+                Conversation History
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[80vh]">
@@ -737,16 +737,6 @@ Generated: ${timestamp}`
               </div>
             </DialogContent>
           </Dialog>
-        </div>
-
-        {/* Quick Actions */}
-        <div>
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Quick Actions</h4>
-          <div className="grid grid-cols-2 gap-2">
-            {userActions.map((action) => (
-              <UserActionModal key={action.label} action={action} />
-            ))}
-          </div>
         </div>
 
         {/* Device Info */}

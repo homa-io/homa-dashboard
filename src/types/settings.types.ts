@@ -2,12 +2,37 @@
  * Types for the Settings page and its components
  */
 
+// Re-export types from the custom attributes service for convenience
+export type {
+  CustomAttribute as BackendCustomAttribute,
+  CustomAttributeScope,
+  CustomAttributeDataType,
+  CustomAttributeVisibility,
+  CreateCustomAttributeRequest,
+  UpdateCustomAttributeRequest,
+} from '@/services/custom-attributes.service'
+
 export interface SelectOption {
   key: string
   label: string
 }
 
+// Frontend representation of custom attribute (used in forms)
 export interface CustomAttribute {
+  // Composite key: scope + name (name is unique within scope)
+  scope: 'client' | 'conversation'
+  name: string // snake_case identifier
+  title: string // Display name
+  description: string | null
+  data_type: 'int' | 'float' | 'date' | 'string'
+  validation: string | null
+  visibility: 'everyone' | 'administrator' | 'hidden'
+  created_at?: string
+  updated_at?: string
+}
+
+// Legacy interface - maps old format to new
+export interface LegacyCustomAttribute {
   id: string
   varName: string
   displayName: string

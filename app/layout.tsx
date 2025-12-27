@@ -4,6 +4,7 @@ import "./globals.css";
 import { DashboardLayoutWrapper } from "../src/components/DashboardLayoutWrapper"
 import { AuthProvider } from "../src/contexts/AuthContext"
 import { Toaster } from "../src/components/ui/toaster"
+import { AuthGuard } from "../src/components/auth/AuthGuard"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -46,6 +47,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${poppins.variable} antialiased`}>
         <AuthProvider>
+          <AuthGuard />
           <DashboardLayoutWrapper>
             {children}
           </DashboardLayoutWrapper>

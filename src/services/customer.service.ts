@@ -11,6 +11,7 @@ import type { ExternalID } from '@/types/conversation.types'
 export interface Client {
   id: string // UUID
   name: string
+  avatar: string | null // Avatar image URL
   data: Record<string, any> // Custom fields (flexible JSON)
   language: string | null
   timezone: string | null
@@ -50,7 +51,7 @@ export interface ClientListParams {
 }
 
 class CustomerService {
-  private readonly basePath = '/api/admin/clients'
+  private readonly basePath = '/api/agent/clients'
 
   /**
    * Get paginated list of clients with filters
@@ -107,6 +108,23 @@ class CustomerService {
    */
   async deleteClient(id: string): Promise<ApiResponse<void>> {
     return apiClient.delete<void>(`${this.basePath}/${id}`)
+  }
+
+  /**
+   * Upload avatar for a client
+   * @param id - Client UUID
+   * @param base64Data - Base64 encoded image data (with data:image/xxx;base64, prefix)
+   */
+  async uploadAvatar(id: string, base64Data: string): Promise<ApiResponse<{ avatar: string }>> {
+    return apiClient.post<{ avatar: string }>(`${this.basePath}/${id}/avatar`, { data: base64Data })
+  }
+
+  /**
+   * Delete avatar from a client
+   * @param id - Client UUID
+   */
+  async deleteAvatar(id: string): Promise<ApiResponse<{ message: string }>> {
+    return apiClient.delete<{ message: string }>(`${this.basePath}/${id}/avatar`)
   }
 }
 

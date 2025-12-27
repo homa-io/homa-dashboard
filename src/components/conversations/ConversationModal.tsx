@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { VisitorInformation } from "./VisitorInformation"
 import { ConversationActions } from "./ConversationActions"
 import { WysiwygEditor } from "./WysiwygEditor"
-import { CannedMessages } from "./CannedMessages"
 import { conversationService } from "@/services/conversation.service"
 import { useToast } from "@/hooks/use-toast"
 import type { Conversation, Message } from "@/types/conversation.types"
@@ -64,9 +63,8 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
     if (isOpen && conversation) {
       fetchMessages()
       fetchMetadata()
-      // Initialize reply text with greeting
-      const firstName = conversation.customer.name.split(' ')[0]
-      setReplyText(`Hi ${firstName},\n\nThank you for contacting us. I understand your concern and I'm here to help you resolve this issue.\n\nBest regards,`)
+      // Clear reply text when opening modal
+      setReplyText("")
     }
   }, [isOpen, conversation])
 
@@ -197,17 +195,82 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
     }
   }
 
-  const handleCannedMessageSelect = (message: string) => {
-    setReplyText(message)
+
+  const [isSending, setIsSending] = useState(false)
+
+  const handleSendReply = async () => {
+    if (!conversation || !replyText.trim() || isSending) return
+
+    setIsSending(true)
+    try {
+      const response = await conversationService.sendMessage(conversation.id, replyText.trim())
+
+      // Add the new message to the messages list
+      setMessages(prev => [...prev, response.message])
+
+      toast({
+        title: "Reply sent",
+        description: "Your reply has been sent to the customer"
+      })
+      setReplyText("")
+
+      // Notify parent to refresh data
+      if (onUpdate) {
+        onUpdate()
+      }
+    } catch (error) {
+      console.error('Error sending reply:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send reply. Please try again."
+      })
+    } finally {
+      setIsSending(false)
+    }
   }
 
-  const handleSendReply = () => {
-    console.log('Sending reply:', replyText)
-    toast({
-      title: "Reply sent",
-      description: "Your reply has been sent to the customer"
-    })
-    setReplyText("")
+  const handleFastReply = async () => {
+    if (!conversation || !replyText.trim() || isSending) return
+
+    setIsSending(true)
+    try {
+      // Send the message
+      const response = await conversationService.sendMessage(conversation.id, replyText.trim())
+
+      // Add the new message to the messages list
+      setMessages(prev => [...prev, response.message])
+
+      // Update conversation status to agent_reply
+      await conversationService.updateConversationProperties(conversation.id, {
+        status: 'agent_reply'
+      })
+
+      toast({
+        title: "Fast reply sent",
+        description: "Your reply has been sent and status changed to Agent Reply"
+      })
+      setReplyText("")
+
+      // Notify parent to refresh data
+      if (onUpdate) {
+        onUpdate()
+      }
+
+      // Call onStatusChange if provided to update the UI immediately
+      if (onStatusChange) {
+        onStatusChange(conversation.id, 'agent_reply')
+      }
+    } catch (error) {
+      console.error('Error sending fast reply:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send fast reply. Please try again."
+      })
+    } finally {
+      setIsSending(false)
+    }
   }
 
   if (!conversation) return null
@@ -377,16 +440,16 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
                         <Avatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0">
                           <AvatarFallback
                             className="text-xs font-medium text-white"
-                            style={{ backgroundColor: getAvatarColor(message.author.name) }}
+                            style={{ backgroundColor: getAvatarColor(message.author?.name || "Unknown") }}
                           >
-                            {message.author.initials}
+                            {message.author?.initials || "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div className={`flex-1 max-w-[80%] sm:max-w-[70%] ${message.is_agent ? "text-right" : ""}`}>
                           <div className={`inline-block p-2 sm:p-4 rounded-lg ${message.is_agent ? "bg-primary text-primary-foreground" : "bg-muted"
                             }`}>
                             <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-                              <span className="font-medium text-xs sm:text-sm">{message.author.name}</span>
+                              <span className="font-medium text-xs sm:text-sm">{message.author?.name || "Unknown"}</span>
                               <span className="text-[10px] sm:text-xs opacity-70">{formatTime(message.created_at)}</span>
                             </div>
                             <p className="text-xs sm:text-sm whitespace-pre-wrap">{message.body}</p>
@@ -424,13 +487,9 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
                       onChange={setReplyText}
                       placeholder="Type your reply..."
                       onSend={handleSendReply}
-                      onFastReply={handleSendReply}
-                      className="mb-4"
+                      onFastReply={handleFastReply}
+                      disabled={isSending}
                     />
-
-                    <div className="flex justify-start">
-                      <CannedMessages onMessageSelect={handleCannedMessageSelect} />
-                    </div>
                   </CardContent>
                 </Card>
               </div>
