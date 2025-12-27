@@ -116,26 +116,11 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, disabled, userName
 
   const handleCropComplete = async () => {
     setIsProcessing(true)
-    const logData: any = { timestamp: new Date().toISOString(), action: 'avatar_upload' }
-
     try {
       const croppedImageBase64 = await getCroppedImg()
-      logData.croppedImageLength = croppedImageBase64?.length || 0
-      logData.croppedImagePreview = croppedImageBase64?.substring(0, 100)
-
       if (croppedImageBase64) {
-        // Upload the cropped image to the backend
-        logData.uploadStarted = true
         const response = await uploadAvatar(croppedImageBase64)
-        logData.uploadResponse = {
-          success: response.success,
-          data: response.data,
-          message: response.message,
-          error: response.error
-        }
-
         if (response.success && response.data) {
-          logData.avatarUrl = response.data.url
           onAvatarChange(response.data.url)
           setIsOpen(false)
           setImageSrc("")
@@ -152,7 +137,6 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, disabled, userName
         }
       }
     } catch (error: any) {
-      logData.error = error?.message || String(error)
       console.error("Error uploading avatar:", error)
       toast({
         title: "Error",
@@ -161,8 +145,6 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, disabled, userName
       })
     } finally {
       setIsProcessing(false)
-      // Log to console and also send to a debug endpoint
-      console.log('[AVATAR_DEBUG]', JSON.stringify(logData, null, 2))
     }
   }
 

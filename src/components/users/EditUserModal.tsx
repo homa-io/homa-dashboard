@@ -89,8 +89,6 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
     if (!userId) return
 
     setIsLoading(true)
-    const logData: any = { timestamp: new Date().toISOString(), action: 'user_update', userId }
-
     try {
       // Backend requires all fields, not just changed ones
       const updateData: any = {
@@ -99,31 +97,14 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
         display_name: formData.display_name,
         email: formData.email,
         type: formData.type,
-        avatar: formData.avatar || null, // Always include avatar
+        avatar: formData.avatar || null,
       }
 
-      // Only include password if provided
-      if (formData.password) {
-        updateData.password = "[REDACTED]"
-      }
-
-      logData.updateData = { ...updateData, avatar: updateData.avatar ? `[${updateData.avatar.length} chars]` : null }
-      logData.originalAvatar = user?.avatar ? `[${user.avatar.length} chars]` : null
-      logData.formDataAvatar = formData.avatar ? `[${formData.avatar.length} chars]` : null
-
-      // Restore actual password for request
       if (formData.password) {
         updateData.password = formData.password
       }
 
       const response = await updateUser(userId, updateData)
-
-      logData.response = {
-        success: response.success,
-        message: response.message,
-        error: response.error,
-        dataKeys: response.data ? Object.keys(response.data) : null
-      }
 
       if (response.success) {
         toast({
@@ -140,7 +121,6 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
         })
       }
     } catch (error: any) {
-      logData.error = error?.message || String(error)
       console.error("Error updating user:", error)
       const errorMessage = error?.message || "An unexpected error occurred"
       toast({
@@ -150,7 +130,6 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
       })
     } finally {
       setIsLoading(false)
-      console.log('[USER_UPDATE_DEBUG]', JSON.stringify(logData, null, 2))
     }
   }
 
