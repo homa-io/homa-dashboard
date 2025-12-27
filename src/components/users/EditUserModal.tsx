@@ -97,16 +97,12 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
         display_name: formData.display_name,
         email: formData.email,
         type: formData.type,
+        avatar: formData.avatar || null, // Always include avatar
       }
 
       // Only include password if provided
       if (formData.password) {
         updateData.password = formData.password
-      }
-
-      // Include avatar (can be null to remove)
-      if (formData.avatar !== (user?.avatar || "")) {
-        updateData.avatar = formData.avatar || null
       }
 
       const response = await updateUser(userId, updateData)

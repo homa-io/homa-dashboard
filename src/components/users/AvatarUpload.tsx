@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback } from "react"
-import ReactCrop, { type Crop, type PixelCrop } from "react-image-crop"
+import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop"
 import "react-image-crop/dist/ReactCrop.css"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -21,23 +21,38 @@ interface AvatarUploadProps {
 export function AvatarUpload({ currentAvatar, onAvatarChange, disabled, userName }: AvatarUploadProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [imageSrc, setImageSrc] = useState<string>("")
-  const [crop, setCrop] = useState<Crop>({
-    unit: "%",
-    width: 50,
-    height: 50,
-    x: 25,
-    y: 25,
-  })
+  const [crop, setCrop] = useState<Crop>()
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const imgRef = useRef<HTMLImageElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Create centered square crop when image loads
+  const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget
+    const cropSize = Math.min(width, height, 300)
+    const crop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: "px",
+          width: cropSize,
+        },
+        1, // aspect ratio 1:1
+        width,
+        height
+      ),
+      width,
+      height
+    )
+    setCrop(crop)
+  }, [])
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const reader = new FileReader()
       reader.addEventListener("load", () => {
         setImageSrc(reader.result?.toString() || "")
+        setCrop(undefined) // Reset crop when new image selected
         setIsOpen(true)
       })
       reader.readAsDataURL(e.target.files[0])
@@ -215,11 +230,9 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, disabled, userName
               <div className="flex justify-center max-h-[400px] overflow-auto">
                 <ReactCrop
                   crop={crop}
-                  onChange={(c) => setCrop(c)}
+                  onChange={(_, percentCrop) => setCrop(percentCrop)}
                   onComplete={(c) => setCompletedCrop(c)}
                   aspect={1}
-                  locked={false}
-                  keepSelection
                   circularCrop
                 >
                   <img
@@ -227,6 +240,7 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, disabled, userName
                     src={imageSrc}
                     alt="Crop preview"
                     style={{ maxHeight: "400px" }}
+                    onLoad={onImageLoad}
                   />
                 </ReactCrop>
               </div>
