@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { CustomBadge } from '@/components/ui/custom-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,11 +30,13 @@ import { WysiwygEditor } from '@/components/conversations/WysiwygEditor'
 import { ConversationModal } from '@/components/conversations/ConversationModal'
 import { getAvatarColor, getInitials } from '@/lib/avatar-colors'
 import { conversationService } from '@/services'
+import { getMediaUrl } from '@/services/api-client'
 import type { Conversation } from '@/types/conversation.types'
 import { useToast } from '@/hooks/use-toast'
 
 export default function ConversationsContent() {
   const { toast } = useToast()
+  const router = useRouter()
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [replyText, setReplyText] = useState("")
@@ -65,13 +67,30 @@ export default function ConversationsContent() {
   // Get URL search parameters
   const searchParams = useSearchParams()
 
-  // Handle ticket_id parameter from URL
+  // Handle URL parameters (ticket_id for search, id for selected conversation)
   useEffect(() => {
     const ticketId = searchParams.get('ticket_id')
     if (ticketId) {
       setSearchQuery(ticketId)
     }
+
+    const conversationId = searchParams.get('id')
+    if (conversationId) {
+      const id = parseInt(conversationId, 10)
+      if (!isNaN(id)) {
+        setSelectedConversationId(id)
+      }
+    }
   }, [searchParams])
+
+  // Function to select a conversation and update URL
+  const selectConversation = useCallback((id: number) => {
+    setSelectedConversationId(id)
+    // Update URL without full page reload
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('id', id.toString())
+    router.push(`/conversations?${params.toString()}`, { scroll: false })
+  }, [router, searchParams])
 
   // Fetch departments, tags, and users on component mount
   useEffect(() => {
@@ -202,6 +221,7 @@ export default function ConversationsContent() {
           isAgent: msg.is_agent,
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           author: msg.author.name,
+          avatarUrl: getMediaUrl(msg.author.avatar_url),
           attachments: msg.attachments
         }))
 
@@ -256,6 +276,7 @@ export default function ConversationsContent() {
           isAgent: msg.is_agent,
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           author: msg.author.name,
+          avatarUrl: getMediaUrl(msg.author.avatar_url),
           attachments: msg.attachments
         }))
 
@@ -1197,6 +1218,7 @@ export default function ConversationsContent() {
           isAgent: msg.is_agent,
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           author: msg.author.name,
+          avatarUrl: getMediaUrl(msg.author.avatar_url),
           attachments: msg.attachments
         }))
 
@@ -1606,11 +1628,11 @@ export default function ConversationsContent() {
             <div
               key={conversation.id}
               onClick={() => {
-                // Mobile: open modal, Desktop: set selected conversation
+                // Mobile: open modal, Desktop: set selected conversation and update URL
                 if (window.innerWidth < 1024) {
                   openTicketModal(conversation.id)
                 } else {
-                  setSelectedConversationId(conversation.id)
+                  selectConversation(conversation.id)
                 }
               }}
               className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${
@@ -1620,9 +1642,15 @@ export default function ConversationsContent() {
               <div className={`flex items-start gap-3 transition-transform duration-200 ease-in-out ${
                 conversation.id === selectedConversationId ? 'translate-x-[5px]' : 'translate-x-0'
               }`}>
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-10 w-10">
+                  {conversation.customer.avatar_url && (
+                    <AvatarImage
+                      src={conversation.customer.avatar_url}
+                      alt={conversation.customer.name}
+                    />
+                  )}
                   <AvatarFallback
-                    className="text-white text-xs font-medium"
+                    className="text-white text-sm font-medium"
                     style={{ backgroundColor: getAvatarColor(conversation.customer.name) }}
                   >
                     {conversation.customer.initials}
@@ -1849,6 +1877,12 @@ export default function ConversationsContent() {
                     <div key={message.id} className={`rounded-lg border p-3 ${message.isAgent ? 'ml-6 bg-primary/5 border-primary/20' : 'bg-card border-border'}`}>
                       <div className="flex items-start gap-2 mb-2">
                         <Avatar className="h-7 w-7">
+                          {message.avatarUrl && (
+                            <AvatarImage
+                              src={message.avatarUrl}
+                              alt={message.author}
+                            />
+                          )}
                           <AvatarFallback
                             className="text-white text-xs font-medium"
                             style={{ backgroundColor: message.isAgent ? '#3b82f6' : getAvatarColor(message.author) }}
