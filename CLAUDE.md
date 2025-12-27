@@ -1,5 +1,44 @@
 # Claude Code Instructions
 
+## Running the Application
+
+This project runs as a systemd service. Use these commands to manage it:
+
+```bash
+# Start the service
+sudo systemctl start homa-dashboard.service
+
+# Stop the service
+sudo systemctl stop homa-dashboard.service
+
+# Restart the service (rebuilds and restarts)
+sudo systemctl restart homa-dashboard.service
+
+# Check status
+sudo systemctl status homa-dashboard.service
+
+# View logs
+sudo journalctl -u homa-dashboard.service -f
+
+# View recent logs
+sudo journalctl -u homa-dashboard.service -n 100 --no-pager
+```
+
+The service automatically:
+1. Runs `npm run build` to compile the Next.js application
+2. Runs `npm run start` to serve on port 3000
+3. Restarts on failure
+4. Starts on system boot
+
+For development, you can also run:
+```bash
+npm run dev    # Development mode with hot reload
+npm run build  # Build for production
+npm run start  # Start production server
+```
+
+**Related Service**: The backend API runs as `homa-backend.service` on port 8033.
+
 ## Project Guidelines
 
 **IMPORTANT**: When working on this Next.js dashboard project, you MUST follow the comprehensive guidelines documented in `docs/guideline.md`.

@@ -372,9 +372,12 @@ export default function UsersPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <div className="font-medium text-sm truncate">
+                        <button
+                          onClick={() => handleEditUser(user.id)}
+                          className="font-medium text-sm truncate text-left hover:text-primary hover:underline cursor-pointer transition-colors"
+                        >
                           {user.display_name}
-                        </div>
+                        </button>
                         <div className="text-xs text-gray-500 truncate">
                           {user.name} {user.last_name}
                         </div>
