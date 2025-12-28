@@ -25,7 +25,8 @@ import {
   Globe,
   Search,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Webhook
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -49,10 +50,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { AttributeManager } from "@/components/settings/AttributeManager"
+import { WebhookManager } from "@/components/settings/webhooks"
 
-export type SettingsTab = 'general' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'plugins' | 'canned-messages'
+export type SettingsTab = 'general' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages'
 
-const validTabs: SettingsTab[] = ['general', 'customer-attributes', 'conversation-attributes', 'integrations', 'plugins', 'canned-messages']
+const validTabs: SettingsTab[] = ['general', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages']
 
 export function isValidTab(tab: string): tab is SettingsTab {
   return validTabs.includes(tab as SettingsTab)
@@ -82,6 +84,12 @@ const tabs = [
     label: 'Integrations',
     icon: Zap,
     description: 'Connect with external services and APIs'
+  },
+  {
+    id: 'webhooks' as SettingsTab,
+    label: 'Webhooks',
+    icon: Webhook,
+    description: 'Configure webhook endpoints for event notifications'
   },
   {
     id: 'plugins' as SettingsTab,
@@ -177,6 +185,7 @@ export default function SettingsContent({ activeTab }: SettingsContentProps) {
             />
           )}
           {activeTab === 'integrations' && <IntegrationsSettings />}
+          {activeTab === 'webhooks' && <WebhookManager />}
           {activeTab === 'plugins' && <PluginsSettings />}
           {activeTab === 'canned-messages' && <CannedMessagesSettings />}
         </div>
