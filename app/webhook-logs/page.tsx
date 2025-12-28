@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -29,6 +28,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
   ChevronLeft,
   ChevronRight,
   CheckCircle,
@@ -39,11 +43,29 @@ import {
   Terminal,
   Clock,
   ArrowLeft,
+  ChevronDown,
+  Check,
 } from "lucide-react"
 import Link from "next/link"
 import { webhookService } from "@/services/webhook.service"
 import { useSearchParams } from "next/navigation"
 import type { WebhookDelivery, Webhook } from "@/types/webhook.types"
+import { cn } from "@/lib/utils"
+
+// Available webhook event types
+const EVENT_TYPES = [
+  { value: "conversation.created", label: "Conversation Created" },
+  { value: "conversation.updated", label: "Conversation Updated" },
+  { value: "conversation.status_changed", label: "Conversation Status Changed" },
+  { value: "conversation.closed", label: "Conversation Closed" },
+  { value: "conversation.assigned", label: "Conversation Assigned" },
+  { value: "message.created", label: "Message Created" },
+  { value: "client.created", label: "Client Created" },
+  { value: "client.updated", label: "Client Updated" },
+  { value: "user.created", label: "User Created" },
+  { value: "user.updated", label: "User Updated" },
+  { value: "webhook.test", label: "Webhook Test" },
+]
 
 export default function WebhookLogsPage() {
   return (
@@ -75,7 +97,8 @@ function WebhookLogsContent() {
   // Filters - initialize from URL params
   const [webhookFilter, setWebhookFilter] = useState<string>(initialWebhookId || "all")
   const [successFilter, setSuccessFilter] = useState<string>("all")
-  const [eventFilter, setEventFilter] = useState("")
+  const [eventFilters, setEventFilters] = useState<string[]>([])
+  const [eventPopoverOpen, setEventPopoverOpen] = useState(false)
 
   // Selected log for detail view
   const [selectedLog, setSelectedLog] = useState<WebhookDelivery | null>(null)
@@ -98,7 +121,7 @@ function WebhookLogsContent() {
       const response = await webhookService.deliveries.list({
         webhook_id: webhookFilter !== "all" ? parseInt(webhookFilter) : undefined,
         success: successFilter !== "all" ? successFilter === "true" : undefined,
-        event: eventFilter || undefined,
+        event: eventFilters.length > 0 ? eventFilters.join(",") : undefined,
         page: currentPage,
         per_page: itemsPerPage,
       })
@@ -119,16 +142,25 @@ function WebhookLogsContent() {
 
   useEffect(() => {
     fetchLogs()
-  }, [currentPage, webhookFilter, successFilter, eventFilter])
+  }, [currentPage, webhookFilter, successFilter, eventFilters])
 
   const clearFilters = () => {
     setWebhookFilter("all")
     setSuccessFilter("all")
-    setEventFilter("")
+    setEventFilters([])
     setCurrentPage(1)
   }
 
-  const hasActiveFilters = webhookFilter !== "all" || successFilter !== "all" || eventFilter !== ""
+  const toggleEventFilter = (event: string) => {
+    setEventFilters(prev =>
+      prev.includes(event)
+        ? prev.filter(e => e !== event)
+        : [...prev, event]
+    )
+    setCurrentPage(1)
+  }
+
+  const hasActiveFilters = webhookFilter !== "all" || successFilter !== "all" || eventFilters.length > 0
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -213,13 +245,70 @@ function WebhookLogsContent() {
             </div>
 
             <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Event</Label>
-              <Input
-                placeholder="Filter by event..."
-                value={eventFilter}
-                onChange={(e) => setEventFilter(e.target.value)}
-                className="text-sm"
-              />
+              <Label className="text-xs text-muted-foreground mb-1.5 block">Event Types</Label>
+              <Popover open={eventPopoverOpen} onOpenChange={setEventPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={eventPopoverOpen}
+                    className="w-full justify-between text-sm font-normal"
+                  >
+                    <span className="truncate">
+                      {eventFilters.length === 0
+                        ? "All Events"
+                        : eventFilters.length === 1
+                        ? EVENT_TYPES.find(e => e.value === eventFilters[0])?.label || eventFilters[0]
+                        : `${eventFilters.length} events selected`}
+                    </span>
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[280px] p-0" align="start">
+                  <div className="max-h-[300px] overflow-auto p-2">
+                    {EVENT_TYPES.map((eventType) => {
+                      const isSelected = eventFilters.includes(eventType.value)
+                      return (
+                        <div
+                          key={eventType.value}
+                          className={cn(
+                            "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted",
+                            isSelected && "bg-muted"
+                          )}
+                          onClick={() => toggleEventFilter(eventType.value)}
+                        >
+                          <div
+                            className={cn(
+                              "flex h-4 w-4 items-center justify-center rounded border",
+                              isSelected
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : "border-muted-foreground/30"
+                            )}
+                          >
+                            {isSelected && <Check className="h-3 w-3" />}
+                          </div>
+                          <span className="text-sm">{eventType.label}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {eventFilters.length > 0 && (
+                    <div className="border-t p-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs"
+                        onClick={() => {
+                          setEventFilters([])
+                          setEventPopoverOpen(false)
+                        }}
+                      >
+                        Clear selection
+                      </Button>
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="flex items-end">
@@ -415,7 +504,7 @@ function DeliveryDetailModal({ log, webhookName, onClose }: DeliveryDetailModalP
 
   return (
     <Dialog open={!!log} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {log.success ? (
@@ -455,7 +544,7 @@ function DeliveryDetailModal({ log, webhookName, onClose }: DeliveryDetailModalP
                 {copied ? "Copied!" : "Copy"}
               </Button>
             </div>
-            <pre className="p-4 bg-zinc-950 text-green-400 rounded-lg text-xs overflow-auto max-h-48 font-mono">
+            <pre className="p-4 bg-zinc-950 text-green-400 rounded-lg text-sm overflow-auto max-h-80 font-mono whitespace-pre-wrap break-all">
               {curlCommand}
             </pre>
           </div>

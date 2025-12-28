@@ -109,8 +109,8 @@ export function WebhookForm({ webhook, isOpen, onClose, onSave }: WebhookFormPro
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 p-6 pb-4">
           <DialogTitle className="text-base sm:text-lg">
             {webhook ? "Edit Webhook" : "Add New Webhook"}
           </DialogTitle>
@@ -119,7 +119,7 @@ export function WebhookForm({ webhook, isOpen, onClose, onSave }: WebhookFormPro
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 px-6">
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-xs sm:text-sm font-medium">
@@ -208,7 +208,7 @@ export function WebhookForm({ webhook, isOpen, onClose, onSave }: WebhookFormPro
               Select which events should trigger this webhook.
             </p>
 
-            <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            <div className="space-y-2">
               {WEBHOOK_EVENTS.map((event) => (
                 <div
                   key={event.id}
@@ -226,37 +226,39 @@ export function WebhookForm({ webhook, isOpen, onClose, onSave }: WebhookFormPro
               ))}
             </div>
           </div>
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={saving}
-              className="text-xs sm:text-sm h-9 sm:h-10 order-2 sm:order-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={saving}
-              className="text-xs sm:text-sm h-9 sm:h-10 order-1 sm:order-2"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
-                  Save Webhook
-                </>
-              )}
-            </Button>
-          </div>
         </form>
+
+        {/* Actions - Fixed at bottom */}
+        <div className="flex flex-col sm:flex-row justify-end gap-2 p-6 pt-4 border-t flex-shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={saving}
+            className="text-xs sm:text-sm h-9 sm:h-10 order-2 sm:order-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="webhook-form"
+            disabled={saving}
+            className="text-xs sm:text-sm h-9 sm:h-10 order-1 sm:order-2"
+            onClick={handleSubmit}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
+                Save Webhook
+              </>
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )
