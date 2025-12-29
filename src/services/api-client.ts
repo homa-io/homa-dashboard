@@ -193,6 +193,7 @@ export const apiClient = new ApiClient()
 /**
  * Get the full URL for a media/upload path from the backend
  * Converts relative paths like /uploads/avatars/... to full URLs
+ * Also handles S3 keys like avatars/... which are served via /media/ proxy
  */
 export function getMediaUrl(path: string | null | undefined): string {
   if (!path) return ''
@@ -207,7 +208,19 @@ export function getMediaUrl(path: string | null | undefined): string {
     return path
   }
 
-  // Prepend the API base URL
   const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://api.getevo.dev'
+
+  // If it's an S3 key (no leading slash, starts with known prefixes)
+  // These are served via the /media/ proxy endpoint
+  if (!path.startsWith('/') && (
+    path.startsWith('avatars/') ||
+    path.startsWith('uploads/') ||
+    path.startsWith('kb/') ||
+    path.startsWith('media/')
+  )) {
+    return `${baseURL}/media/${path}`
+  }
+
+  // Prepend the API base URL for legacy /uploads/ paths
   return `${baseURL}${path.startsWith('/') ? '' : '/'}${path}`
 }

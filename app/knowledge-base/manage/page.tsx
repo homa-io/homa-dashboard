@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,7 +50,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { CategoryManager } from "@/components/knowledge-base/CategoryManager"
-import { ArticleEditor } from "@/components/knowledge-base/ArticleEditor"
 import { TagManager } from "@/components/knowledge-base/TagManager"
 import { toast } from "@/hooks/use-toast"
 import { getMediaUrl } from "@/services/api-client"
@@ -65,6 +65,8 @@ import {
 } from "@/services/knowledge-base.service"
 
 export default function KnowledgeBaseManagePage() {
+  const router = useRouter()
+
   // Data state
   const [articles, setArticles] = useState<KBArticle[]>([])
   const [categories, setCategories] = useState<KBCategory[]>([])
@@ -77,9 +79,7 @@ export default function KnowledgeBaseManagePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedTab, setSelectedTab] = useState('articles')
 
-  // Editor state
-  const [editingArticle, setEditingArticle] = useState<KBArticle | null>(null)
-  const [creatingNew, setCreatingNew] = useState(false)
+  // Preview state
   const [previewArticle, setPreviewArticle] = useState<KBArticle | null>(null)
 
   // Delete state
@@ -134,24 +134,11 @@ export default function KnowledgeBaseManagePage() {
   }, [searchTerm])
 
   const handleCreateNew = () => {
-    setCreatingNew(true)
-    setEditingArticle(null)
+    router.push("/knowledge-base/manage/new")
   }
 
-  const handleEditArticle = async (articleId: string) => {
-    try {
-      const response = await getKBArticle(articleId)
-      if (response.success && response.data) {
-        setEditingArticle(response.data)
-        setCreatingNew(false)
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load article",
-        variant: "destructive",
-      })
-    }
+  const handleEditArticle = (articleId: string) => {
+    router.push(`/knowledge-base/manage/${articleId}`)
   }
 
   const handlePreviewArticle = async (articleId: string) => {
@@ -167,12 +154,6 @@ export default function KnowledgeBaseManagePage() {
         variant: "destructive",
       })
     }
-  }
-
-  const handleCloseEditor = () => {
-    setEditingArticle(null)
-    setCreatingNew(false)
-    fetchData()
   }
 
   const handleDeleteClick = (id: string, title: string) => {
@@ -213,19 +194,6 @@ export default function KnowledgeBaseManagePage() {
       case 'archived': return 'bg-gray-100 text-gray-800'
       default: return 'bg-gray-100 text-gray-800'
     }
-  }
-
-  // Article Editor view
-  if (editingArticle || creatingNew) {
-    return (
-      <ArticleEditor
-        article={editingArticle}
-        categories={categories}
-        tags={tags}
-        onClose={handleCloseEditor}
-        onSave={handleCloseEditor}
-      />
-    )
   }
 
   const publishedCount = articles.filter(a => a.status === 'published').length

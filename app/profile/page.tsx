@@ -109,7 +109,7 @@ export default function ProfilePage() {
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Personal Information */}
         <Card>
-          <CardHeader className="pb-3 sm:pb-6">
+          <CardHeader>
             <CardTitle className="text-base sm:text-lg">Personal Information</CardTitle>
             <CardDescription className="text-xs sm:text-sm">Your basic account details</CardDescription>
           </CardHeader>
@@ -186,7 +186,7 @@ export default function ProfilePage() {
 
         {/* Account Information & Profile Picture */}
         <Card>
-          <CardHeader className="pb-3 sm:pb-6">
+          <CardHeader>
             <CardTitle className="text-base sm:text-lg">Account Information</CardTitle>
             <CardDescription className="text-xs sm:text-sm">Your profile and account details</CardDescription>
           </CardHeader>
@@ -247,7 +247,7 @@ export default function ProfilePage() {
 
         {/* Security Settings */}
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-3 sm:pb-6">
+          <CardHeader>
             <CardTitle className="text-base sm:text-lg">Security Settings</CardTitle>
             <CardDescription className="text-xs sm:text-sm">Manage your account security</CardDescription>
           </CardHeader>

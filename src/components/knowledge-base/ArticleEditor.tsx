@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useMemo, useEffect } from "react"
 import "@/styles/editor.css"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,23 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Progress } from "@/components/ui/progress"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable"
+import { SortableMediaItem } from "./SortableMediaItem"
 import {
   ArrowLeft,
   Save,
@@ -35,7 +52,6 @@ import {
   Redo,
   Loader2,
   Trash2,
-  GripVertical,
   Sparkles,
   Star
 } from "lucide-react"
@@ -48,11 +64,11 @@ import Placeholder from "@tiptap/extension-placeholder"
 import TextAlign from "@tiptap/extension-text-align"
 import UnderlineExtension from "@tiptap/extension-underline"
 import { toast } from "@/hooks/use-toast"
+import { useUppy } from "@/hooks/useUppy"
 import { getMediaUrl } from "@/services/api-client"
 import {
   createKBArticle,
   updateKBArticle,
-  uploadKBMedia,
   generateArticleSummary,
   type KBArticle,
   type KBCategory,
@@ -93,9 +109,8 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
   const [featuredImageUrl, setFeaturedImageUrl] = useState(article?.featured_image || '')
   const [showPreview, setShowPreview] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isUploadingFeatured, setIsUploadingFeatured] = useState(false)
-  const [isUploadingMedia, setIsUploadingMedia] = useState(false)
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
+  const [previewMedia, setPreviewMedia] = useState<MediaItem | null>(null)
 
   // Media gallery state
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(
@@ -112,6 +127,179 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
 
   const featuredImageRef = useRef<HTMLInputElement>(null)
   const mediaUploadRef = useRef<HTMLInputElement>(null)
+  const mediaItemsRef = useRef(mediaItems)
+  const articleRef = useRef(article)
+
+  // Keep refs in sync with props/state
+  useEffect(() => {
+    mediaItemsRef.current = mediaItems
+  }, [mediaItems])
+
+  useEffect(() => {
+    articleRef.current = article
+  }, [article])
+
+  // Auto-save media for existing articles
+  const autoSaveMedia = useCallback(async (newMediaItem: MediaItem) => {
+    if (!article) return // Don't auto-save for new articles
+
+    const updatedMedia = [...mediaItemsRef.current, newMediaItem]
+
+    try {
+      await updateKBArticle(article.id, {
+        media: updatedMedia.map((item, index) => ({
+          id: item.id,
+          type: item.type,
+          url: item.url,
+          title: item.title || `Media ${index + 1}`,
+          description: item.description,
+          sort_order: index,
+          is_primary: item.is_primary || false,
+        })),
+      })
+    } catch (error) {
+      console.error("Failed to auto-save media:", error)
+    }
+  }, [article])
+
+  // Auto-save featured image - updates existing article immediately
+  const autoSaveFeaturedImage = useCallback(async (imageUrl: string) => {
+    const currentArticle = articleRef.current
+    if (!currentArticle) return // For new articles, image is saved when article is created
+
+    try {
+      await updateKBArticle(currentArticle.id, {
+        featured_image: imageUrl,
+      })
+      console.log("Featured image auto-saved to article:", currentArticle.id)
+    } catch (error) {
+      console.error("Failed to auto-save featured image:", error)
+    }
+  }, [])
+
+  // Uppy hook for featured image uploads (S3 multipart)
+  const {
+    uppy: featuredUppy,
+    uploading: isUploadingFeatured,
+    progress: featuredProgress,
+    addFiles: addFeaturedFiles,
+    reset: resetFeaturedUppy,
+  } = useUppy({
+    prefix: "kb/featured",
+    maxFileSize: 50 * 1024 * 1024, // 50MB
+    allowedFileTypes: ["image/jpeg", "image/png", "image/webp"],
+    autoProceed: true,
+    onUploadSuccess: (file) => {
+      setFeaturedImageUrl(file.key)
+      // Auto-save for existing articles to prevent orphan files
+      autoSaveFeaturedImage(file.key)
+      toast({
+        title: "Success",
+        description: "Featured image uploaded and saved",
+      })
+    },
+    onUploadError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload featured image",
+        variant: "destructive",
+      })
+    },
+  })
+
+  // Uppy hook for media gallery uploads (S3 multipart)
+  const {
+    uppy: mediaUppy,
+    uploading: isUploadingMedia,
+    progress: mediaProgress,
+    addFiles: addMediaFiles,
+    reset: resetMediaUppy,
+  } = useUppy({
+    prefix: "kb/media",
+    maxFileSize: 500 * 1024 * 1024, // 500MB for videos
+    allowedFileTypes: ["image/jpeg", "image/png", "image/webp", "video/mp4"],
+    autoProceed: true,
+    onUploadSuccess: (uploadedFile) => {
+      const isVideo = uploadedFile.type.startsWith("video/")
+      const newMediaItem: MediaItem = {
+        type: isVideo ? "video" : "image",
+        url: uploadedFile.key,
+        title: uploadedFile.name,
+        sort_order: mediaItemsRef.current.length,
+        isNew: true,
+      }
+      setMediaItems((prev) => [...prev, newMediaItem])
+
+      // Auto-save for existing articles to prevent orphan files
+      autoSaveMedia(newMediaItem)
+
+      toast({
+        title: "Success",
+        description: `${uploadedFile.name} uploaded and saved`,
+      })
+    },
+    onUploadError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload media",
+        variant: "destructive",
+      })
+    },
+  })
+
+  // DnD sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Generate stable IDs for sortable context
+  const mediaItemIds = useMemo(() =>
+    mediaItems.map((item, index) => item.id || `new-${index}`),
+    [mediaItems]
+  )
+
+  // Handle drag end for reordering
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = mediaItems.findIndex((item, index) =>
+        (item.id || `new-${index}`) === active.id
+      )
+      const newIndex = mediaItems.findIndex((item, index) =>
+        (item.id || `new-${index}`) === over.id
+      )
+
+      const reorderedItems = arrayMove(mediaItems, oldIndex, newIndex)
+      setMediaItems(reorderedItems)
+
+      // Auto-save for existing articles
+      if (article) {
+        try {
+          await updateKBArticle(article.id, {
+            media: reorderedItems.map((item, idx) => ({
+              id: item.id,
+              type: item.type,
+              url: item.url,
+              title: item.title || `Media ${idx + 1}`,
+              description: item.description,
+              sort_order: idx,
+              is_primary: item.is_primary || false,
+            })),
+          })
+        } catch (error) {
+          console.error("Failed to auto-save media reorder:", error)
+        }
+      }
+    }
+  }, [mediaItems, article])
 
   const editor = useEditor({
     extensions: [
@@ -215,84 +403,100 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
     }
   }
 
-  const handleFeaturedImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle featured image upload with Uppy (S3 multipart)
+  const handleFeaturedImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("[ArticleEditor:FeaturedImage] File input changed, files:", e.target.files)
     const file = e.target.files?.[0]
-    if (!file) return
+    console.log("[ArticleEditor:FeaturedImage] Selected file:", file)
+    if (!file) {
+      console.log("[ArticleEditor:FeaturedImage] No file selected, returning")
+      return
+    }
 
-    setIsUploadingFeatured(true)
-    try {
-      const reader = new FileReader()
-      reader.onloadend = async () => {
-        const base64 = reader.result as string
-        const response = await uploadKBMedia(base64, 'image')
-        if (response.success && response.data) {
-          setFeaturedImageUrl(response.data.url)
-          toast({
-            title: "Success",
-            description: "Featured image uploaded",
-          })
-        }
-        setIsUploadingFeatured(false)
+    console.log("[ArticleEditor:FeaturedImage] File details:", {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    })
+
+    // Reset input so same file can be selected again
+    e.target.value = ""
+
+    // Add file to Uppy for upload
+    console.log("[ArticleEditor:FeaturedImage] Calling addFeaturedFiles with file array")
+    addFeaturedFiles([file])
+  }
+
+  // Handle media gallery upload with Uppy (S3 multipart)
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files
+    if (!fileList || fileList.length === 0) return
+
+    // Convert to array BEFORE resetting input (FileList becomes empty when input is cleared)
+    const files = Array.from(fileList)
+    const fileCount = files.length
+
+    // Reset input so same files can be selected again
+    e.target.value = ""
+
+    // Add files to Uppy for upload
+    addMediaFiles(files)
+
+    toast({
+      title: "Uploading",
+      description: `${fileCount} file(s) queued for upload`,
+    })
+  }
+
+  const removeMediaItem = async (index: number) => {
+    const updatedItems = mediaItems.filter((_, i) => i !== index)
+    setMediaItems(updatedItems)
+
+    // Auto-save for existing articles
+    if (article) {
+      try {
+        await updateKBArticle(article.id, {
+          media: updatedItems.map((item, idx) => ({
+            id: item.id,
+            type: item.type,
+            url: item.url,
+            title: item.title || `Media ${idx + 1}`,
+            description: item.description,
+            sort_order: idx,
+            is_primary: item.is_primary || false,
+          })),
+        })
+      } catch (error) {
+        console.error("Failed to auto-save media removal:", error)
       }
-      reader.readAsDataURL(file)
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to upload image",
-        variant: "destructive",
-      })
-      setIsUploadingFeatured(false)
     }
   }
 
-  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-
-    setIsUploadingMedia(true)
-    try {
-      for (const file of Array.from(files)) {
-        const isVideo = file.type.startsWith('video/')
-        const reader = new FileReader()
-        reader.onloadend = async () => {
-          const base64 = reader.result as string
-          const response = await uploadKBMedia(base64, isVideo ? 'video' : 'image')
-          if (response.success && response.data) {
-            setMediaItems(prev => [...prev, {
-              type: isVideo ? 'video' : 'image',
-              url: response.data!.url,
-              title: file.name,
-              sort_order: prev.length,
-              isNew: true,
-            }])
-          }
-        }
-        reader.readAsDataURL(file)
-      }
-      toast({
-        title: "Success",
-        description: `${files.length} file(s) uploaded`,
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to upload media",
-        variant: "destructive",
-      })
-    } finally {
-      setIsUploadingMedia(false)
-    }
-  }
-
-  const removeMediaItem = (index: number) => {
-    setMediaItems(prev => prev.filter((_, i) => i !== index))
-  }
-
-  const togglePrimaryMedia = (index: number) => {
-    setMediaItems(prev => prev.map((item, i) => ({
+  const togglePrimaryMedia = async (index: number) => {
+    const updatedItems = mediaItems.map((item, i) => ({
       ...item,
       is_primary: i === index ? !item.is_primary : false
-    })))
+    }))
+    setMediaItems(updatedItems)
+
+    // Auto-save for existing articles
+    if (article) {
+      try {
+        await updateKBArticle(article.id, {
+          media: updatedItems.map((item, idx) => ({
+            id: item.id,
+            type: item.type,
+            url: item.url,
+            title: item.title || `Media ${idx + 1}`,
+            description: item.description,
+            sort_order: idx,
+            is_primary: item.is_primary || false,
+          })),
+        })
+      } catch (error) {
+        console.error("Failed to auto-save primary media toggle:", error)
+      }
+    }
   }
 
   const addImage = useCallback(() => {
@@ -639,7 +843,7 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
           <div className="space-y-4 sm:space-y-6 order-2 lg:order-2">
             {/* Status and Settings - Mobile Responsive */}
             <Card>
-              <CardHeader className="pb-3 sm:pb-6">
+              <CardHeader>
                 <CardTitle className="text-base sm:text-lg">Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4">
@@ -687,7 +891,7 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
 
             {/* Featured Image - Mobile Responsive */}
             <Card>
-              <CardHeader className="pb-3 sm:pb-6">
+              <CardHeader>
                 <CardTitle className="text-base sm:text-lg">Featured Image</CardTitle>
               </CardHeader>
               <CardContent>
@@ -697,7 +901,7 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
                       <img
                         src={getMediaUrl(featuredImageUrl)}
                         alt="Featured"
-                        className="w-full h-32 object-cover rounded-lg"
+                        className="w-full h-48 object-cover rounded-lg"
                       />
                       <Button
                         variant="destructive"
@@ -721,19 +925,17 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
                       <p className="text-sm text-muted-foreground">
                         {isUploadingFeatured ? 'Uploading...' : 'Click to upload image'}
                       </p>
+                      {isUploadingFeatured && (
+                        <Progress value={featuredProgress} className="mt-2 h-1" />
+                      )}
                     </div>
                   )}
                   <input
                     ref={featuredImageRef}
                     type="file"
-                    accept="image/*"
+                    accept=".jpg,.jpeg,.png,.webp"
                     className="hidden"
                     onChange={handleFeaturedImageUpload}
-                  />
-                  <Input
-                    placeholder="Or enter image URL..."
-                    value={featuredImageUrl}
-                    onChange={(e) => setFeaturedImageUrl(e.target.value)}
                   />
                 </div>
               </CardContent>
@@ -741,7 +943,7 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
 
             {/* Tags - Mobile Responsive */}
             <Card>
-              <CardHeader className="pb-3 sm:pb-6">
+              <CardHeader>
                 <CardTitle className="text-base sm:text-lg">Tags</CardTitle>
               </CardHeader>
               <CardContent>
@@ -764,114 +966,82 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
               </CardContent>
             </Card>
 
-            {/* Media Gallery - Mobile Responsive */}
-            <Card>
-              <CardHeader className="pb-3 sm:pb-6">
-                <CardTitle className="text-base sm:text-lg">Media Gallery</CardTitle>
-                <CardDescription>Add images and videos to this article</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {/* Upload Button */}
-                  <div
-                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => mediaUploadRef.current?.click()}
-                  >
-                    {isUploadingMedia ? (
-                      <Loader2 className="w-8 h-8 mx-auto mb-2 text-primary animate-spin" />
-                    ) : (
-                      <Plus className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      {isUploadingMedia ? 'Uploading...' : 'Click to add images or videos'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Supports multiple files
-                    </p>
-                  </div>
-                  <input
-                    ref={mediaUploadRef}
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleMediaUpload}
-                  />
-
-                  {/* Media Items */}
-                  {mediaItems.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {mediaItems.map((item, index) => (
-                        <div
-                          key={item.id || index}
-                          className={`relative group aspect-video bg-muted rounded-lg overflow-hidden ${item.is_primary ? 'ring-2 ring-yellow-500' : ''}`}
-                        >
-                          {item.type === 'image' ? (
-                            <img
-                              src={getMediaUrl(item.url)}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <video
-                              src={getMediaUrl(item.url)}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <Button
-                              variant={item.is_primary ? "default" : "secondary"}
-                              size="sm"
-                              onClick={() => togglePrimaryMedia(index)}
-                              title={item.is_primary ? "Remove as primary" : "Set as primary"}
-                            >
-                              <Star className={`w-4 h-4 ${item.is_primary ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => removeMediaItem(index)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                          {/* Primary indicator */}
-                          {item.is_primary && (
-                            <div className="absolute top-1 right-1">
-                              <Badge className="bg-yellow-500 text-white text-xs">
-                                <Star className="w-3 h-3 mr-1 fill-current" />
-                                Primary
-                              </Badge>
-                            </div>
-                          )}
-                          <div className="absolute bottom-1 left-1">
-                            {item.type === 'video' ? (
-                              <Badge variant="secondary" className="text-xs">
-                                <Video className="w-3 h-3 mr-1" />
-                                Video
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs">
-                                <ImageIcon className="w-3 h-3 mr-1" />
-                                Image
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {mediaItems.length === 0 && (
-                    <p className="text-center text-sm text-muted-foreground py-2">
-                      No media added yet
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
+
+        {/* Media Gallery - Full Width Row */}
+        <Card className="mt-4 sm:mt-6">
+          <CardHeader>
+            <CardTitle className="text-base sm:text-lg">Media Gallery</CardTitle>
+            <CardDescription>Add images and videos to this article. Click on any item to preview.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Upload Button */}
+              <div
+                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => mediaUploadRef.current?.click()}
+              >
+                {isUploadingMedia ? (
+                  <Loader2 className="w-10 h-10 mx-auto mb-3 text-primary animate-spin" />
+                ) : (
+                  <Plus className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+                )}
+                <p className="text-base text-muted-foreground">
+                  {isUploadingMedia ? 'Uploading...' : 'Click to add images or videos'}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Supports JPG, PNG, WebP images and MP4 videos (up to 500MB)
+                </p>
+                {isUploadingMedia && (
+                  <Progress value={mediaProgress} className="mt-3 h-2 max-w-md mx-auto" />
+                )}
+              </div>
+              <input
+                ref={mediaUploadRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.mp4"
+                multiple
+                className="hidden"
+                onChange={handleMediaUpload}
+              />
+
+              {/* Media Items with Drag and Drop - Larger Grid */}
+              {mediaItems.length > 0 && (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={mediaItemIds}
+                    strategy={rectSortingStrategy}
+                  >
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                      {mediaItems.map((item, index) => (
+                        <SortableMediaItem
+                          key={item.id || `new-${index}`}
+                          item={item}
+                          index={index}
+                          onRemove={removeMediaItem}
+                          onTogglePrimary={togglePrimaryMedia}
+                          onPreview={setPreviewMedia}
+                          size="large"
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+
+              {mediaItems.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">
+                  No media added yet. Upload images or videos to showcase in your article.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Preview Modal - Mobile Responsive */}
@@ -932,6 +1102,36 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
               }}
             />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Media Preview Modal */}
+      <Dialog open={!!previewMedia} onOpenChange={(open) => !open && setPreviewMedia(null)}>
+        <DialogContent className="w-[95vw] sm:max-w-5xl max-h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="text-lg truncate pr-8">{previewMedia?.title || 'Media Preview'}</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center bg-black/5 min-h-[300px] max-h-[70vh]">
+            {previewMedia?.type === 'image' ? (
+              <img
+                src={getMediaUrl(previewMedia.url)}
+                alt={previewMedia.title}
+                className="max-w-full max-h-[70vh] object-contain"
+              />
+            ) : previewMedia?.type === 'video' ? (
+              <video
+                src={getMediaUrl(previewMedia.url)}
+                controls
+                autoPlay
+                className="max-w-full max-h-[70vh]"
+              />
+            ) : null}
+          </div>
+          {previewMedia?.description && (
+            <div className="p-4 pt-2 text-sm text-muted-foreground">
+              {previewMedia.description}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

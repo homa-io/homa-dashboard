@@ -118,7 +118,7 @@ export function ArticleCard({
             </div>
           </div>
         )}
-        <CardHeader className="pb-3">
+        <CardHeader>
           <CardTitle className="text-xl leading-tight">
             <Link 
               href={`/knowledge-base/articles/${article.slug}`}
@@ -167,7 +167,7 @@ export function ArticleCard({
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader className="pb-3">
+      <CardHeader>
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2 flex-wrap">
             {category && (

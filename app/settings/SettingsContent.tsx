@@ -205,7 +205,7 @@ function GeneralSettings() {
       </div>
 
       <Card>
-        <CardHeader className="pb-3 sm:pb-6">
+        <CardHeader>
           <CardTitle className="text-base sm:text-lg">Application Settings</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Basic configuration for your dashboard
@@ -258,7 +258,7 @@ function GeneralSettings() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-3 sm:pb-6">
+        <CardHeader>
           <CardTitle className="text-base sm:text-lg">Localization</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Language and regional settings
@@ -405,7 +405,7 @@ function IntegrationsSettings() {
       </div>
 
       <Card>
-        <CardHeader className="pb-3 sm:pb-6">
+        <CardHeader>
           <CardTitle className="text-base sm:text-lg">API Settings</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Configure API access and webhooks
@@ -453,7 +453,7 @@ function PluginsSettings() {
       </div>
 
       <Card>
-        <CardHeader className="pb-3 sm:pb-6">
+        <CardHeader>
           <CardTitle className="text-base sm:text-lg">Installed Plugins</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Manage your currently installed plugins
@@ -516,7 +516,7 @@ function PluginsSettings() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-3 sm:pb-6">
+        <CardHeader>
           <CardTitle className="text-base sm:text-lg">Plugin Store</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Browse and install new plugins to extend functionality
@@ -666,7 +666,7 @@ function CannedMessagesSettings() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-6">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base sm:text-lg">Message Templates</CardTitle>
             <CardDescription className="text-xs sm:text-sm">

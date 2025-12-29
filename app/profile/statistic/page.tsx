@@ -194,7 +194,7 @@ export default function StatisticsPage() {
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Online Hours Chart */}
         <Card>
-          <CardHeader className="pb-3 sm:pb-6">
+          <CardHeader>
             <CardTitle className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
               <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               Online Hours per Day
@@ -254,7 +254,7 @@ export default function StatisticsPage() {
 
         {/* Conversations Response Chart */}
         <Card>
-          <CardHeader className="pb-3 sm:pb-6">
+          <CardHeader>
             <CardTitle className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
               <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
               Conversations Responded per Day
@@ -316,7 +316,7 @@ export default function StatisticsPage() {
 
       {/* Summary Statistics - Mobile Responsive */}
       <Card>
-        <CardHeader className="pb-3 sm:pb-6">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
             <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
             {selectedMonth} Summary

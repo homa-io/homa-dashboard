@@ -109,7 +109,7 @@ export default function KnowledgeBasePage() {
               const category = mockKnowledgeBaseCategories.find(cat => cat.id === article.categoryId)
               return (
                 <Card key={article.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
+                  <CardHeader>
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="secondary" className="text-xs">
                         {category?.icon} {category?.name}
@@ -224,7 +224,7 @@ export default function KnowledgeBasePage() {
               <div className="space-y-4">
                 {filteredArticles.map((article) => (
                   <Card key={article.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3">
+                    <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <CardTitle className="text-lg leading-snug mb-2">

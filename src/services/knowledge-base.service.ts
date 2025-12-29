@@ -85,6 +85,7 @@ export interface CreateArticleRequest {
     title: string
     description?: string
     sort_order?: number
+    is_primary?: boolean
   }>
 }
 
@@ -104,6 +105,7 @@ export interface UpdateArticleRequest {
     title: string
     description?: string
     sort_order?: number
+    is_primary?: boolean
   }>
 }
 

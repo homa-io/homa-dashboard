@@ -105,7 +105,7 @@ export function WebhookManager() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-6">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base sm:text-lg">Configured Webhooks</CardTitle>
             <CardDescription className="text-xs sm:text-sm">
@@ -162,7 +162,7 @@ export function WebhookManager() {
 
       {/* Webhook Event Types Info */}
       <Card>
-        <CardHeader className="pb-3 sm:pb-4">
+        <CardHeader>
           <CardTitle className="text-base sm:text-lg">Available Events</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Events that can trigger webhook notifications.
