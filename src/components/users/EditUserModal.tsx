@@ -176,47 +176,52 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
                   disabled={isLoading}
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-email">Email</Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-password">Password</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="edit-password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Leave blank to keep current password"
-                    disabled={isLoading}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      const newPassword = generatePassword()
-                      setFormData({ ...formData, password: newPassword })
-                      toast({
-                        title: "Password Generated",
-                        description: "A secure password has been generated and filled in",
-                      })
-                    }}
-                    disabled={isLoading}
-                    title="Generate secure password"
-                  >
-                    <Key className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              {/* Hide email/password for bots - they can't login */}
+              {formData.type !== "bot" && (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-email">Email</Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-password">Password</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="edit-password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Leave blank to keep current password"
+                        disabled={isLoading}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          const newPassword = generatePassword()
+                          setFormData({ ...formData, password: newPassword })
+                          toast({
+                            title: "Password Generated",
+                            description: "A secure password has been generated and filled in",
+                          })
+                        }}
+                        disabled={isLoading}
+                        title="Generate secure password"
+                      >
+                        <Key className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
               <AvatarUpload
                 currentAvatar={formData.avatar}
                 onAvatarChange={(avatarUrl) => setFormData({ ...formData, avatar: avatarUrl })}
@@ -236,6 +241,7 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
                   <SelectContent>
                     <SelectItem value="agent">Agent</SelectItem>
                     <SelectItem value="administrator">Administrator</SelectItem>
+                    <SelectItem value="bot">Bot</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

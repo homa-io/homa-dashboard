@@ -2,6 +2,7 @@ import { apiClient } from './api-client';
 import type {
   User,
   CreateUserRequest,
+  CreateBotRequest,
   UpdateUserRequest,
   UsersListResponse,
   UsersListParams,
@@ -42,6 +43,25 @@ export async function getUser(id: string) {
  */
 export async function createUser(data: CreateUserRequest) {
   return apiClient.post<{ user: User }>('/api/admin/users', data);
+}
+
+/**
+ * Create a new bot
+ * Bots don't require password, email, or username - they are auto-generated
+ */
+export async function createBot(data: CreateBotRequest) {
+  // Generate random email and password for bot (not visible to user)
+  const randomId = Math.random().toString(36).substring(2, 10);
+  const botData: CreateUserRequest = {
+    name: data.name,
+    last_name: data.last_name,
+    display_name: data.display_name || `${data.name} ${data.last_name}`,
+    email: `bot-${randomId}@bot.local`,
+    password: Math.random().toString(36).substring(2, 18) + Math.random().toString(36).substring(2, 18),
+    type: 'bot',
+    avatar: data.avatar,
+  };
+  return apiClient.post<{ user: User }>('/api/admin/users', botData);
 }
 
 /**

@@ -216,6 +216,7 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
                 <SelectContent>
                   <SelectItem value="agent">Agent</SelectItem>
                   <SelectItem value="administrator">Administrator</SelectItem>
+                  <SelectItem value="bot">Bot</SelectItem>
                 </SelectContent>
               </Select>
             </div>

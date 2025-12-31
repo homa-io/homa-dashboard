@@ -51,10 +51,12 @@ import {
 } from "@/components/ui/dialog"
 import { AttributeManager } from "@/components/settings/AttributeManager"
 import { WebhookManager } from "@/components/settings/webhooks"
+import { DepartmentManager } from "@/components/settings/departments"
+import { Building2 } from "lucide-react"
 
-export type SettingsTab = 'general' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages'
+export type SettingsTab = 'general' | 'departments' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages'
 
-const validTabs: SettingsTab[] = ['general', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages']
+const validTabs: SettingsTab[] = ['general', 'departments', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages']
 
 export function isValidTab(tab: string): tab is SettingsTab {
   return validTabs.includes(tab as SettingsTab)
@@ -66,6 +68,12 @@ const tabs = [
     label: 'General',
     icon: Settings,
     description: 'Basic application settings and preferences'
+  },
+  {
+    id: 'departments' as SettingsTab,
+    label: 'Departments',
+    icon: Building2,
+    description: 'Manage departments and team assignments'
   },
   {
     id: 'customer-attributes' as SettingsTab,
@@ -170,6 +178,7 @@ export default function SettingsContent({ activeTab }: SettingsContentProps) {
         {/* Content Area */}
         <div className="flex-1 min-w-0 lg:max-w-none">
           {activeTab === 'general' && <GeneralSettings />}
+          {activeTab === 'departments' && <DepartmentManager />}
           {activeTab === 'customer-attributes' && (
             <AttributeManager
               title="Customer Attributes"

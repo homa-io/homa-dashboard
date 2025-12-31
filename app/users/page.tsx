@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   User as UserIcon,
+  Bot,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -43,7 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { CreateUserModal, EditUserModal } from "@/components/users"
+import { CreateUserModal, CreateBotModal, EditUserModal } from "@/components/users"
 import { getUsers, deleteUser, blockUser, unblockUser } from "@/services/users"
 import { getMediaUrl } from "@/services/api-client"
 import { toast } from "@/hooks/use-toast"
@@ -66,6 +67,7 @@ export default function UsersPage() {
 
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createBotModalOpen, setCreateBotModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
@@ -250,13 +252,23 @@ export default function UsersPage() {
             Manage system users, roles, and permissions
           </p>
         </div>
-        <Button
-          className="w-full sm:w-auto"
-          onClick={() => setCreateModalOpen(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add User
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => setCreateBotModalOpen(true)}
+          >
+            <Bot className="h-4 w-4 mr-2" />
+            Create Bot
+          </Button>
+          <Button
+            className="w-full sm:w-auto"
+            onClick={() => setCreateModalOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add User
+          </Button>
+        </div>
       </div>
 
       {/* Filters and Search Bar */}
@@ -279,6 +291,7 @@ export default function UsersPage() {
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="agent">Agents</SelectItem>
             <SelectItem value="administrator">Administrators</SelectItem>
+            <SelectItem value="bot">Bots</SelectItem>
           </SelectContent>
         </Select>
 
@@ -390,11 +403,13 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <Badge
-                      variant={user.type === "administrator" ? "default" : "secondary"}
-                      className="capitalize"
+                      variant={user.type === "administrator" ? "default" : user.type === "bot" ? "outline" : "secondary"}
+                      className={`capitalize ${user.type === "bot" ? "border-blue-500 text-blue-600 dark:text-blue-400" : ""}`}
                     >
                       {user.type === "administrator" ? (
                         <><Shield className="h-3 w-3 mr-1" />{user.type}</>
+                      ) : user.type === "bot" ? (
+                        <><Bot className="h-3 w-3 mr-1" />{user.type}</>
                       ) : (
                         user.type
                       )}
@@ -464,6 +479,12 @@ export default function UsersPage() {
       <CreateUserModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
+        onSuccess={fetchUsers}
+      />
+
+      <CreateBotModal
+        open={createBotModalOpen}
+        onOpenChange={setCreateBotModalOpen}
         onSuccess={fetchUsers}
       />
 

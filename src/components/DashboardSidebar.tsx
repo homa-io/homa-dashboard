@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, MessageSquare, Settings, Users, BarChart3, Calendar, Archive, HelpCircle, Type, User, LogOut, BookOpen, Shield } from 'lucide-react'
+import { Home, MessageSquare, Settings, Users, BarChart3, Calendar, Archive, HelpCircle, Type, User, LogOut, BookOpen, Shield, Building2 } from 'lucide-react'
 import { Logo } from './Logo'
 
 interface MenuItem {
@@ -70,6 +70,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
     { icon: MessageSquare, label: "Conversations", href: "/conversations" },
     { icon: Users, label: "Customers", href: "/customers" },
     { icon: Shield, label: "User Management", href: "/users" },
+    { icon: Building2, label: "Departments", href: "/settings/departments" },
     { icon: BarChart3, label: "Analytics", href: "/analytics" },
     { icon: BookOpen, label: "Knowledge Base", href: "/knowledge-base/manage" },
     { icon: Calendar, label: "Calendar", href: "/calendar" },

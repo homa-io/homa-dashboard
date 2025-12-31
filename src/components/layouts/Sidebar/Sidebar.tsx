@@ -2,15 +2,16 @@
 
 import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { 
-  Home, 
-  Conversation, 
-  Users, 
-  BarChart3, 
-  Settings, 
+import {
+  Home,
+  Conversation,
+  Users,
+  BarChart3,
+  Settings,
   HelpCircle,
   ChevronLeft,
-  Menu
+  Menu,
+  Building2
 } from 'lucide-react'
 import { SidebarItem } from './SidebarItem'
 import { SidebarSection } from './SidebarSection'
@@ -46,6 +47,13 @@ const menuItems = [
     label: 'Analytics',
     icon: BarChart3,
     href: '/analytics',
+    section: 'main'
+  },
+  {
+    id: 'departments',
+    label: 'Departments',
+    icon: Building2,
+    href: '/settings/departments',
     section: 'main'
   },
   {

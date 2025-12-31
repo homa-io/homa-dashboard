@@ -1,4 +1,4 @@
-export type UserType = 'agent' | 'administrator';
+export type UserType = 'agent' | 'administrator' | 'bot';
 
 export type UserStatus = 'active' | 'blocked';
 
@@ -22,6 +22,13 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   type: UserType;
+  avatar?: string;
+}
+
+export interface CreateBotRequest {
+  name: string;
+  last_name: string;
+  display_name?: string;
   avatar?: string;
 }
 

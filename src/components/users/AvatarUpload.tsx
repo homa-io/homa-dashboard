@@ -164,12 +164,15 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, disabled, userName
   }
 
   const getInitials = () => {
-    if (!userName) return "?"
-    const parts = userName.split(" ")
-    if (parts.length >= 2) {
+    if (!userName || userName.trim() === "" || userName === "undefined" || userName === "undefined undefined") return ""
+    const parts = userName.trim().split(" ").filter(p => p && p !== "undefined")
+    if (parts.length >= 2 && parts[0][0] && parts[1][0]) {
       return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
     }
-    return userName.substring(0, 2).toUpperCase()
+    if (parts.length === 1 && parts[0]) {
+      return parts[0].substring(0, 2).toUpperCase()
+    }
+    return ""
   }
 
   return (
