@@ -6,6 +6,7 @@ import { AuthProvider } from "../src/contexts/AuthContext"
 import { Toaster } from "../src/components/ui/toaster"
 import { AuthGuard } from "../src/components/auth/AuthGuard"
 import { QueryProvider } from "../src/providers"
+import { ActivityTracker } from "../src/components/ActivityTracker"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -50,6 +51,7 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>
             <AuthGuard />
+            <ActivityTracker />
             <DashboardLayoutWrapper>
               {children}
             </DashboardLayoutWrapper>

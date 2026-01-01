@@ -10,14 +10,15 @@ import { CustomBadge } from "@/components/ui/custom-badge"
 import { PinModal } from "@/components/PinModal"
 import { PasswordModal } from "@/components/PasswordModal"
 import { ImageCropModal } from "@/components/ImageCropModal"
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Shield, 
-  Settings, 
+import { SessionsModal } from "@/components/SessionsModal"
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Shield,
+  Settings,
   Camera,
   Save,
   Edit3,
@@ -26,9 +27,11 @@ import {
   MessageSquare,
   TrendingUp,
   Sun,
-  Moon
+  Moon,
+  Loader2
 } from "lucide-react"
 import { useDarkMode } from "@/hooks/useDarkMode"
+import { sessionsService, ActivitySummary } from "@/services/sessions.service"
 
 export default function ProfilePage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode()
@@ -37,8 +40,11 @@ export default function ProfilePage() {
   const [showPinModal, setShowPinModal] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [showImageCropModal, setShowImageCropModal] = useState(false)
+  const [showSessionsModal, setShowSessionsModal] = useState(false)
   const [hasPin, setHasPin] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string>("")
+  const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null)
+  const [isLoadingActivity, setIsLoadingActivity] = useState(true)
   
   // Original data to compare against
   const [originalData] = useState({
@@ -97,6 +103,21 @@ export default function ProfilePage() {
   useEffect(() => {
     const savedPin = localStorage.getItem('userPin')
     setHasPin(!!savedPin)
+  }, [])
+
+  // Load activity summary on mount
+  useEffect(() => {
+    const loadActivitySummary = async () => {
+      try {
+        const data = await sessionsService.getActivitySummary()
+        setActivitySummary(data)
+      } catch (error) {
+        console.error('Failed to load activity summary:', error)
+      } finally {
+        setIsLoadingActivity(false)
+      }
+    }
+    loadActivitySummary()
   }, [])
 
   return (
@@ -319,7 +340,12 @@ export default function ProfilePage() {
                 <h4 className="font-medium text-sm sm:text-base">Active Sessions</h4>
                 <p className="text-xs sm:text-sm text-muted-foreground">Manage your active sessions</p>
               </div>
-              <Button variant="outline" size="sm" className="text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto"
+                onClick={() => setShowSessionsModal(true)}
+              >
                 View Sessions
               </Button>
             </div>
@@ -357,24 +383,40 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg sm:text-xl font-bold">142</p>
-                    <p className="text-xs text-muted-foreground">hours</p>
+                    {isLoadingActivity ? (
+                      <Loader2 className="w-5 h-5 animate-spin ml-auto" />
+                    ) : (
+                      <>
+                        <p className="text-lg sm:text-xl font-bold">
+                          {activitySummary?.total_active_hours?.toFixed(1) || '0'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">hours</p>
+                      </>
+                    )}
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div className="p-1.5 sm:p-2 rounded-lg bg-green-500/10">
                       <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm font-medium">Responded Conversations</p>
+                      <p className="text-xs sm:text-sm font-medium">Active Sessions</p>
                       <p className="text-xs text-muted-foreground">This month</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg sm:text-xl font-bold">287</p>
-                    <p className="text-xs text-muted-foreground">conversations</p>
+                    {isLoadingActivity ? (
+                      <Loader2 className="w-5 h-5 animate-spin ml-auto" />
+                    ) : (
+                      <>
+                        <p className="text-lg sm:text-xl font-bold">
+                          {activitySummary?.total_sessions || '0'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">sessions</p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -402,6 +444,12 @@ export default function ProfilePage() {
         open={showImageCropModal}
         onOpenChange={setShowImageCropModal}
         onImageCropped={handleImageCropped}
+      />
+
+      {/* Sessions Modal */}
+      <SessionsModal
+        open={showSessionsModal}
+        onOpenChange={setShowSessionsModal}
       />
     </div>
   )

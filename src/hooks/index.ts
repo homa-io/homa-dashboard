@@ -12,3 +12,6 @@ export * from './use-api';
 export { useDarkMode } from './useDarkMode';
 export { useIsMobile } from './use-mobile';
 export { useToast, toast } from './use-toast';
+
+// Activity tracking
+export { useActivityTracker } from './useActivityTracker';
