@@ -26,7 +26,8 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Webhook
+  Webhook,
+  Activity
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -54,11 +55,12 @@ import { WebhookManager } from "@/components/settings/webhooks"
 import { DepartmentManager } from "@/components/settings/departments"
 import { UserManager } from "@/components/settings/users"
 import { AISettings, WorkflowSettings } from "@/components/settings/general"
+import { ActivityLogList } from "@/components/settings/activity"
 import { Building2, Users } from "lucide-react"
 
-export type SettingsTab = 'general' | 'users' | 'departments' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages'
+export type SettingsTab = 'general' | 'users' | 'departments' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity'
 
-const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages']
+const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages', 'activity']
 
 export function isValidTab(tab: string): tab is SettingsTab {
   return validTabs.includes(tab as SettingsTab)
@@ -118,6 +120,12 @@ const tabs = [
     label: 'Canned Messages',
     icon: MessageSquare,
     description: 'Pre-written responses and message templates'
+  },
+  {
+    id: 'activity' as SettingsTab,
+    label: 'Activity Log',
+    icon: Activity,
+    description: 'Track all changes and actions in the system'
   }
 ]
 
@@ -206,6 +214,7 @@ export default function SettingsContent({ activeTab }: SettingsContentProps) {
           {activeTab === 'webhooks' && <WebhookManager />}
           {activeTab === 'plugins' && <PluginsSettings />}
           {activeTab === 'canned-messages' && <CannedMessagesSettings />}
+          {activeTab === 'activity' && <ActivityLogList />}
         </div>
       </div>
     </div>
