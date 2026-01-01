@@ -32,9 +32,12 @@ import {
 } from "lucide-react"
 import { useDarkMode } from "@/hooks/useDarkMode"
 import { sessionsService, ActivitySummary } from "@/services/sessions.service"
+import { useAuth } from "@/contexts/AuthContext"
+import { format } from "date-fns"
 
 export default function ProfilePage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode()
+  const { user } = useAuth()
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [showPinModal, setShowPinModal] = useState(false)
@@ -45,28 +48,48 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string>("")
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null)
   const [isLoadingActivity, setIsLoadingActivity] = useState(true)
-  
-  // Original data to compare against
-  const [originalData] = useState({
-    name: "Admin User",
-    email: "admin@homa.com",
-    phone: "+1 (555) 123-4567",
-    location: "San Francisco, CA",
-    role: "Administrator",
-    department: "IT",
-    joinDate: "January 2023"
+
+  // Original data to compare against (initialized from user)
+  const [originalData, setOriginalData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    role: "",
+    department: "",
+    joinDate: ""
   })
-  
+
   // Current profile data
   const [profileData, setProfileData] = useState({
-    name: "Admin User",
-    email: "admin@homa.com",
-    phone: "+1 (555) 123-4567",
-    location: "San Francisco, CA",
-    role: "Administrator",
-    department: "IT",
-    joinDate: "January 2023"
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    role: "",
+    department: "",
+    joinDate: ""
   })
+
+  // Initialize profile data from user
+  useEffect(() => {
+    if (user) {
+      const userData = {
+        name: user.display_name || `${user.name || ''} ${user.last_name || ''}`.trim(),
+        email: user.email || "",
+        phone: "",
+        location: "",
+        role: user.type || user.role || "User",
+        department: "",
+        joinDate: user.created_at ? format(new Date(user.created_at), "MMMM yyyy") : ""
+      }
+      setOriginalData(userData)
+      setProfileData(userData)
+      if (user.avatar) {
+        setAvatarUrl(user.avatar)
+      }
+    }
+  }, [user])
 
   // Check if data has changed
   useEffect(() => {
@@ -217,7 +240,7 @@ export default function ProfilePage() {
               <Avatar className="w-20 h-20 sm:w-24 sm:h-24">
                 <AvatarImage src={avatarUrl} />
                 <AvatarFallback className="text-lg sm:text-xl font-semibold bg-primary text-primary-foreground">
-                  AU
+                  {profileData.name ? profileData.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
                 </AvatarFallback>
               </Avatar>
               <Button 
