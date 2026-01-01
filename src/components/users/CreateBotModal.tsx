@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Bot } from "lucide-react"
+import { Loader2, Bot, Key, Copy, Check } from "lucide-react"
 import { createBot } from "@/services/users"
 import { toast } from "@/hooks/use-toast"
 import { AvatarUpload } from "./AvatarUpload"
@@ -23,13 +23,25 @@ interface CreateBotModalProps {
   onSuccess: () => void
 }
 
+// Generate a random 12-character alphanumeric security key
+function generateSecurityKey(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
 export function CreateBotModal({ open, onOpenChange, onSuccess }: CreateBotModalProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     last_name: "",
     display_name: "",
     avatar: "",
+    security_key: generateSecurityKey(),
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +63,7 @@ export function CreateBotModal({ open, onOpenChange, onSuccess }: CreateBotModal
         last_name: formData.last_name,
         display_name: formData.display_name || `${formData.name} ${formData.last_name}`,
         avatar: formData.avatar || undefined,
+        security_key: formData.security_key,
       })
 
       if (response.success) {
@@ -63,7 +76,9 @@ export function CreateBotModal({ open, onOpenChange, onSuccess }: CreateBotModal
           last_name: "",
           display_name: "",
           avatar: "",
+          security_key: generateSecurityKey(),
         })
+        setCopied(false)
         onOpenChange(false)
         onSuccess()
       } else {
@@ -144,6 +159,59 @@ export function CreateBotModal({ open, onOpenChange, onSuccess }: CreateBotModal
               disabled={isLoading}
               userName={formData.display_name || `${formData.name} ${formData.last_name}`}
             />
+            <div className="grid gap-2">
+              <Label htmlFor="bot-security_key">
+                Security Key <span className="text-red-500">*</span>
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="bot-security_key"
+                  value={formData.security_key}
+                  onChange={(e) => setFormData({ ...formData, security_key: e.target.value })}
+                  placeholder="Auto-generated security key"
+                  disabled={isLoading}
+                  className="flex-1 font-mono"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    navigator.clipboard.writeText(formData.security_key)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                    toast({
+                      title: "Copied",
+                      description: "Security key copied to clipboard",
+                    })
+                  }}
+                  disabled={isLoading}
+                  title="Copy security key"
+                >
+                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setFormData({ ...formData, security_key: generateSecurityKey() })
+                    setCopied(false)
+                    toast({
+                      title: "Regenerated",
+                      description: "A new security key has been generated",
+                    })
+                  }}
+                  disabled={isLoading}
+                  title="Generate new security key"
+                >
+                  <Key className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This key is used for bot authentication. Make sure to save it securely.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button

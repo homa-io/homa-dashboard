@@ -10,8 +10,7 @@ import {
   Settings,
   HelpCircle,
   ChevronLeft,
-  Menu,
-  Building2
+  Menu
 } from 'lucide-react'
 import { SidebarItem } from './SidebarItem'
 import { SidebarSection } from './SidebarSection'
@@ -47,13 +46,6 @@ const menuItems = [
     label: 'Analytics',
     icon: BarChart3,
     href: '/analytics',
-    section: 'main'
-  },
-  {
-    id: 'departments',
-    label: 'Departments',
-    icon: Building2,
-    href: '/settings/departments',
     section: 'main'
   },
   {

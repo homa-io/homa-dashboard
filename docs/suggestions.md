@@ -56,14 +56,15 @@ These issues should be addressed before any new feature development.
 
 ### Backend (Go)
 
-| Improvement | Current State | Recommendation | Effort |
-|-------------|---------------|----------------|--------|
-| Unread Message Tracking | Hardcoded to 0 (6 TODOs) | Implement per-user read status | Medium |
-| Database Indexes | Missing on key columns | Add indexes on `status`, `department_id`, `created_at` | Low |
-| Request Size Limits | Unlimited message bodies | Enforce max payload sizes (1MB text, 25MB uploads) | Low |
-| Webhook Retry Logic | No retry mechanism | Implement exponential backoff with max 5 retries | Medium |
-| Activity Audit Log | No change tracking | Log all CRUD operations with user/timestamp | Medium |
-| SLA Management | Not implemented | Track response times, add escalation triggers | High |
+| Improvement | Current State | Recommendation | Effort | Status |
+|-------------|---------------|----------------|--------|--------|
+| Unread Message Tracking | ~~Hardcoded to 0 (6 TODOs)~~ | Implement per-user read status | Medium | **DONE** |
+| Database Indexes | ~~Missing on key columns~~ | Add indexes on `status`, `priority`, `created_at`, `updated_at` | Low | **DONE** |
+| Request Size Limits | ~~Unlimited message bodies~~ | Enforce max payload sizes (1MB text, 25MB uploads) | Low | **DONE** |
+| Webhook Retry Logic | ~~No retry mechanism~~ | Implement exponential backoff with max 5 retries | Medium | **DONE** |
+| Rate Limiting | ~~No rate limiting~~ | 100 requests per minute per IP | Low | **DONE** |
+| Activity Audit Log | No change tracking | Log all CRUD operations with user/timestamp | Medium | Pending |
+| SLA Management | Not implemented | Track response times, add escalation triggers | High | Pending |
 
 ### Dashboard (Next.js)
 
@@ -151,7 +152,10 @@ These issues should be addressed before any new feature development.
 | Redact secrets in JSON responses | 1 hour | Security fix | **DONE** |
 | Add loading skeletons to data tables | 2-3 hours | UX improvement | Pending |
 | Add empty state components | 2 hours | UX improvement | Pending |
-| Implement rate limiting middleware | 2-3 hours | Security fix | Pending |
+| Implement rate limiting middleware | 2-3 hours | Security fix | **DONE** |
+| Database indexes for conversations | 30 min | Performance | **DONE** |
+| Webhook retry with exponential backoff | 2 hours | Reliability | **DONE** |
+| Unread message tracking API | 3 hours | Feature | **DONE** |
 
 ---
 
@@ -221,7 +225,9 @@ These issues should be addressed before any new feature development.
 | Item | Location | Priority | Status |
 |------|----------|----------|--------|
 | TODO: Implement full validation | `functions.go:437` | High | **FIXED** |
-| TODO: Unread counting | `agent_controller.go` (6 locations) | High | Pending |
+| TODO: Unread counting | `agent_controller.go` (6 locations) | High | **FIXED** |
+| Rate limiting | All API endpoints | High | **FIXED** |
+| Webhook retry logic | `webhook/sender.go` | Medium | **FIXED** |
 | Hardcoded channel ID | `controller.go:140` | Medium | Pending |
 | JWT secret fallback | `auth/models.go:54-56` | Medium | Pending |
 | Goroutine leak potential | GORM hooks | Low | Pending |

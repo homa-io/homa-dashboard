@@ -52,11 +52,13 @@ import {
 import { AttributeManager } from "@/components/settings/AttributeManager"
 import { WebhookManager } from "@/components/settings/webhooks"
 import { DepartmentManager } from "@/components/settings/departments"
-import { Building2 } from "lucide-react"
+import { UserManager } from "@/components/settings/users"
+import { AISettings, WorkflowSettings } from "@/components/settings/general"
+import { Building2, Users } from "lucide-react"
 
-export type SettingsTab = 'general' | 'departments' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages'
+export type SettingsTab = 'general' | 'users' | 'departments' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages'
 
-const validTabs: SettingsTab[] = ['general', 'departments', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages']
+const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages']
 
 export function isValidTab(tab: string): tab is SettingsTab {
   return validTabs.includes(tab as SettingsTab)
@@ -68,6 +70,12 @@ const tabs = [
     label: 'General',
     icon: Settings,
     description: 'Basic application settings and preferences'
+  },
+  {
+    id: 'users' as SettingsTab,
+    label: 'Users',
+    icon: Users,
+    description: 'Manage system users, agents, and bots'
   },
   {
     id: 'departments' as SettingsTab,
@@ -178,6 +186,7 @@ export default function SettingsContent({ activeTab }: SettingsContentProps) {
         {/* Content Area */}
         <div className="flex-1 min-w-0 lg:max-w-none">
           {activeTab === 'general' && <GeneralSettings />}
+          {activeTab === 'users' && <UserManager />}
           {activeTab === 'departments' && <DepartmentManager />}
           {activeTab === 'customer-attributes' && (
             <AttributeManager
@@ -209,110 +218,15 @@ function GeneralSettings() {
       <div>
         <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">General Settings</h2>
         <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
-          Configure basic application settings and preferences.
+          Configure AI providers and workflow automation.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">Application Settings</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">
-            Basic configuration for your dashboard
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 sm:space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="app-name" className="text-xs sm:text-sm font-medium text-muted-foreground">Application Name</Label>
-              <Input id="app-name" defaultValue="Homa Dashboard" className="text-sm h-9 sm:h-10" />
-            </div>
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="company-name" className="text-xs sm:text-sm font-medium text-muted-foreground">Company Name</Label>
-              <Input id="company-name" defaultValue="Your Company" className="text-sm h-9 sm:h-10" />
-            </div>
-          </div>
+      {/* AI Settings */}
+      <AISettings />
 
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="app-description" className="text-xs sm:text-sm font-medium text-muted-foreground">Description</Label>
-            <Textarea
-              id="app-description"
-              defaultValue="Modern customer service dashboard"
-              rows={3}
-              className="text-sm resize-none"
-            />
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 py-3 sm:py-4">
-            <div className="space-y-0.5">
-              <Label className="text-xs sm:text-sm font-medium">Maintenance Mode</Label>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Enable maintenance mode to prevent user access
-              </p>
-            </div>
-            <Switch className="self-start sm:self-center" />
-          </div>
-
-          <div className="border-t border-border"></div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 py-3 sm:py-4">
-            <div className="space-y-0.5">
-              <Label className="text-xs sm:text-sm font-medium">Enable Registration</Label>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Allow new users to register accounts
-              </p>
-            </div>
-            <Switch defaultChecked className="self-start sm:self-center" />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">Localization</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">
-            Language and regional settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 sm:space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Default Language</Label>
-              <Select defaultValue="en">
-                <SelectTrigger className="text-sm h-9 sm:h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
-                  <SelectItem value="fr">French</SelectItem>
-                  <SelectItem value="de">German</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Timezone</Label>
-              <Select defaultValue="utc">
-                <SelectTrigger className="text-sm h-9 sm:h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="utc">UTC</SelectItem>
-                  <SelectItem value="est">Eastern Time</SelectItem>
-                  <SelectItem value="pst">Pacific Time</SelectItem>
-                  <SelectItem value="cet">Central European Time</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end pt-2 sm:pt-0">
-        <Button className="w-full sm:w-auto text-sm h-9 sm:h-10">
-          <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-          Save Changes
-        </Button>
-      </div>
+      {/* Workflow Settings */}
+      <WorkflowSettings />
     </div>
   )
 }

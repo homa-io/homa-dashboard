@@ -11,6 +11,7 @@ export interface User {
   email: string;
   type: UserType;
   status: UserStatus;
+  security_key?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +31,7 @@ export interface CreateBotRequest {
   last_name: string;
   display_name?: string;
   avatar?: string;
+  security_key?: string;
 }
 
 export interface UpdateUserRequest {
@@ -40,6 +42,7 @@ export interface UpdateUserRequest {
   password?: string;
   type?: UserType;
   avatar?: string;
+  security_key?: string;
 }
 
 export interface UsersListResponse {

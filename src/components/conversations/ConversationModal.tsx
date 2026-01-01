@@ -53,7 +53,8 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [replyText, setReplyText] = useState("")
-  const [availableDepartments, setAvailableDepartments] = useState<string[]>([])
+  const [availableDepartments, setAvailableDepartments] = useState<Array<{ id: number; name: string }>>([])
+  const [departmentNames, setDepartmentNames] = useState<string[]>([])
   const [availableTags, setAvailableTags] = useState<string[]>([])
   const [availableUsers, setAvailableUsers] = useState<Array<{ id: string; name: string; last_name: string; display_name: string; email: string; avatar: string | null }>>([])
   const { toast } = useToast()
@@ -93,7 +94,8 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
         conversationService.getTags(),
         conversationService.getUsers()
       ])
-      setAvailableDepartments(departments.map(d => d.name))
+      setAvailableDepartments(departments.map(d => ({ id: d.id, name: d.name })))
+      setDepartmentNames(departments.map(d => d.name))
       setAvailableTags(tags.map(t => t.name))
       setAvailableUsers(users)
     } catch (error) {
@@ -109,8 +111,8 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
       if (field === 'status') updates.status = value
       if (field === 'priority') updates.priority = value
       if (field === 'department') {
-        const dept = availableDepartments.find(d => d === value)
-        if (dept) updates.department_id = dept
+        const dept = availableDepartments.find(d => d.name === value)
+        if (dept) updates.department_id = dept.id
       }
 
       await conversationService.updateConversationProperties(conversation.id, updates)
@@ -502,7 +504,7 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
                   currentDepartment={conversation.department?.name || ""}
                   currentAssignees={conversation.assigned_agents?.map(a => a.id) || []}
                   currentTags={conversation.tags?.map(t => t.name) || []}
-                  availableDepartments={availableDepartments}
+                  availableDepartments={departmentNames}
                   availableTags={availableTags}
                   availableUsers={availableUsers}
                   isExpanded={isActionsExpanded}

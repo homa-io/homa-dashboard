@@ -19,12 +19,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Loader2, Key } from "lucide-react"
+import { Loader2, Key, Copy, Check } from "lucide-react"
 import { getUser, updateUser } from "@/services/users"
 import { toast } from "@/hooks/use-toast"
 import type { User, UserType } from "@/types/user"
 import { AvatarUpload } from "./AvatarUpload"
 import { generatePassword } from "@/lib/password-generator"
+
+// Generate a random 12-character alphanumeric security key
+function generateSecurityKey(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
 
 interface EditUserModalProps {
   open: boolean
@@ -37,6 +47,7 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(false)
   const [user, setUser] = useState<User | null>(null)
+  const [copied, setCopied] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     last_name: "",
@@ -45,6 +56,7 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
     password: "",
     type: "agent" as UserType,
     avatar: "",
+    security_key: "",
   })
 
   useEffect(() => {
@@ -69,6 +81,7 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
           password: "",
           type: response.data.type,
           avatar: response.data.avatar || "",
+          security_key: response.data.security_key || "",
         })
       }
     } catch (error) {
@@ -102,6 +115,11 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
 
       if (formData.password) {
         updateData.password = formData.password
+      }
+
+      // Include security_key for bot users
+      if (formData.type === "bot" && formData.security_key) {
+        updateData.security_key = formData.security_key
       }
 
       const response = await updateUser(userId, updateData)
@@ -221,6 +239,92 @@ export function EditUserModal({ open, onOpenChange, userId, onSuccess }: EditUse
                     </div>
                   </div>
                 </>
+              )}
+              {/* Show Bot ID and security key for bots */}
+              {formData.type === "bot" && user && (
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-bot_id">Bot ID</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="edit-bot_id"
+                      value={user.id}
+                      readOnly
+                      disabled
+                      className="flex-1 font-mono text-xs bg-muted"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(user.id)
+                        toast({
+                          title: "Copied",
+                          description: "Bot ID copied to clipboard",
+                        })
+                      }}
+                      title="Copy Bot ID"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Use this ID in the bot API: POST /api/bot/{"{bot_id}"}/conversation/{"{conversation_id}"}
+                  </p>
+                </div>
+              )}
+              {formData.type === "bot" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-security_key">Security Key</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="edit-security_key"
+                      value={formData.security_key}
+                      onChange={(e) => setFormData({ ...formData, security_key: e.target.value })}
+                      placeholder="Bot security key"
+                      disabled={isLoading}
+                      className="flex-1 font-mono"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(formData.security_key)
+                        setCopied(true)
+                        setTimeout(() => setCopied(false), 2000)
+                        toast({
+                          title: "Copied",
+                          description: "Security key copied to clipboard",
+                        })
+                      }}
+                      disabled={isLoading}
+                      title="Copy security key"
+                    >
+                      {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setFormData({ ...formData, security_key: generateSecurityKey() })
+                        setCopied(false)
+                        toast({
+                          title: "Regenerated",
+                          description: "A new security key has been generated",
+                        })
+                      }}
+                      disabled={isLoading}
+                      title="Generate new security key"
+                    >
+                      <Key className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This key is used for bot authentication. Changing it will require updating any integrations.
+                  </p>
+                </div>
               )}
               <AvatarUpload
                 currentAvatar={formData.avatar}

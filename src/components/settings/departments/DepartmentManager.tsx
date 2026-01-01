@@ -181,32 +181,6 @@ export function DepartmentManager() {
         </CardContent>
       </Card>
 
-      {/* Info Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">About Departments</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">
-            How departments help organize your team.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              <strong className="text-foreground">Organize Conversations:</strong> Departments group related conversations together,
-              making it easier to manage and route messages.
-            </p>
-            <p>
-              <strong className="text-foreground">Assign Team Members:</strong> Add users and bots to departments.
-              When a new message arrives, it will be automatically assigned to the team members in that department.
-            </p>
-            <p>
-              <strong className="text-foreground">Suspend When Needed:</strong> Temporarily disable a department
-              without deleting it. Suspended departments won't receive new conversations.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Form Modal */}
       <DepartmentForm
         department={editingDepartment}
