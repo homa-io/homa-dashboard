@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { CustomBadge } from '@/components/ui/custom-badge'
 import { Button } from '@/components/ui/button'
@@ -63,6 +63,9 @@ export default function ConversationsContent() {
   const [availableTags, setAvailableTags] = useState<Array<{ id: number; name: string; color: string }>>([])
   const [availableUsers, setAvailableUsers] = useState<Array<{ id: string; name: string; last_name: string; display_name: string; email: string; avatar: string | null }>>([])
   const [isSending, setIsSending] = useState(false)
+
+  // Ref for auto-scrolling to last message
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Get URL search parameters
   const searchParams = useSearchParams()
@@ -1241,6 +1244,13 @@ export default function ConversationsContent() {
     return userMessages.length > 0 ? userMessages[userMessages.length - 1]?.message || '' : ''
   }, [conversationMessages])
 
+  // Auto-scroll to the last message when messages change
+  useEffect(() => {
+    if (messagesEndRef.current && conversationMessages.length > 0) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [conversationMessages])
+
   // Mock AI summary for the conversation
   const mockAiSummary = selectedConversation ?
     `Customer ${selectedConversation.customer.name} has raised a ${selectedConversation.priority} priority issue regarding "${selectedConversation.title}". The conversation was started via ${selectedConversation.channel} channel and is currently in ${selectedConversation.status} status. ${selectedConversation.message_count} messages have been exchanged so far.`
@@ -1799,11 +1809,11 @@ export default function ConversationsContent() {
               </div>
 
               {/* Content Row: Conversation + Actions - Mobile Responsive */}
-              <div className="flex-1 flex flex-col lg:flex-row">
+              <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                 {/* Conversation Column - Mobile Responsive */}
-                <div className="flex-1 flex flex-col p-3 sm:p-4">
-                  {/* AI Summary Box */}
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-slate-600 rounded-lg p-3 mb-4">
+                <div className="flex-1 flex flex-col p-3 sm:p-4 overflow-hidden">
+                  {/* AI Summary Box - Fixed at top */}
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-slate-600 rounded-lg p-3 mb-4 flex-shrink-0">
                     <div className="flex items-start gap-2">
                       <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
@@ -1841,8 +1851,8 @@ export default function ConversationsContent() {
                     </div>
                   </div>
 
-                  {/* Conversation */}
-                  <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+                  {/* Conversation - Scrollable messages area */}
+                  <div className="flex-1 overflow-y-auto space-y-3 min-h-0 pr-2">
                 {messagesLoading ? (
                   <div className="flex items-center justify-center h-32">
                     <div className="text-sm text-muted-foreground">Loading messages...</div>
@@ -1929,10 +1939,12 @@ export default function ConversationsContent() {
                     </div>
                   )
                 })}
+                    {/* Scroll anchor for auto-scroll to bottom */}
+                    <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Reply Section */}
-                  <div className="bg-card rounded-lg border border-border p-4">
+                  {/* Reply Section - Sticky at bottom */}
+                  <div className="bg-card rounded-lg border border-border p-4 flex-shrink-0 mt-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Avatar className="h-6 w-6">
                         <AvatarImage
