@@ -26,6 +26,7 @@ export interface User {
   email: string
   avatar?: string | null
   type: string
+  language?: string
   created_at: string
   updated_at: string
   // Optional fields for backwards compatibility
@@ -64,6 +65,7 @@ export interface ChangePasswordRequest {
 export interface UpdateProfileRequest {
   name?: string
   avatar?: string
+  language?: string
   preferences?: Partial<UserPreferences>
 }
 

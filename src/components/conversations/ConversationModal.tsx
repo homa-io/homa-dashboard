@@ -5,10 +5,11 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CustomBadge } from "@/components/ui/custom-badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { VisitorInformation } from "./VisitorInformation"
 import { ConversationActions } from "./ConversationActions"
 import { WysiwygEditor } from "./WysiwygEditor"
+import { ConversationSummary } from "./ConversationSummary"
 import { conversationService } from "@/services/conversation.service"
 import { useToast } from "@/hooks/use-toast"
 import type { Conversation, Message } from "@/types/conversation.types"
@@ -17,8 +18,6 @@ import {
   MessageCircle,
   Phone,
   Monitor,
-  ChevronUp,
-  Sparkles,
   X,
   Circle,
   ArrowUp,
@@ -49,7 +48,6 @@ interface ConversationModalProps {
 
 export function ConversationModal({ conversation, isOpen, onClose, onStatusChange, onUpdate }: ConversationModalProps) {
   const [isActionsExpanded, setIsActionsExpanded] = useState(true)
-  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [replyText, setReplyText] = useState("")
@@ -405,27 +403,11 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
               {/* Main Content Area */}
               <div className="flex-1 flex flex-col min-w-0 max-w-full">
                 {/* AI Summary */}
-                <Card className="mb-3 sm:mb-6">
-                  <CardHeader className="cursor-pointer p-3 sm:p-6" onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2">
-                        <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
-                        AI Summary
-                      </CardTitle>
-                      <Button variant="ghost" size="sm" className="text-[10px] sm:text-xs p-1 sm:p-2 h-auto">
-                        <ChevronUp className={`w-4 h-4 mr-1 transition-transform ${isSummaryExpanded ? '' : 'rotate-180'}`} />
-                        {isSummaryExpanded ? 'Collapse' : 'Expand'}
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  {isSummaryExpanded && (
-                    <CardContent className="p-3 sm:p-6 pt-0">
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        {conversation.last_message_preview || conversation.title || "No summary available"}
-                      </p>
-                    </CardContent>
-                  )}
-                </Card>
+                <ConversationSummary
+                  conversationId={conversation.id}
+                  messageCount={messages.length}
+                  fallbackText={conversation.last_message_preview || conversation.title || "No summary available"}
+                />
 
                 {/* Messages */}
                 <div className="mb-1">

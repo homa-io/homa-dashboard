@@ -42,6 +42,7 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
     password: "",
     type: "agent" as UserType,
     avatar: "",
+    language: "en",
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +67,7 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
         password: formData.password,
         type: formData.type,
         avatar: formData.avatar || undefined,
+        language: formData.language,
       })
 
       if (response.success) {
@@ -81,6 +83,7 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
           password: "",
           type: "agent",
           avatar: "",
+          language: "en",
         })
         onOpenChange(false)
         onSuccess()
@@ -217,6 +220,65 @@ export function CreateUserModal({ open, onOpenChange, onSuccess }: CreateUserMod
                   <SelectItem value="agent">Agent</SelectItem>
                   <SelectItem value="administrator">Administrator</SelectItem>
                   <SelectItem value="bot">Bot</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="language">Language</Label>
+              <Select
+                value={formData.language}
+                onValueChange={(value) => setFormData({ ...formData, language: value })}
+                disabled={isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="fa">Persian (فارسی)</SelectItem>
+                  <SelectItem value="ar">Arabic (العربية)</SelectItem>
+                  <SelectItem value="es">Spanish (Español)</SelectItem>
+                  <SelectItem value="fr">French (Français)</SelectItem>
+                  <SelectItem value="de">German (Deutsch)</SelectItem>
+                  <SelectItem value="zh">Chinese (中文)</SelectItem>
+                  <SelectItem value="ja">Japanese (日本語)</SelectItem>
+                  <SelectItem value="ko">Korean (한국어)</SelectItem>
+                  <SelectItem value="ru">Russian (Русский)</SelectItem>
+                  <SelectItem value="pt">Portuguese (Português)</SelectItem>
+                  <SelectItem value="tr">Turkish (Türkçe)</SelectItem>
+                  <SelectItem value="it">Italian (Italiano)</SelectItem>
+                  <SelectItem value="nl">Dutch (Nederlands)</SelectItem>
+                  <SelectItem value="pl">Polish (Polski)</SelectItem>
+                  <SelectItem value="uk">Ukrainian (Українська)</SelectItem>
+                  <SelectItem value="vi">Vietnamese (Tiếng Việt)</SelectItem>
+                  <SelectItem value="th">Thai (ไทย)</SelectItem>
+                  <SelectItem value="id">Indonesian (Bahasa Indonesia)</SelectItem>
+                  <SelectItem value="ms">Malay (Bahasa Melayu)</SelectItem>
+                  <SelectItem value="hi">Hindi (हिन्दी)</SelectItem>
+                  <SelectItem value="bn">Bengali (বাংলা)</SelectItem>
+                  <SelectItem value="ta">Tamil (தமிழ்)</SelectItem>
+                  <SelectItem value="te">Telugu (తెలుగు)</SelectItem>
+                  <SelectItem value="ur">Urdu (اردو)</SelectItem>
+                  <SelectItem value="he">Hebrew (עברית)</SelectItem>
+                  <SelectItem value="el">Greek (Ελληνικά)</SelectItem>
+                  <SelectItem value="cs">Czech (Čeština)</SelectItem>
+                  <SelectItem value="sv">Swedish (Svenska)</SelectItem>
+                  <SelectItem value="da">Danish (Dansk)</SelectItem>
+                  <SelectItem value="fi">Finnish (Suomi)</SelectItem>
+                  <SelectItem value="no">Norwegian (Norsk)</SelectItem>
+                  <SelectItem value="hu">Hungarian (Magyar)</SelectItem>
+                  <SelectItem value="ro">Romanian (Română)</SelectItem>
+                  <SelectItem value="bg">Bulgarian (Български)</SelectItem>
+                  <SelectItem value="hr">Croatian (Hrvatski)</SelectItem>
+                  <SelectItem value="sk">Slovak (Slovenčina)</SelectItem>
+                  <SelectItem value="sl">Slovenian (Slovenščina)</SelectItem>
+                  <SelectItem value="sr">Serbian (Српски)</SelectItem>
+                  <SelectItem value="lt">Lithuanian (Lietuvių)</SelectItem>
+                  <SelectItem value="lv">Latvian (Latviešu)</SelectItem>
+                  <SelectItem value="et">Estonian (Eesti)</SelectItem>
+                  <SelectItem value="fil">Filipino (Tagalog)</SelectItem>
+                  <SelectItem value="sw">Swahili (Kiswahili)</SelectItem>
+                  <SelectItem value="af">Afrikaans</SelectItem>
                 </SelectContent>
               </Select>
             </div>

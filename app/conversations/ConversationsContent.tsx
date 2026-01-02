@@ -28,6 +28,7 @@ import { VisitorInformation } from '@/components/conversations/VisitorInformatio
 import { ConversationActions } from '@/components/conversations/ConversationActions'
 import { WysiwygEditor } from '@/components/conversations/WysiwygEditor'
 import { ConversationModal } from '@/components/conversations/ConversationModal'
+import { ConversationSummary } from '@/components/conversations/ConversationSummary'
 import { getAvatarColor, getInitials } from '@/lib/avatar-colors'
 import { conversationService } from '@/services'
 import { getMediaUrl } from '@/services/api-client'
@@ -1251,10 +1252,6 @@ export default function ConversationsContent() {
     }
   }, [conversationMessages])
 
-  // Mock AI summary for the conversation
-  const mockAiSummary = selectedConversation ?
-    `Customer ${selectedConversation.customer.name} has raised a ${selectedConversation.priority} priority issue regarding "${selectedConversation.title}". The conversation was started via ${selectedConversation.channel} channel and is currently in ${selectedConversation.status} status. ${selectedConversation.message_count} messages have been exchanged so far.`
-    : ""
 
   // Shared files mock data
   const sharedFiles = [
@@ -1812,47 +1809,14 @@ export default function ConversationsContent() {
               <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                 {/* Conversation Column - Mobile Responsive */}
                 <div className="flex-1 flex flex-col p-3 sm:p-4 overflow-hidden">
-                  {/* AI Summary Box - Fixed at top */}
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-slate-600 rounded-lg p-3 mb-4 flex-shrink-0">
-                    <div className="flex items-start gap-2">
-                      <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">AI Summary</h3>
-                          {mockAiSummary && mockAiSummary.length > 120 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 px-2 text-xs text-blue-600 dark:text-blue-400"
-                              onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
-                            >
-                              {isSummaryExpanded ? (
-                                <>
-                                  <ChevronUp className="w-3 h-3 mr-1" />
-                                  Collapse
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="w-3 h-3 mr-1" />
-                                  Expand
-                                </>
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                        <p className={`text-sm text-blue-800 dark:text-blue-200 leading-relaxed ${
-                          !isSummaryExpanded && mockAiSummary && mockAiSummary.length > 120
-                            ? 'line-clamp-2'
-                            : ''
-                        }`}>
-                          {mockAiSummary}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Conversation - Scrollable messages area */}
                   <div className="flex-1 overflow-y-auto space-y-3 min-h-0 pr-2">
+                    {/* AI Summary Component - First item in scrollable area */}
+                    <ConversationSummary
+                      conversationId={selectedConversation.id}
+                      messageCount={selectedConversation.message_count || conversationMessages.length}
+                      fallbackText={selectedConversation.last_message_preview || selectedConversation.title || "No summary available"}
+                    />
                 {messagesLoading ? (
                   <div className="flex items-center justify-center h-32">
                     <div className="text-sm text-muted-foreground">Loading messages...</div>

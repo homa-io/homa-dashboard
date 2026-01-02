@@ -75,6 +75,16 @@ export interface SmartReplyResponse {
   improvements: string[]
 }
 
+export interface ConversationSummaryResponse {
+  summary: string
+  key_points: string[]
+  version: number
+  message_count: number
+  needs_update: boolean
+  language: string
+}
+
+
 // Common languages for translation
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -137,6 +147,27 @@ export async function smartReply(data: SmartReplyRequest): Promise<ApiResponse<S
   return apiClient.post<SmartReplyResponse>('/api/ai/smart-reply', data, { timeout: 30000 })
 }
 
+/**
+ * Get conversation summary for a specific conversation
+ * Note: Use SETTING_KEYS.AI_CONVERSATION_SUMMARY_ENABLED from settings.service.ts to check if enabled
+ * @param conversationId - The conversation ID
+ * @param language - Optional language code (e.g., 'en', 'fa', 'es'). If not provided, uses user's language from backend.
+ */
+export async function getConversationSummary(conversationId: number, language?: string): Promise<ApiResponse<ConversationSummaryResponse>> {
+  const params = language ? `?language=${encodeURIComponent(language)}` : ''
+  return apiClient.get<ConversationSummaryResponse>(`/api/ai/conversation-summary/${conversationId}${params}`)
+}
+
+/**
+ * Generate or regenerate conversation summary
+ * @param conversationId - The conversation ID
+ * @param language - Optional language code (e.g., 'en', 'fa', 'es'). If not provided, uses user's language from backend.
+ */
+export async function generateConversationSummary(conversationId: number, language?: string): Promise<ApiResponse<ConversationSummaryResponse>> {
+  const params = language ? `?language=${encodeURIComponent(language)}` : ''
+  return apiClient.post<ConversationSummaryResponse>(`/api/ai/conversation-summary/${conversationId}/generate${params}`, {}, { timeout: 60000 })
+}
+
 // ============================================================================
 // AI Service Object (for convenience)
 // ============================================================================
@@ -148,4 +179,6 @@ export const aiService = {
   summarize: summarizeConversation,
   smartReply: smartReply,
   languages: SUPPORTED_LANGUAGES,
+  getConversationSummary,
+  generateConversationSummary,
 }

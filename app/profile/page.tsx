@@ -30,8 +30,16 @@ import {
   X,
   BarChart3,
   ChevronRight,
-  Timer
+  Timer,
+  Languages
 } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useDarkMode } from "@/hooks/useDarkMode"
 import { sessionsService, DailyActivity, UserSession } from "@/services/sessions.service"
 import { departmentService } from "@/services/department.service"
@@ -102,6 +110,55 @@ function isSessionActive(session: UserSession): boolean {
   return minutesAgo < SESSION_ACTIVE_THRESHOLD_MINUTES
 }
 
+// Language options
+const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "fa", name: "Persian (فارسی)" },
+  { code: "ar", name: "Arabic (العربية)" },
+  { code: "es", name: "Spanish (Español)" },
+  { code: "fr", name: "French (Français)" },
+  { code: "de", name: "German (Deutsch)" },
+  { code: "zh", name: "Chinese (中文)" },
+  { code: "ja", name: "Japanese (日本語)" },
+  { code: "ko", name: "Korean (한국어)" },
+  { code: "ru", name: "Russian (Русский)" },
+  { code: "pt", name: "Portuguese (Português)" },
+  { code: "tr", name: "Turkish (Türkçe)" },
+  { code: "it", name: "Italian (Italiano)" },
+  { code: "nl", name: "Dutch (Nederlands)" },
+  { code: "pl", name: "Polish (Polski)" },
+  { code: "uk", name: "Ukrainian (Українська)" },
+  { code: "vi", name: "Vietnamese (Tiếng Việt)" },
+  { code: "th", name: "Thai (ไทย)" },
+  { code: "id", name: "Indonesian (Bahasa Indonesia)" },
+  { code: "ms", name: "Malay (Bahasa Melayu)" },
+  { code: "hi", name: "Hindi (हिन्दी)" },
+  { code: "bn", name: "Bengali (বাংলা)" },
+  { code: "ta", name: "Tamil (தமிழ்)" },
+  { code: "te", name: "Telugu (తెలుగు)" },
+  { code: "ur", name: "Urdu (اردو)" },
+  { code: "he", name: "Hebrew (עברית)" },
+  { code: "el", name: "Greek (Ελληνικά)" },
+  { code: "cs", name: "Czech (Čeština)" },
+  { code: "sv", name: "Swedish (Svenska)" },
+  { code: "da", name: "Danish (Dansk)" },
+  { code: "fi", name: "Finnish (Suomi)" },
+  { code: "no", name: "Norwegian (Norsk)" },
+  { code: "hu", name: "Hungarian (Magyar)" },
+  { code: "ro", name: "Romanian (Română)" },
+  { code: "bg", name: "Bulgarian (Български)" },
+  { code: "hr", name: "Croatian (Hrvatski)" },
+  { code: "sk", name: "Slovak (Slovenčina)" },
+  { code: "sl", name: "Slovenian (Slovenščina)" },
+  { code: "sr", name: "Serbian (Српски)" },
+  { code: "lt", name: "Lithuanian (Lietuvių)" },
+  { code: "lv", name: "Latvian (Latviešu)" },
+  { code: "et", name: "Estonian (Eesti)" },
+  { code: "fil", name: "Filipino (Tagalog)" },
+  { code: "sw", name: "Swahili (Kiswahili)" },
+  { code: "af", name: "Afrikaans" },
+]
+
 export default function ProfilePage() {
   const router = useRouter()
   const { isDarkMode, toggleDarkMode } = useDarkMode()
@@ -116,6 +173,7 @@ export default function ProfilePage() {
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(true)
   const [sessions, setSessions] = useState<UserSession[]>([])
   const [isLoadingSessions, setIsLoadingSessions] = useState(true)
+  const [isSavingLanguage, setIsSavingLanguage] = useState(false)
   const currentSessionId = typeof window !== 'undefined' ? localStorage.getItem('homa_session_id') : null
 
   const [formData, setFormData] = useState<ProfileFormData>({
@@ -216,6 +274,25 @@ export default function ProfilePage() {
     await refreshUser()
   }
 
+  const handleLanguageChange = async (newLanguage: string) => {
+    if (newLanguage === user?.language) return
+
+    setIsSavingLanguage(true)
+    try {
+      await authService.updateProfile({ language: newLanguage })
+      await refreshUser()
+      toast({ title: "Language updated successfully" })
+    } catch (error: any) {
+      toast({
+        title: "Failed to update language",
+        description: error?.message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSavingLanguage(false)
+    }
+  }
+
   const getDisplayName = () => {
     if (formData.display_name) return formData.display_name
     return `${formData.name} ${formData.last_name}`.trim() || 'User'
@@ -249,7 +326,7 @@ export default function ProfilePage() {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Profile Header Card */}
         <Card className="overflow-hidden bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               {/* Avatar with edit button below */}
               <div className="shrink-0">
@@ -499,6 +576,41 @@ export default function ProfilePage() {
               <Button variant="outline" size="sm" onClick={toggleDarkMode}>
                 Switch to {isDarkMode ? 'Light' : 'Dark'}
               </Button>
+            </div>
+
+            {/* Language Setting */}
+            <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Languages className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Language</p>
+                  <p className="text-xs text-muted-foreground">
+                    Language for AI-generated content
+                  </p>
+                </div>
+              </div>
+              <Select
+                value={user?.language || "en"}
+                onValueChange={handleLanguageChange}
+                disabled={isSavingLanguage}
+              >
+                <SelectTrigger className="w-[180px]">
+                  {isSavingLanguage ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <SelectValue />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Password Setting */}
