@@ -57,11 +57,12 @@ import { UserManager } from "@/components/settings/users"
 import { AISettings, WorkflowSettings } from "@/components/settings/general"
 import { ActivityLogList } from "@/components/settings/activity"
 import { IntegrationsSettings } from "@/components/settings/integrations"
-import { Building2, Users } from "lucide-react"
+import { RAGSettings } from "@/components/settings/rag"
+import { Building2, Users, Brain } from "lucide-react"
 
-export type SettingsTab = 'general' | 'users' | 'departments' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity'
+export type SettingsTab = 'general' | 'users' | 'departments' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag'
 
-const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages', 'activity']
+const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages', 'activity', 'rag']
 
 export function isValidTab(tab: string): tab is SettingsTab {
   return validTabs.includes(tab as SettingsTab)
@@ -127,6 +128,12 @@ const tabs = [
     label: 'Activity Log',
     icon: Activity,
     description: 'Track all changes and actions in the system'
+  },
+  {
+    id: 'rag' as SettingsTab,
+    label: 'RAG',
+    icon: Brain,
+    description: 'Configure vector search and knowledge base indexing'
   }
 ]
 
@@ -216,6 +223,7 @@ export default function SettingsContent({ activeTab }: SettingsContentProps) {
           {activeTab === 'plugins' && <PluginsSettings />}
           {activeTab === 'canned-messages' && <CannedMessagesSettings />}
           {activeTab === 'activity' && <ActivityLogList />}
+          {activeTab === 'rag' && <RAGSettings />}
         </div>
       </div>
     </div>
