@@ -96,6 +96,9 @@ const CustomerTableRow = memo<{
       <TableCell>
         <div className="flex items-center space-x-2 sm:space-x-3">
           <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
+            {customer.avatar && (
+              <AvatarImage src={customer.avatar} alt={customer.name} />
+            )}
             <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
               {getInitials(customer.name)}
             </AvatarFallback>

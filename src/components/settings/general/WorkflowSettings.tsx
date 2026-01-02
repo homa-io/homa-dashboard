@@ -4,9 +4,11 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, Loader2, GitBranch } from "lucide-react"
-import { settingsService, SETTING_KEYS } from "@/services/settings.service"
+import { SETTING_KEYS } from "@/services/settings.service"
+import { getSettingsAction, updateSettingsAction } from "@/actions/settings.actions"
 import { departmentService } from "@/services/department.service"
 
 interface Department {
@@ -23,6 +25,7 @@ export function WorkflowSettings() {
 
   const [departments, setDepartments] = useState<Department[]>([])
   const [defaultDepartment, setDefaultDepartment] = useState("")
+  const [conversationTimeoutHours, setConversationTimeoutHours] = useState("12")
 
   useEffect(() => {
     loadData()
@@ -36,12 +39,13 @@ export function WorkflowSettings() {
       // Load departments and settings in parallel
       const [deptResponse, settings] = await Promise.all([
         departmentService.list({}),
-        settingsService.getSettings(),
+        getSettingsAction(),
       ])
 
       setDepartments(deptResponse.data?.filter(d => d.status === "active") || [])
       // Use "none" as the value for no default, since Radix Select doesn't allow empty string values
       setDefaultDepartment(settings[SETTING_KEYS.DEFAULT_DEPARTMENT] || "none")
+      setConversationTimeoutHours(settings[SETTING_KEYS.CONVERSATION_TIMEOUT_HOURS] || "12")
     } catch (err: any) {
       setError(err.message || "Failed to load settings")
     } finally {
@@ -56,8 +60,9 @@ export function WorkflowSettings() {
       setSuccess(false)
 
       // Convert "none" back to empty string for storage
-      await settingsService.updateSettings({
+      await updateSettingsAction({
         [SETTING_KEYS.DEFAULT_DEPARTMENT]: defaultDepartment === "none" ? "" : defaultDepartment,
+        [SETTING_KEYS.CONVERSATION_TIMEOUT_HOURS]: conversationTimeoutHours,
       })
 
       setSuccess(true)
@@ -132,6 +137,27 @@ export function WorkflowSettings() {
             No active departments found. Create a department in the Departments settings first.
           </div>
         )}
+
+        {/* Conversation Timeout */}
+        <div className="space-y-2 pt-4 border-t">
+          <Label htmlFor="conversation-timeout" className="text-xs sm:text-sm font-medium text-muted-foreground">
+            Conversation Timeout (Hours)
+          </Label>
+          <Input
+            id="conversation-timeout"
+            type="number"
+            min="1"
+            max="168"
+            value={conversationTimeoutHours}
+            onChange={(e) => setConversationTimeoutHours(e.target.value)}
+            className="text-sm h-9 sm:h-10 w-32"
+          />
+          <p className="text-xs text-muted-foreground">
+            When a new message arrives from an external channel (Slack, Telegram, WhatsApp), the system will
+            check if this user has an open conversation within this time window. If yes, the message will be
+            appended to the existing conversation. If no, a new conversation will be created.
+          </p>
+        </div>
 
         <div className="flex justify-end pt-2">
           <Button onClick={handleSave} disabled={saving} className="text-sm h-9 sm:h-10">

@@ -15,3 +15,7 @@ export { useToast, toast } from './use-toast';
 
 // Activity tracking
 export { useActivityTracker } from './useActivityTracker';
+
+// WebSocket hooks
+export { useAgentWebSocket } from './useAgentWebSocket';
+export type { WebSocketMessage, UseAgentWebSocketOptions, UseAgentWebSocketReturn } from './useAgentWebSocket';

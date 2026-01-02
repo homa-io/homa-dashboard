@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { TagInput } from "@/components/ui/tag-input"
+import { TagPicker } from "@/components/ui/tag-picker"
 import { CustomBadge } from "@/components/ui/custom-badge"
 import { Check, ChevronsUpDown, Workflow, X, Plus, ChevronDown, ChevronRight, Settings, AlertCircle, CircleDot, Building, Users, Tag, Archive, XCircle, Circle, ArrowUp, ArrowDown, Clock, Loader } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -349,11 +349,12 @@ export function ConversationActions({
             <Tag className="w-3 h-3" />
             Tags
           </label>
-          <TagInput
+          <TagPicker
             tags={currentTags}
             onTagsChange={onTagsChange}
             placeholder="Add tags..."
             suggestions={availableTags}
+            allowCreate={true}
           />
         </div>
 

@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Save, Eye, EyeOff, Loader2, Bot } from "lucide-react"
-import { settingsService, AI_ENDPOINTS, AI_MODELS, SETTING_KEYS } from "@/services/settings.service"
+import { AI_ENDPOINTS, AI_MODELS, SETTING_KEYS } from "@/services/settings.service"
+import { getSettingsAction, updateSettingsAction } from "@/actions/settings.actions"
 
 export function AISettings() {
   const [loading, setLoading] = useState(true)
@@ -37,7 +38,7 @@ export function AISettings() {
     try {
       setLoading(true)
       setError(null)
-      const settings = await settingsService.getSettings()
+      const settings = await getSettingsAction()
 
       const savedEndpoint = settings[SETTING_KEYS.AI_ENDPOINT] || ""
       const savedModel = settings[SETTING_KEYS.AI_MODEL] || ""
@@ -101,7 +102,7 @@ export function AISettings() {
       const finalEndpoint = isCustomEndpoint ? customEndpoint : endpoint
       const finalModel = isCustomModel ? customModel : model
 
-      await settingsService.updateSettings({
+      await updateSettingsAction({
         [SETTING_KEYS.AI_ENDPOINT]: finalEndpoint,
         [SETTING_KEYS.AI_API_KEY]: apiKey,
         [SETTING_KEYS.AI_MODEL]: finalModel,

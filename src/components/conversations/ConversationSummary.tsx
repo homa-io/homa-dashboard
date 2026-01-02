@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Sparkles, ChevronDown, ChevronUp, RefreshCw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getConversationSummary, generateConversationSummary, ConversationSummaryResponse } from '@/services/ai.service'
-import { settingsService, SETTING_KEYS } from '@/services/settings.service'
+import { isSettingEnabledAction } from '@/actions/settings.actions'
 
 interface ConversationSummaryProps {
   conversationId: number
@@ -21,12 +21,11 @@ export function ConversationSummary({ conversationId, messageCount, fallbackText
   const [isExpanded, setIsExpanded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Check if conversation summary is enabled in settings
+  // Check if conversation summary is enabled in settings using server action
   useEffect(() => {
     const checkSetting = async () => {
       try {
-        const settings = await settingsService.getSettings()
-        const enabled = settings[SETTING_KEYS.AI_CONVERSATION_SUMMARY_ENABLED] === 'true'
+        const enabled = await isSettingEnabledAction('ai.conversation_summary_enabled')
         setIsEnabled(enabled)
       } catch (err) {
         console.error('Error checking conversation summary setting:', err)

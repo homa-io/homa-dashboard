@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useAgentWebSocket, WebSocketMessage } from '@/hooks/useAgentWebSocket'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,10 @@ import { useToast } from '@/hooks/use-toast'
 export default function ConversationsContent() {
   const { toast } = useToast()
   const router = useRouter()
+
+  // WebSocket state for real-time updates
+  const [wsConnected, setWsConnected] = useState(false)
+
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [replyText, setReplyText] = useState("")
@@ -55,7 +60,7 @@ export default function ConversationsContent() {
 
   // API state
   const [apiConversations, setApiConversations] = useState<Conversation[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [totalConversations, setTotalConversations] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
@@ -67,6 +72,12 @@ export default function ConversationsContent() {
 
   // Ref for auto-scrolling to last message
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Ref to track selectedConversationId for WebSocket handler (to avoid stale closure)
+  const selectedConversationIdRef = useRef<number | null>(null)
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId
+  }, [selectedConversationId])
 
   // Get URL search parameters
   const searchParams = useSearchParams()
@@ -115,11 +126,81 @@ export default function ConversationsContent() {
     fetchDepartmentsTagsAndUsers()
   }, [])
 
+  // Handle WebSocket messages for real-time updates
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
+    console.log('WebSocket message received:', message)
+
+    // Handle different event types
+    const eventType = message.event || message.type
+
+    switch (eventType) {
+      case 'message.created':
+      case 'conversation.message':
+        // New message received - refresh conversation list and current conversation
+        setRefreshTrigger(prev => prev + 1)
+
+        // If this is for the currently selected conversation, fetch new messages
+        // Use ref to avoid stale closure issue
+        // The backend sends: { event: "message.created", message: { conversation_id, ... }, ... }
+        const wsMessage = message as unknown as { message?: { conversation_id?: number } }
+        const conversationId = wsMessage.message?.conversation_id
+        const currentSelectedId = selectedConversationIdRef.current
+        if (conversationId && currentSelectedId && conversationId === currentSelectedId) {
+          // Refetch current conversation messages
+          conversationService.getConversation(currentSelectedId).then(detailData => {
+            const transformedMessages = detailData.messages.map(msg => ({
+              id: msg.id,
+              message: msg.body,
+              isAgent: msg.is_agent,
+              time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              author: msg.author.name,
+              avatarUrl: getMediaUrl(msg.author.avatar_url),
+              attachments: msg.attachments
+            }))
+            setConversationMessages(transformedMessages)
+          }).catch(err => {
+            console.error('Error fetching updated messages:', err)
+          })
+        }
+        break
+
+      case 'conversation.created':
+      case 'conversation.updated':
+        // Conversation created or updated - refresh the list
+        setRefreshTrigger(prev => prev + 1)
+        break
+
+      default:
+        // For any other events, also trigger a refresh
+        if (eventType) {
+          setRefreshTrigger(prev => prev + 1)
+        }
+    }
+  }, []) // No dependencies - we use selectedConversationIdRef to avoid stale closure
+
+  // Connect to agent WebSocket for real-time updates
+  const { isConnected: wsIsConnected } = useAgentWebSocket({
+    onMessage: handleWebSocketMessage,
+    onConnect: () => {
+      console.log('Agent WebSocket connected')
+      setWsConnected(true)
+    },
+    onDisconnect: () => {
+      console.log('Agent WebSocket disconnected')
+      setWsConnected(false)
+    },
+    onError: (error) => {
+      console.error('Agent WebSocket error:', error)
+    },
+    autoReconnect: true,
+    reconnectInterval: 5000,
+    maxReconnectAttempts: 10,
+  })
+
   // Fetch conversations from API
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        setIsLoading(true)
         setError(null)
 
         const params: any = {
@@ -156,7 +237,7 @@ export default function ConversationsContent() {
         console.error('Error fetching conversations:', err)
         setError(err instanceof Error ? err.message : 'Failed to fetch conversations')
       } finally {
-        setIsLoading(false)
+        setIsInitialLoading(false)
       }
     }
 
@@ -1600,8 +1681,8 @@ export default function ConversationsContent() {
 
           {/* Conversations List - Mobile Responsive */}
           <div className="flex-1 overflow-y-auto min-h-[50vh] lg:max-h-full">
-          {/* Loading State */}
-          {isLoading && (
+          {/* Loading State - only show on initial load */}
+          {isInitialLoading && (
             <div className="flex items-center justify-center py-8">
               <Loader className="w-6 h-6 animate-spin text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Loading conversations...</span>
@@ -1609,7 +1690,7 @@ export default function ConversationsContent() {
           )}
 
           {/* Error State */}
-          {error && !isLoading && (
+          {error && !isInitialLoading && (
             <div className="p-4 m-4 bg-destructive/10 border border-destructive rounded-lg">
               <p className="text-sm text-destructive">Error: {error}</p>
               <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.reload()}>
@@ -1619,7 +1700,7 @@ export default function ConversationsContent() {
           )}
 
           {/* Empty State */}
-          {!isLoading && !error && filteredTickets.length === 0 && (
+          {!isInitialLoading && !error && filteredTickets.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <p className="mb-2">No conversations found</p>
               {hasActiveFilters && (
@@ -1631,7 +1712,7 @@ export default function ConversationsContent() {
           )}
 
           {/* Conversation List */}
-          {!isLoading && !error && filteredTickets.map((conversation, index) => (
+          {!isInitialLoading && !error && filteredTickets.map((conversation, index) => (
             <div
               key={conversation.id}
               onClick={() => {
@@ -1668,7 +1749,7 @@ export default function ConversationsContent() {
                     <span className="text-sm font-medium">{conversation.customer.name}</span>
                     <span className="text-xs text-muted-foreground">{new Date(conversation.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
-                  <p className="text-sm text-foreground mb-2 line-clamp-2">{conversation.title}</p>
+                  <p className="text-sm text-foreground mb-2 line-clamp-2">{conversation.last_message_preview || conversation.title}</p>
                   <div className="flex flex-wrap gap-1">
                     <CustomBadge variant={getSourceColor(conversation.channel) as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-[10px] h-4 px-1">
                       {getSourceIcon(conversation.channel)}

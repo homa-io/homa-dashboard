@@ -2,26 +2,28 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from './query-keys';
-import { settingsService, SettingsMap } from '@/services/settings.service';
+import { SettingsMap, SETTING_KEYS } from '@/services/settings.service';
+import { getSettingsAction, updateSettingsAction, getAISettingsAction } from '@/actions/settings.actions';
 
 /**
  * Hook to fetch all settings or by category
+ * Uses server actions to keep sensitive data secure
  */
 export function useSettings(category?: string) {
   return useQuery({
     queryKey: category ? queryKeys.settings.category(category) : queryKeys.settings.all,
-    queryFn: () => settingsService.getSettings(category),
+    queryFn: () => getSettingsAction(category),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 }
 
 /**
- * Hook to fetch AI settings
+ * Hook to fetch AI settings (non-sensitive fields only)
  */
 export function useAISettings() {
   return useQuery({
     queryKey: queryKeys.settings.ai(),
-    queryFn: () => settingsService.getAISettings(),
+    queryFn: () => getAISettingsAction(),
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -32,7 +34,12 @@ export function useAISettings() {
 export function useWorkflowSettings() {
   return useQuery({
     queryKey: queryKeys.settings.workflow(),
-    queryFn: () => settingsService.getWorkflowSettings(),
+    queryFn: async () => {
+      const settings = await getSettingsAction('workflow')
+      return {
+        defaultDepartment: settings[SETTING_KEYS.DEFAULT_DEPARTMENT] || '',
+      }
+    },
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -44,7 +51,7 @@ export function useUpdateSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (settings: SettingsMap) => settingsService.updateSettings(settings),
+    mutationFn: (settings: SettingsMap) => updateSettingsAction(settings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
     },
@@ -59,7 +66,11 @@ export function useUpdateAISettings() {
 
   return useMutation({
     mutationFn: ({ endpoint, apiKey, model }: { endpoint: string; apiKey: string; model: string }) =>
-      settingsService.updateAISettings(endpoint, apiKey, model),
+      updateSettingsAction({
+        [SETTING_KEYS.AI_ENDPOINT]: endpoint,
+        [SETTING_KEYS.AI_API_KEY]: apiKey,
+        [SETTING_KEYS.AI_MODEL]: model,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.ai() });
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
@@ -75,7 +86,9 @@ export function useUpdateWorkflowSettings() {
 
   return useMutation({
     mutationFn: (defaultDepartment: string) =>
-      settingsService.updateWorkflowSettings(defaultDepartment),
+      updateSettingsAction({
+        [SETTING_KEYS.DEFAULT_DEPARTMENT]: defaultDepartment,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.workflow() });
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });

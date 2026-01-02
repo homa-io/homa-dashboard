@@ -56,6 +56,7 @@ import { DepartmentManager } from "@/components/settings/departments"
 import { UserManager } from "@/components/settings/users"
 import { AISettings, WorkflowSettings } from "@/components/settings/general"
 import { ActivityLogList } from "@/components/settings/activity"
+import { IntegrationsSettings } from "@/components/settings/integrations"
 import { Building2, Users } from "lucide-react"
 
 export type SettingsTab = 'general' | 'users' | 'departments' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity'
@@ -236,140 +237,6 @@ function GeneralSettings() {
 
       {/* Workflow Settings */}
       <WorkflowSettings />
-    </div>
-  )
-}
-
-function IntegrationsSettings() {
-  return (
-    <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">Integrations</h2>
-        <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
-          Connect with external services and manage API integrations.
-        </p>
-      </div>
-
-      <div className="grid gap-3 sm:gap-6">
-        {[
-          {
-            name: 'Slack',
-            description: 'Get notifications and manage conversations from Slack',
-            connected: true,
-            logo: '💬'
-          },
-          {
-            name: 'WhatsApp Business',
-            description: 'Handle customer support via WhatsApp',
-            connected: false,
-            logo: '📱'
-          },
-          {
-            name: 'Gmail',
-            description: 'Manage email conversations and customer communications',
-            connected: false,
-            logo: '📧'
-          },
-          {
-            name: 'SMTP',
-            description: 'Send emails through custom SMTP server',
-            connected: true,
-            logo: '📮'
-          },
-          {
-            name: 'Outlook',
-            description: 'Integrate with Microsoft Outlook for email management',
-            connected: false,
-            logo: '📨'
-          },
-          {
-            name: 'Webhook',
-            description: 'Receive real-time notifications via HTTP webhooks',
-            connected: true,
-            logo: '🔗'
-          },
-          {
-            name: 'NATS',
-            description: 'High-performance messaging system for real-time communication',
-            connected: 'error',
-            logo: '⚡'
-          },
-        ].map((integration) => (
-          <Card key={integration.name}>
-            <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 py-4 sm:py-6">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="text-xl sm:text-2xl flex-shrink-0">{integration.logo}</div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-sm sm:text-base truncate">{integration.name}</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">{integration.description}</p>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
-                {integration.connected === true ? (
-                  <>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs justify-center sm:justify-start">
-                      Connected
-                    </Badge>
-                    <div className="flex gap-1 sm:gap-2">
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Configure</Button>
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Logs</Button>
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Disconnect</Button>
-                    </div>
-                  </>
-                ) : integration.connected === 'error' ? (
-                  <>
-                    <Badge variant="secondary" className="bg-red-100 text-red-800 text-xs justify-center sm:justify-start">
-                      Error
-                    </Badge>
-                    <div className="flex gap-1 sm:gap-2">
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Configure</Button>
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Logs</Button>
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-xs h-8">Reconnect</Button>
-                    </div>
-                  </>
-                ) : (
-                  <Button size="sm" className="w-full sm:w-auto text-xs h-8">Connect</Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">API Settings</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">
-            Configure API access and webhooks
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 sm:space-y-4">
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">API Base URL</Label>
-            <Input defaultValue="https://api.yourdomain.com/v1" readOnly className="bg-muted text-sm h-9 sm:h-10" />
-          </div>
-
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">API Key</Label>
-            <Input defaultValue="sk-1234567890abcdef..." readOnly className="bg-muted text-sm h-9 sm:h-10" />
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 py-3 sm:py-4">
-            <div className="space-y-0.5">
-              <Label className="text-xs sm:text-sm font-medium">Enable API Access</Label>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Allow external applications to access your data
-              </p>
-            </div>
-            <Switch defaultChecked className="self-start sm:self-center" />
-          </div>
-
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Webhook URL</Label>
-            <Input placeholder="https://yourapp.com/webhooks" className="text-sm h-9 sm:h-10" />
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

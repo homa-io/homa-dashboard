@@ -1,9 +1,10 @@
 /**
  * Settings Service
  * Handles API calls for application settings
+ *
+ * Note: Settings are fetched via server-side API route (/api/settings)
+ * to keep sensitive data like API keys secure (not exposed to browser).
  */
-
-import { apiClient } from './api-client'
 
 export interface Setting {
   id: number
@@ -89,6 +90,7 @@ export const SETTING_KEYS = {
 
   // Workflow Settings
   DEFAULT_DEPARTMENT: 'workflow.default_department',
+  CONVERSATION_TIMEOUT_HOURS: 'workflow.conversation_timeout_hours',
 
   // General Settings
   APP_NAME: 'general.app_name',
@@ -99,45 +101,72 @@ export const SETTING_KEYS = {
 class SettingsService {
   /**
    * Get all settings or filter by category
+   * Uses server-side API route to keep sensitive data secure
    */
   async getSettings(category?: string): Promise<SettingsMap> {
     const endpoint = category ? `/api/settings?category=${category}` : '/api/settings'
-    const response = await apiClient.get<SettingsMap>(endpoint)
-    return response.data
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch settings: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data.data || data
   }
 
   /**
    * Update multiple settings at once
+   * Uses server-side API route to keep sensitive data secure
    */
   async updateSettings(settings: SettingsMap): Promise<void> {
-    await apiClient.put<void>('/api/settings', { settings })
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ settings }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to update settings: ${response.statusText}`)
+    }
   }
 
   /**
    * Get a single setting by key
+   * Note: Currently fetches all settings and filters - individual key endpoint not implemented
    */
   async getSetting(key: string): Promise<Setting> {
-    const response = await apiClient.get<Setting>(`/api/settings/${key}`)
-    return response.data
+    const settings = await this.getSettings()
+    return {
+      id: 0,
+      key,
+      value: settings[key] || '',
+      type: 'string',
+      category: '',
+      label: '',
+      created_at: '',
+      updated_at: '',
+    }
   }
 
   /**
    * Set a single setting
    */
   async setSetting(key: string, value: string, type?: string, category?: string, label?: string): Promise<void> {
-    await apiClient.put<void>(`/api/settings/${key}`, {
-      value,
-      type: type || 'string',
-      category: category || '',
-      label: label || '',
-    })
+    await this.updateSettings({ [key]: value })
   }
 
   /**
    * Delete a setting
+   * Note: Not yet implemented for server-side route
    */
   async deleteSetting(key: string): Promise<void> {
-    await apiClient.delete<void>(`/api/settings/${key}`)
+    console.warn('deleteSetting not implemented for server-side route')
   }
 
   /**
