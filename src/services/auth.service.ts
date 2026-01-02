@@ -5,6 +5,7 @@
 
 import { apiClient, type ApiResponse } from './api-client'
 import { setAuthTokens, clearAuthTokens, getRefreshToken } from '@/lib/cookies'
+import { safeStorage } from '@/lib/storage'
 
 export interface LoginRequest {
   email: string
@@ -88,9 +89,7 @@ class AuthService {
         setAuthTokens(response.data.access_token, response.data.refresh_token)
 
         // Store user data in localStorage for quick access
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('user', JSON.stringify(response.data.user))
-        }
+        safeStorage.setItem('user', response.data.user)
       }
 
       return response
@@ -160,7 +159,7 @@ class AuthService {
           setAuthTokens(oauthResponse.access_token, oauthResponse.refresh_token)
 
           // Store user data
-          localStorage.setItem('user', JSON.stringify(oauthResponse.user))
+          safeStorage.setItem('user', oauthResponse.user)
 
           // Clean URL
           window.history.replaceState({}, document.title, window.location.pathname)
@@ -221,12 +220,12 @@ class AuthService {
    */
   async updateProfile(updates: UpdateProfileRequest): Promise<ApiResponse<User>> {
     const response = await apiClient.patch<User>(`${this.basePath}/profile`, updates)
-    
+
     // Update local user data
-    if (response.success && typeof window !== 'undefined') {
-      localStorage.setItem('user', JSON.stringify(response.data))
+    if (response.success) {
+      safeStorage.setItem('user', response.data)
     }
-    
+
     return response
   }
 
@@ -279,14 +278,7 @@ class AuthService {
    * Get current user from local storage
    */
   getCurrentUser(): User | null {
-    if (typeof window === 'undefined') return null
-    
-    try {
-      const userData = localStorage.getItem('user')
-      return userData ? JSON.parse(userData) : null
-    } catch {
-      return null
-    }
+    return safeStorage.getItem<User>('user')
   }
 
   /**
@@ -296,7 +288,7 @@ class AuthService {
     if (typeof window === 'undefined') return
 
     clearAuthTokens()
-    localStorage.removeItem('user')
+    safeStorage.removeItem('user')
   }
 
   /**
