@@ -97,6 +97,14 @@ export async function getAssignableUsers(): Promise<DepartmentUser[]> {
   return []
 }
 
+/**
+ * Get departments for current user (my departments)
+ */
+export async function getMyDepartments(): Promise<Department[]> {
+  const response = await apiClient.get<Department[]>('/api/agent/me/departments')
+  return response.data || []
+}
+
 // Convenience object export
 export const departmentService = {
   list: getDepartments,
@@ -106,4 +114,5 @@ export const departmentService = {
   delete: deleteDepartment,
   suspend: suspendDepartment,
   getAssignableUsers,
+  getMyDepartments,
 }

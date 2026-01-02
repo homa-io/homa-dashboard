@@ -1,14 +1,13 @@
 /**
  * Activity Tracker Hook
- * Tracks user activity with heartbeat mechanism and multi-tab support
+ * Tracks user activity with heartbeat mechanism and cookie-based session persistence
  *
  * Features:
- * - Session ID stored in localStorage (shared across tabs)
+ * - Session ID stored in cookie (expires after 1 hour of inactivity)
+ * - Cookie lifetime extends on each heartbeat
  * - Tab ID stored in sessionStorage (unique per tab)
  * - Heartbeat every 30 seconds
  * - Handles visibility change (pause when tab hidden)
- * - Handles beforeunload to end session on logout/close
- * - BroadcastChannel for cross-tab communication
  */
 
 import { useEffect, useRef, useCallback } from 'react'
@@ -16,7 +15,8 @@ import { sessionsService } from '@/services/sessions.service'
 import { useAuth } from '@/contexts/AuthContext'
 
 const HEARTBEAT_INTERVAL = 30000 // 30 seconds
-const SESSION_ID_KEY = 'homa_session_id'
+const COOKIE_EXPIRY_HOURS = 1 // Cookie expires after 1 hour of inactivity
+const SESSION_COOKIE_NAME = 'homa_session_id'
 const TAB_ID_KEY = 'homa_tab_id'
 
 function generateUUID(): string {
@@ -41,15 +41,53 @@ function getDeviceInfo(): Record<string, unknown> {
   }
 }
 
-function getOrCreateSessionId(): string {
-  if (typeof window === 'undefined') return ''
+// Cookie helper functions
+function setCookie(name: string, value: string, hours: number): void {
+  if (typeof document === 'undefined') return
+  const expires = new Date()
+  expires.setTime(expires.getTime() + hours * 60 * 60 * 1000)
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`
+}
 
-  let sessionId = localStorage.getItem(SESSION_ID_KEY)
-  if (!sessionId) {
-    sessionId = generateUUID()
-    localStorage.setItem(SESSION_ID_KEY, sessionId)
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null
+  const nameEQ = `${name}=`
+  const cookies = document.cookie.split(';')
+  for (let cookie of cookies) {
+    cookie = cookie.trim()
+    if (cookie.indexOf(nameEQ) === 0) {
+      return decodeURIComponent(cookie.substring(nameEQ.length))
+    }
   }
-  return sessionId
+  return null
+}
+
+function deleteCookie(name: string): void {
+  if (typeof document === 'undefined') return
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`
+}
+
+function getOrCreateSessionId(): { sessionId: string; isNew: boolean } {
+  if (typeof window === 'undefined') return { sessionId: '', isNew: false }
+
+  const existingSessionId = getCookie(SESSION_COOKIE_NAME)
+  if (existingSessionId) {
+    // Extend cookie expiry on access
+    setCookie(SESSION_COOKIE_NAME, existingSessionId, COOKIE_EXPIRY_HOURS)
+    return { sessionId: existingSessionId, isNew: false }
+  }
+
+  // Create new session ID
+  const newSessionId = generateUUID()
+  setCookie(SESSION_COOKIE_NAME, newSessionId, COOKIE_EXPIRY_HOURS)
+  return { sessionId: newSessionId, isNew: true }
+}
+
+function extendSessionCookie(): void {
+  const sessionId = getCookie(SESSION_COOKIE_NAME)
+  if (sessionId) {
+    setCookie(SESSION_COOKIE_NAME, sessionId, COOKIE_EXPIRY_HOURS)
+  }
 }
 
 function getOrCreateTabId(): string {
@@ -70,13 +108,17 @@ export function useActivityTracker() {
   const tabIdRef = useRef<string>('')
   const isActiveRef = useRef<boolean>(true)
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null)
+  const isSessionStartedRef = useRef<boolean>(false)
 
-  // Clear session ID on logout
+  // Clear session cookie on logout
   const clearSession = useCallback(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(SESSION_ID_KEY)
+      deleteCookie(SESSION_COOKIE_NAME)
       sessionStorage.removeItem(TAB_ID_KEY)
     }
+    sessionIdRef.current = ''
+    tabIdRef.current = ''
+    isSessionStartedRef.current = false
   }, [])
 
   // Start session
@@ -84,7 +126,7 @@ export function useActivityTracker() {
     if (!isAuthenticated || !user) return
 
     try {
-      const sessionId = getOrCreateSessionId()
+      const { sessionId, isNew } = getOrCreateSessionId()
       const tabId = getOrCreateTabId()
       sessionIdRef.current = sessionId
       tabIdRef.current = tabId
@@ -92,8 +134,10 @@ export function useActivityTracker() {
       await sessionsService.startSession({
         session_id: sessionId,
         tab_id: tabId,
-        device_info: getDeviceInfo(),
+        device_info: isNew ? getDeviceInfo() : undefined,
       })
+
+      isSessionStartedRef.current = true
     } catch (error) {
       console.error('Failed to start session:', error)
     }
@@ -108,11 +152,16 @@ export function useActivityTracker() {
         session_id: sessionIdRef.current,
         tab_id: tabIdRef.current,
       })
+      // Extend cookie on successful heartbeat
+      extendSessionCookie()
     } catch (error: unknown) {
       // If session not found, restart it
       if (error && typeof error === 'object' && 'message' in error) {
         const errMessage = (error as { message: string }).message
         if (errMessage.includes('SESSION_NOT_FOUND') || errMessage.includes('session not found')) {
+          // Session expired on server, create new one
+          deleteCookie(SESSION_COOKIE_NAME)
+          isSessionStartedRef.current = false
           await startSession()
         }
       }
@@ -141,14 +190,20 @@ export function useActivityTracker() {
       isActiveRef.current = false
     } else {
       isActiveRef.current = true
-      // Send heartbeat when becoming visible again
-      sendHeartbeat()
+      // Check if cookie still exists and extend it
+      const sessionId = getCookie(SESSION_COOKIE_NAME)
+      if (sessionId && sessionId === sessionIdRef.current) {
+        extendSessionCookie()
+        sendHeartbeat()
+      } else if (isAuthenticated) {
+        // Cookie expired, restart session
+        startSession()
+      }
     }
-  }, [sendHeartbeat])
+  }, [sendHeartbeat, isAuthenticated, startSession])
 
-  // Handle before unload
+  // Handle before unload - use sendBeacon for reliable delivery
   const handleBeforeUnload = useCallback(() => {
-    // Use sendBeacon for reliable delivery on page close
     if (sessionIdRef.current && typeof navigator.sendBeacon === 'function') {
       const data = JSON.stringify({
         session_id: sessionIdRef.current,

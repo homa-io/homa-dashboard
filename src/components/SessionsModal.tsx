@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { CustomBadge } from '@/components/ui/custom-badge'
-import { sessionsService, UserSession } from '@/services/sessions.service'
-import { Monitor, Smartphone, Tablet, Globe, MapPin, Clock, X, Loader2 } from 'lucide-react'
-import { formatDistanceToNow, format } from 'date-fns'
+import { sessionsService, UserSession, DailyActivity } from '@/services/sessions.service'
+import { Monitor, Smartphone, Tablet, Globe, Clock, X, Loader2, Timer } from 'lucide-react'
+import { formatDistanceToNow, format, differenceInMinutes } from 'date-fns'
 
 interface SessionsModalProps {
   open: boolean
@@ -46,8 +46,33 @@ function getOSName(userAgent: string): string {
   return 'Unknown'
 }
 
+// Format seconds to human readable format (e.g., "2h 30m" or "45m")
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return 'Less than 1 minute'
+
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h ${minutes}m`
+  } else if (hours > 0) {
+    return `${hours}h`
+  } else {
+    return `${minutes}m`
+  }
+}
+
+// Check if session is active (last_activity within 5 minutes)
+const SESSION_ACTIVE_THRESHOLD_MINUTES = 5
+function isSessionActive(session: UserSession): boolean {
+  const lastActivity = new Date(session.last_activity)
+  const minutesAgo = differenceInMinutes(new Date(), lastActivity)
+  return minutesAgo < SESSION_ACTIVE_THRESHOLD_MINUTES
+}
+
 export function SessionsModal({ open, onOpenChange }: SessionsModalProps) {
   const [sessions, setSessions] = useState<UserSession[]>([])
+  const [todayActivity, setTodayActivity] = useState<DailyActivity | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [terminatingId, setTerminatingId] = useState<number | null>(null)
   const [isTerminatingAll, setIsTerminatingAll] = useState(false)
@@ -56,18 +81,28 @@ export function SessionsModal({ open, onOpenChange }: SessionsModalProps) {
   useEffect(() => {
     if (open) {
       loadSessions()
+      loadTodayActivity()
     }
   }, [open])
 
   const loadSessions = async () => {
     setIsLoading(true)
     try {
-      const response = await sessionsService.getActiveSessions()
-      setSessions(response.sessions || [])
+      const sessionsData = await sessionsService.getActiveSessions()
+      setSessions(sessionsData || [])
     } catch (error) {
       console.error('Failed to load sessions:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadTodayActivity = async () => {
+    try {
+      const activity = await sessionsService.getTodayActivity()
+      setTodayActivity(activity)
+    } catch (error) {
+      console.error('Failed to load today activity:', error)
     }
   }
 
@@ -110,12 +145,37 @@ export function SessionsModal({ open, onOpenChange }: SessionsModalProps) {
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Header with terminate all button */}
-          {sessions.length > 1 && (
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">
-                {sessions.length} active session{sessions.length > 1 ? 's' : ''}
+          {/* Today's Activity */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Timer className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Today's Activity</p>
+                <p className="text-xs text-muted-foreground">Total time active today</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-bold">
+                {todayActivity ? formatDuration(todayActivity.total_active_seconds) : '0m'}
               </p>
+              {todayActivity && (
+                <p className="text-xs text-muted-foreground">
+                  {todayActivity.session_count} session{todayActivity.session_count !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Header with terminate all button */}
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              {sessions.length} active session{sessions.length !== 1 ? 's' : ''}
+            </p>
+            {sessions.length > 1 && (
               <Button
                 variant="destructive"
                 size="sm"
@@ -127,12 +187,12 @@ export function SessionsModal({ open, onOpenChange }: SessionsModalProps) {
                 ) : (
                   <X className="w-4 h-4 mr-2" />
                 )}
-                End All Other Sessions
+                End All Other
               </Button>
-            </div>
-          )}
+            )}
+          </div>
 
-          <ScrollArea className="max-h-[400px]">
+          <ScrollArea className="max-h-[350px]">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin" />
