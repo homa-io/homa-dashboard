@@ -156,27 +156,29 @@ export function ProfileAvatarUpload({ currentAvatar, onAvatarChange, disabled }:
 
   return (
     <>
-      {/* Floating action buttons - positioned absolutely */}
-      <div className="absolute -bottom-1 -right-1 flex gap-1">
+      {/* Inline action buttons */}
+      <div className="flex gap-1">
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isRemoving}
-          className="p-2 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="p-1.5 rounded-full bg-primary text-primary-foreground shadow hover:bg-primary/90 transition-colors disabled:opacity-50"
+          title="Change photo"
         >
-          <Camera className="w-4 h-4" />
+          <Camera className="w-3.5 h-3.5" />
         </button>
         {currentAvatar && (
           <button
             type="button"
             onClick={handleRemoveAvatar}
             disabled={disabled || isRemoving}
-            className="p-2 rounded-full bg-destructive text-destructive-foreground shadow-lg hover:bg-destructive/90 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-full bg-destructive text-destructive-foreground shadow hover:bg-destructive/90 transition-colors disabled:opacity-50"
+            title="Remove photo"
           >
             {isRemoving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             )}
           </button>
         )}

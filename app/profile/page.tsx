@@ -248,22 +248,24 @@ export default function ProfilePage() {
     <div className="flex-1 p-4 md:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Profile Header Card */}
-        <Card className="overflow-hidden">
-          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6">
+        <Card className="overflow-hidden bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+          <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              {/* Avatar */}
-              <div className="relative group shrink-0">
+              {/* Avatar with edit button below */}
+              <div className="shrink-0">
                 <Avatar className="w-20 h-20 ring-4 ring-background shadow-xl">
                   {avatarUrl && <AvatarImage src={getMediaUrl(avatarUrl)} alt={getDisplayName()} />}
                   <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
-                <ProfileAvatarUpload
-                  currentAvatar={avatarUrl}
-                  onAvatarChange={handleAvatarChange}
-                  userName={getDisplayName()}
-                />
+                <div className="flex justify-center gap-1 mt-2">
+                  <ProfileAvatarUpload
+                    currentAvatar={avatarUrl}
+                    onAvatarChange={handleAvatarChange}
+                    userName={getDisplayName()}
+                  />
+                </div>
               </div>
 
               {/* Info */}
@@ -304,7 +306,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-          </div>
+          </CardContent>
         </Card>
 
         {/* Personal Information */}
