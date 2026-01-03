@@ -54,15 +54,16 @@ import { AttributeManager } from "@/components/settings/AttributeManager"
 import { WebhookManager } from "@/components/settings/webhooks"
 import { DepartmentManager } from "@/components/settings/departments"
 import { UserManager } from "@/components/settings/users"
-import { AISettings, WorkflowSettings } from "@/components/settings/general"
+import { AISettings, WorkflowSettings, ProjectSettings } from "@/components/settings/general"
 import { ActivityLogList } from "@/components/settings/activity"
 import { IntegrationsSettings } from "@/components/settings/integrations"
 import { RAGSettings } from "@/components/settings/rag"
-import { Building2, Users, Brain } from "lucide-react"
+import { AIAgentManager } from "@/components/settings/bot/ai-agents"
+import { Building2, Users, Brain, Bot } from "lucide-react"
 
-export type SettingsTab = 'general' | 'users' | 'departments' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag'
+export type SettingsTab = 'general' | 'users' | 'departments' | 'bot' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag'
 
-const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages', 'activity', 'rag']
+const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'bot', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages', 'activity', 'rag']
 
 export function isValidTab(tab: string): tab is SettingsTab {
   return validTabs.includes(tab as SettingsTab)
@@ -86,6 +87,12 @@ const tabs = [
     label: 'Departments',
     icon: Building2,
     description: 'Manage departments and team assignments'
+  },
+  {
+    id: 'bot' as SettingsTab,
+    label: 'AI Agents',
+    icon: Bot,
+    description: 'Configure AI bot agents and their behaviors'
   },
   {
     id: 'customer-attributes' as SettingsTab,
@@ -204,6 +211,7 @@ export default function SettingsContent({ activeTab }: SettingsContentProps) {
           {activeTab === 'general' && <GeneralSettings />}
           {activeTab === 'users' && <UserManager />}
           {activeTab === 'departments' && <DepartmentManager />}
+          {activeTab === 'bot' && <AIAgentManager />}
           {activeTab === 'customer-attributes' && (
             <AttributeManager
               title="Customer Attributes"
@@ -236,9 +244,12 @@ function GeneralSettings() {
       <div>
         <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">General Settings</h2>
         <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
-          Configure AI providers and workflow automation.
+          Configure project settings, AI providers and workflow automation.
         </p>
       </div>
+
+      {/* Project Settings */}
+      <ProjectSettings />
 
       {/* AI Settings */}
       <AISettings />

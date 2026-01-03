@@ -9,9 +9,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Bot, User, Loader2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Bot, User, Loader2, Sparkles } from "lucide-react"
 import type { Department, DepartmentCreateRequest, DepartmentUser } from "@/types/department.types"
+import type { AIAgent } from "@/types/ai-agent.types"
 import { departmentService } from "@/services/department.service"
+import { aiAgentService } from "@/services/ai-agent.service"
 
 interface DepartmentFormProps {
   department: Department | null
@@ -24,22 +27,28 @@ export function DepartmentForm({ department, isOpen, onClose, onSave }: Departme
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [selectedAIAgentId, setSelectedAIAgentId] = useState<string>("")
   const [availableUsers, setAvailableUsers] = useState<DepartmentUser[]>([])
+  const [availableAIAgents, setAvailableAIAgents] = useState<AIAgent[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingUsers, setLoadingUsers] = useState(false)
+  const [loadingAIAgents, setLoadingAIAgents] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen) {
       loadUsers()
+      loadAIAgents()
       if (department) {
         setName(department.name)
         setDescription(department.description || "")
         setSelectedUserIds(department.users?.map(u => u.id) || [])
+        setSelectedAIAgentId(department.ai_agent_id ? department.ai_agent_id.toString() : "")
       } else {
         setName("")
         setDescription("")
         setSelectedUserIds([])
+        setSelectedAIAgentId("")
       }
       setError(null)
     }
@@ -58,6 +67,19 @@ export function DepartmentForm({ department, isOpen, onClose, onSave }: Departme
     }
   }
 
+  const loadAIAgents = async () => {
+    try {
+      setLoadingAIAgents(true)
+      const response = await aiAgentService.list({ status: "active" })
+      setAvailableAIAgents(response.data || [])
+    } catch (err) {
+      console.error("Failed to load AI agents:", err)
+      setAvailableAIAgents([])
+    } finally {
+      setLoadingAIAgents(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
@@ -72,10 +94,12 @@ export function DepartmentForm({ department, isOpen, onClose, onSave }: Departme
         name: name.trim(),
         description: description.trim(),
         user_ids: selectedUserIds,
+        ai_agent_id: selectedAIAgentId ? parseInt(selectedAIAgentId) : null,
       })
       onClose()
-    } catch (err: any) {
-      setError(err.message || "Failed to save department")
+    } catch (err) {
+      const error = err as Error
+      setError(error.message || "Failed to save department")
     } finally {
       setLoading(false)
     }
@@ -126,6 +150,37 @@ export function DepartmentForm({ department, isOpen, onClose, onSave }: Departme
                 rows={3}
                 disabled={loading}
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="ai-agent">AI Agent</Label>
+              {loadingAIAgents ? (
+                <div className="flex items-center justify-center h-10 border rounded-md">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <Select value={selectedAIAgentId} onValueChange={setSelectedAIAgentId} disabled={loading}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="No AI agent (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">
+                      <span className="text-muted-foreground">No AI agent</span>
+                    </SelectItem>
+                    {availableAIAgents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-3 w-3 text-blue-500" />
+                          {agent.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Assign an AI agent to automatically handle conversations in this department
+              </p>
             </div>
 
             <div className="grid gap-2">

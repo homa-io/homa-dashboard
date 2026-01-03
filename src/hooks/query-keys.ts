@@ -94,4 +94,13 @@ export const queryKeys = {
     all: ['tags'] as const,
     lists: () => [...queryKeys.tags.all, 'list'] as const,
   },
+
+  // AI Agents
+  aiAgents: {
+    all: ['ai-agents'] as const,
+    lists: () => [...queryKeys.aiAgents.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.aiAgents.lists(), filters] as const,
+    details: () => [...queryKeys.aiAgents.all, 'detail'] as const,
+    detail: (id: number) => [...queryKeys.aiAgents.details(), id] as const,
+  },
 } as const;

@@ -38,11 +38,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { ArrowLeft, Bot, User, Loader2, Save, Building2, Plus, Search, Check } from "lucide-react"
+import { ArrowLeft, Bot, User, Loader2, Save, Building2, Plus, Search, Check, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import type { Department, DepartmentUser, DepartmentStatus } from "@/types/department.types"
+import type { AIAgent } from "@/types/ai-agent.types"
 import { departmentService } from "@/services/department.service"
+import { aiAgentService } from "@/services/ai-agent.service"
 import { SortableUserItem } from "./SortableUserItem"
+import { SettingsPageWrapper } from "@/components/settings/SettingsPageWrapper"
 
 interface DepartmentEditPageProps {
   departmentId: number
@@ -55,11 +58,14 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [status, setStatus] = useState<DepartmentStatus>("active")
+  const [selectedAIAgentId, setSelectedAIAgentId] = useState<string>("")
   const [assignedUsers, setAssignedUsers] = useState<DepartmentUser[]>([])
   const [availableUsers, setAvailableUsers] = useState<DepartmentUser[]>([])
+  const [availableAIAgents, setAvailableAIAgents] = useState<AIAgent[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [loadingUsers, setLoadingUsers] = useState(false)
+  const [loadingAIAgents, setLoadingAIAgents] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [addUserOpen, setAddUserOpen] = useState(false)
@@ -94,6 +100,7 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
   useEffect(() => {
     loadDepartment()
     loadUsers()
+    loadAIAgents()
   }, [departmentId])
 
   const loadDepartment = async () => {
@@ -105,11 +112,13 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
       setName(data.name)
       setDescription(data.description || "")
       setStatus(data.status)
+      setSelectedAIAgentId(data.ai_agent_id ? data.ai_agent_id.toString() : "")
       // Set assigned users in order (they should come with priority from backend)
       const users = data.users || []
       setAssignedUsers(Array.isArray(users) ? users : [])
-    } catch (err: any) {
-      setError(err.message || "Failed to load department")
+    } catch (err) {
+      const error = err as Error
+      setError(error.message || "Failed to load department")
       console.error("Error loading department:", err)
     } finally {
       setLoading(false)
@@ -129,6 +138,19 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
     }
   }
 
+  const loadAIAgents = async () => {
+    try {
+      setLoadingAIAgents(true)
+      const response = await aiAgentService.list({ status: "active" })
+      setAvailableAIAgents(response.data || [])
+    } catch (err) {
+      console.error("Failed to load AI agents:", err)
+      setAvailableAIAgents([])
+    } finally {
+      setLoadingAIAgents(false)
+    }
+  }
+
   const handleSave = async () => {
     if (!name.trim()) {
       setSaveError("Department name is required")
@@ -144,13 +166,15 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
         description: description.trim(),
         status,
         user_ids: assignedUsers.map(u => u.id),
+        ai_agent_id: selectedAIAgentId ? parseInt(selectedAIAgentId) : null,
       })
       toast({
         title: "Changes saved",
         description: "Department has been updated successfully.",
       })
-    } catch (err: any) {
-      setSaveError(err.message || "Failed to save department")
+    } catch (err) {
+      const error = err as Error
+      setSaveError(error.message || "Failed to save department")
     } finally {
       setSaving(false)
     }
@@ -179,8 +203,8 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <SettingsPageWrapper activeTab="departments" showHeader={false}>
+        <div className="space-y-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-10 w-10 rounded-lg" />
             <div className="space-y-2">
@@ -196,36 +220,34 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </SettingsPageWrapper>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto p-6">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-destructive mb-4">{error}</div>
-              <div className="flex justify-center gap-4">
-                <Button variant="outline" onClick={() => router.push("/settings/departments")}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Departments
-                </Button>
-                <Button onClick={loadDepartment}>
-                  Retry
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <SettingsPageWrapper activeTab="departments" showHeader={false}>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-destructive mb-4">{error}</div>
+            <div className="flex justify-center gap-4">
+              <Button variant="outline" onClick={() => router.push("/settings/departments")}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Departments
+              </Button>
+              <Button onClick={loadDepartment}>
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </SettingsPageWrapper>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <SettingsPageWrapper activeTab="departments" showHeader={false}>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -317,6 +339,37 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
                 disabled={saving}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ai-agent">AI Agent</Label>
+              {loadingAIAgents ? (
+                <div className="flex items-center justify-center h-10 border rounded-md">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <Select value={selectedAIAgentId} onValueChange={setSelectedAIAgentId} disabled={saving}>
+                  <SelectTrigger id="ai-agent">
+                    <SelectValue placeholder="No AI agent (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">
+                      <span className="text-muted-foreground">No AI agent</span>
+                    </SelectItem>
+                    {availableAIAgents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-3 w-3 text-blue-500" />
+                          {agent.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Assign an AI agent to automatically handle conversations in this department
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -361,7 +414,7 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
                   </DndContext>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground border rounded-lg border-dashed">
-                    No users assigned. Click "Add User" to assign users to this department.
+                    No users assigned. Click &quot;Add User&quot; to assign users to this department.
                   </div>
                 )}
 
@@ -458,6 +511,6 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
         </Card>
 
       </div>
-    </div>
+    </SettingsPageWrapper>
   )
 }

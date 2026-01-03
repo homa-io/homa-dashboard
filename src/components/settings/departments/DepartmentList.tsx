@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit, Trash2, PauseCircle, PlayCircle, Users, Bot } from "lucide-react"
+import { MoreHorizontal, Edit, Trash2, PauseCircle, PlayCircle, Users, Bot, Sparkles } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Department } from "@/types/department.types"
 
@@ -62,6 +62,7 @@ export function DepartmentList({
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead className="hidden sm:table-cell">Description</TableHead>
+            <TableHead className="hidden md:table-cell">AI Agent</TableHead>
             <TableHead>Assigned Users</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-[70px]"></TableHead>
@@ -80,6 +81,16 @@ export function DepartmentList({
               </TableCell>
               <TableCell className="hidden sm:table-cell text-muted-foreground max-w-[200px] truncate">
                 {department.description || "-"}
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                {department.ai_agent ? (
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3 w-3 text-blue-500" />
+                    <span className="text-sm">{department.ai_agent.name}</span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">-</span>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1">

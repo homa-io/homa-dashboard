@@ -93,6 +93,7 @@ export const SETTING_KEYS = {
   CONVERSATION_TIMEOUT_HOURS: 'workflow.conversation_timeout_hours',
 
   // General Settings
+  PROJECT_NAME: 'general.project_name',
   APP_NAME: 'general.app_name',
   COMPANY_NAME: 'general.company_name',
   MAINTENANCE_MODE: 'general.maintenance_mode',

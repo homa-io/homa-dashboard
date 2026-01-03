@@ -17,12 +17,20 @@ export interface DepartmentUser {
 // Department status
 export type DepartmentStatus = 'active' | 'suspended'
 
+// AI Agent reference (minimal info)
+export interface DepartmentAIAgent {
+  id: number
+  name: string
+}
+
 // Department entity
 export interface Department {
   id: number
   name: string
   description: string
   status: DepartmentStatus
+  ai_agent_id?: number | null
+  ai_agent?: DepartmentAIAgent | null
   created_at: string
   updated_at: string
   users?: DepartmentUser[]
@@ -33,6 +41,7 @@ export interface DepartmentCreateRequest {
   name: string
   description?: string
   user_ids?: string[]
+  ai_agent_id?: number | null
 }
 
 // Update department request
@@ -41,6 +50,7 @@ export interface DepartmentUpdateRequest {
   description?: string
   status?: DepartmentStatus
   user_ids?: string[]
+  ai_agent_id?: number | null
 }
 
 // List departments response
