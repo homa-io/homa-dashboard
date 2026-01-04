@@ -450,7 +450,7 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
                   <button className="focus:outline-none">
                     <CustomBadge variant={getStatusColor(conversation.status) as any} className="text-[10px] sm:text-xs h-5 sm:h-6 cursor-pointer hover:opacity-80">
                       {getStatusIcon(conversation.status)}
-                      <span className="capitalize">{conversation.status.replace('_', ' ')}</span>
+                      <span className="capitalize">{conversation.status.replace(/_/g, ' ')}</span>
                     </CustomBadge>
                   </button>
                 </DropdownMenuTrigger>

@@ -36,8 +36,14 @@ export const TICKET_STATUS_CONFIG: Record<string, StatusConfig> = {
   new: { color: 'blue', label: 'New' },
   open: { color: 'green', label: 'Open' },
   pending: { color: 'yellow', label: 'Pending' },
+  wait_for_agent: { color: 'yellow', label: 'Wait for Agent' },
+  in_progress: { color: 'yellow', label: 'In Progress' },
+  wait_for_user: { color: 'purple', label: 'Wait for User' },
+  on_hold: { color: 'gray', label: 'On Hold' },
   resolved: { color: 'green', label: 'Resolved' },
-  closed: { color: 'gray', label: 'Closed' }
+  closed: { color: 'gray', label: 'Closed' },
+  unresolved: { color: 'red', label: 'Unresolved' },
+  spam: { color: 'red', label: 'Spam' }
 } as const
 
 // Priority configurations  

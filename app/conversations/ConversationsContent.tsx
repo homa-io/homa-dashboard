@@ -1627,7 +1627,7 @@ export default function ConversationsContent() {
                 {filterSource && (
                   <CustomBadge variant={getSourceColor(filterSource) as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-xs h-6 px-2 gap-1">
                     {getSourceIcon(filterSource)}
-                    <span className="capitalize">{filterSource.replace('_', ' ')}</span>
+                    <span className="capitalize">{filterSource.replace(/_/g, ' ')}</span>
                     <button
                       onClick={() => setFilterSource(null)}
                       className="text-current hover:opacity-70 ml-1"
@@ -1655,7 +1655,7 @@ export default function ConversationsContent() {
                 {filterStatus && (
                   <CustomBadge variant={getStatusColor(filterStatus) as "blue" | "green" | "yellow" | "gray"} className="text-xs h-6 px-2 gap-1">
                     {getStatusIcon(filterStatus)}
-                    <span className="capitalize">{filterStatus.replace('_', ' ')}</span>
+                    <span className="capitalize">{filterStatus.replace(/_/g, ' ')}</span>
                     <button
                       onClick={() => setFilterStatus(null)}
                       className="text-current hover:opacity-70 ml-1"
@@ -1785,11 +1785,11 @@ export default function ConversationsContent() {
                   <div className="flex flex-wrap gap-1">
                     <CustomBadge variant={getSourceColor(conversation.channel) as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-[10px] h-4 px-1">
                       {getSourceIcon(conversation.channel)}
-                      <span className="ml-1 capitalize">{conversation.channel.replace('_', ' ')}</span>
+                      <span className="ml-1 capitalize">{conversation.channel.replace(/_/g, ' ')}</span>
                     </CustomBadge>
                     <CustomBadge variant={getStatusColor(conversation.status) as "blue" | "green" | "yellow" | "gray"} className="text-[10px] h-4 px-1 gap-0.5">
                       {getStatusIcon(conversation.status)}
-                      <span className="capitalize">{conversation.status.replace('_', ' ')}</span>
+                      <span className="capitalize">{conversation.status.replace(/_/g, ' ')}</span>
                     </CustomBadge>
                     <CustomBadge variant={getPriorityColor(conversation.priority) as "gray" | "yellow" | "red" | "red-dot"} className="text-[10px] h-4">
                       {conversation.priority}
@@ -1812,7 +1812,7 @@ export default function ConversationsContent() {
                 <div className="flex gap-2">
                   <CustomBadge variant={getSourceColor(selectedConversation.channel) as "blue" | "green" | "yellow" | "purple" | "gray"} className="text-xs h-6 px-3">
                     {getSourceIcon(selectedConversation.channel)}
-                    <span className="ml-1 capitalize">{selectedConversation.channel.replace('_', ' ')}</span>
+                    <span className="ml-1 capitalize">{selectedConversation.channel.replace(/_/g, ' ')}</span>
                   </CustomBadge>
 
                   {/* Clickable Status Badge */}
@@ -1825,7 +1825,7 @@ export default function ConversationsContent() {
                           ) : (
                             getStatusIcon(ticketHeader.status)
                           )}
-                          <span className="capitalize">{loadingStates.status ? 'Updating...' : ticketHeader.status.replace('_', ' ')}</span>
+                          <span className="capitalize">{loadingStates.status ? 'Updating...' : ticketHeader.status.replace(/_/g, ' ')}</span>
                         </CustomBadge>
                       </button>
                     </DropdownMenuTrigger>
