@@ -13,6 +13,10 @@ export { useDarkMode } from './useDarkMode';
 export { useIsMobile } from './use-mobile';
 export { useToast, toast } from './use-toast';
 
+// CRUD Manager hook for manager components
+export { useCRUDManager } from './useCRUDManager';
+export type { CRUDConfig, CRUDManagerState, CRUDManagerActions } from './useCRUDManager';
+
 // Activity tracking
 export { useActivityTracker } from './useActivityTracker';
 
