@@ -20,16 +20,10 @@ export type SettingsTab = 'general' | 'users' | 'departments' | 'bot' | 'custome
 
 const tabs = [
   {
-    id: 'general' as SettingsTab,
-    label: 'General',
-    icon: Settings,
-    path: '/settings/general'
-  },
-  {
-    id: 'users' as SettingsTab,
-    label: 'Users',
-    icon: Users,
-    path: '/settings/users'
+    id: 'bot' as SettingsTab,
+    label: 'AI Agents',
+    icon: Bot,
+    path: '/settings/bot'
   },
   {
     id: 'departments' as SettingsTab,
@@ -38,10 +32,40 @@ const tabs = [
     path: '/settings/departments'
   },
   {
-    id: 'bot' as SettingsTab,
-    label: 'AI Agents',
-    icon: Bot,
-    path: '/settings/bot'
+    id: 'users' as SettingsTab,
+    label: 'Users',
+    icon: Users,
+    path: '/settings/users'
+  },
+  {
+    id: 'integrations' as SettingsTab,
+    label: 'Integrations',
+    icon: Zap,
+    path: '/settings/integrations'
+  },
+  {
+    id: 'rag' as SettingsTab,
+    label: 'RAG',
+    icon: Brain,
+    path: '/settings/rag'
+  },
+  {
+    id: 'canned-messages' as SettingsTab,
+    label: 'Canned Messages',
+    icon: MessageSquare,
+    path: '/settings/canned-messages'
+  },
+  {
+    id: 'webhooks' as SettingsTab,
+    label: 'Webhooks',
+    icon: Webhook,
+    path: '/settings/webhooks'
+  },
+  {
+    id: 'general' as SettingsTab,
+    label: 'General',
+    icon: Settings,
+    path: '/settings/general'
   },
   {
     id: 'customer-attributes' as SettingsTab,
@@ -56,40 +80,16 @@ const tabs = [
     path: '/settings/conversation-attributes'
   },
   {
-    id: 'integrations' as SettingsTab,
-    label: 'Integrations',
-    icon: Zap,
-    path: '/settings/integrations'
-  },
-  {
-    id: 'webhooks' as SettingsTab,
-    label: 'Webhooks',
-    icon: Webhook,
-    path: '/settings/webhooks'
-  },
-  {
-    id: 'plugins' as SettingsTab,
-    label: 'Plugins',
-    icon: Plug,
-    path: '/settings/plugins'
-  },
-  {
-    id: 'canned-messages' as SettingsTab,
-    label: 'Canned Messages',
-    icon: MessageSquare,
-    path: '/settings/canned-messages'
-  },
-  {
     id: 'activity' as SettingsTab,
     label: 'Activity Log',
     icon: Activity,
     path: '/settings/activity'
   },
   {
-    id: 'rag' as SettingsTab,
-    label: 'RAG',
-    icon: Brain,
-    path: '/settings/rag'
+    id: 'plugins' as SettingsTab,
+    label: 'Plugins',
+    icon: Plug,
+    path: '/settings/plugins'
   }
 ]
 
