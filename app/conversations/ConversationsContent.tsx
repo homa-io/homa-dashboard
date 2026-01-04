@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Search, Filter, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Link, Download, FileText, Image as ImageIcon, ChevronDown, Reply, Mail, Globe, MessageCircle, Phone, Monitor, ChevronUp, Sparkles, Check, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, CircleDot, X, Tag, Building, Minus, AlertTriangle, Zap, Circle, Clock, CheckCircle, XCircle, Pause, Loader, Archive } from 'lucide-react'
+import { Search, Filter, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Link, Download, FileText, Image as ImageIcon, ChevronDown, Reply, Mail, Globe, MessageCircle, Phone, Monitor, ChevronUp, Sparkles, Check, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, CircleDot, X, Tag, Building, Minus, AlertTriangle, Zap, Circle, Clock, CheckCircle, XCircle, Pause, Loader, Archive, UserCheck } from 'lucide-react'
 import { VisitorInformation } from '@/components/conversations/VisitorInformation'
 import { ConversationActions } from '@/components/conversations/ConversationActions'
 import { WysiwygEditor } from '@/components/conversations/WysiwygEditor'
@@ -50,6 +50,7 @@ export default function ConversationsContent() {
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
 
   // Filter state (single-select for most, multi-select for tags)
+  const [filterAssignedToMe, setFilterAssignedToMe] = useState(true) // Checked by default
   const [filterSource, setFilterSource] = useState<string | null>(null)
   const [filterPriority, setFilterPriority] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
@@ -207,7 +208,11 @@ export default function ConversationsContent() {
           page: currentPage,
           limit: 25,
           sort_order: sortOrder,
-          assigned_to_me: true,
+        }
+
+        // Filter by assigned to me or show all from department
+        if (filterAssignedToMe) {
+          params.assigned_to_me = true
         }
 
         if (searchQuery.trim()) {
@@ -243,7 +248,7 @@ export default function ConversationsContent() {
     }
 
     fetchConversations()
-  }, [searchQuery, filterStatus, filterPriority, filterSource, filterTags, sortOrder, currentPage, refreshTrigger])
+  }, [searchQuery, filterStatus, filterPriority, filterSource, filterTags, filterAssignedToMe, sortOrder, currentPage, refreshTrigger])
 
   // Auto-select first conversation on page load
   useEffect(() => {
@@ -1264,6 +1269,7 @@ export default function ConversationsContent() {
 
   // Clear all filters function
   const clearAllFilters = () => {
+    setFilterAssignedToMe(true) // Reset to default (checked)
     setFilterSource(null)
     setFilterPriority(null)
     setFilterStatus(null)
@@ -1272,8 +1278,8 @@ export default function ConversationsContent() {
     setSearchQuery('')
   }
 
-  // Check if any filters are active
-  const hasActiveFilters = filterSource || filterPriority || filterStatus || filterTags.length > 0
+  // Check if any filters are active (assigned to me is checked by default, so unchecked means filter is "active")
+  const hasActiveFilters = filterSource || filterPriority || filterStatus || filterTags.length > 0 || !filterAssignedToMe
 
   // Get tag names for filtering dropdown
   const availableTagNames = availableTags.map(t => t.name)
@@ -1403,6 +1409,16 @@ export default function ConversationsContent() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Filter & Sort</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+
+                  {/* Assigned to me filter */}
+                  <DropdownMenuCheckboxItem
+                    checked={filterAssignedToMe}
+                    onCheckedChange={setFilterAssignedToMe}
+                  >
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Assigned to me
+                  </DropdownMenuCheckboxItem>
                   <DropdownMenuSeparator />
 
                   {/* Filter by Source */}
