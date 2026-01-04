@@ -207,6 +207,7 @@ export default function ConversationsContent() {
           page: currentPage,
           limit: 25,
           sort_order: sortOrder,
+          assigned_to_me: true,
         }
 
         if (searchQuery.trim()) {

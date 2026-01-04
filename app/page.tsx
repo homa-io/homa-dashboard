@@ -157,6 +157,7 @@ export default function Dashboard() {
           statuses.map(status =>
             conversationService.searchConversations({
               status,
+              assigned_to_me: true,
               limit: 50,
               sort_by: 'updated_at',
               sort_order: 'desc'
