@@ -105,6 +105,23 @@ export async function toggleAIAgentStatus(
   return response.data
 }
 
+/**
+ * Get the generated system prompt template for an AI agent
+ */
+export interface AIAgentTemplateResponse {
+  template: string
+  token_count: number
+}
+
+export async function getAIAgentTemplate(
+  id: number
+): Promise<AIAgentTemplateResponse> {
+  const response = await apiClient.get<AIAgentTemplateResponse>(
+    `${BASE_PATH}/${id}/template`
+  )
+  return response.data
+}
+
 // Convenience export as object
 export const aiAgentService = {
   list: getAIAgents,
@@ -113,4 +130,5 @@ export const aiAgentService = {
   update: updateAIAgent,
   delete: deleteAIAgent,
   toggleStatus: toggleAIAgentStatus,
+  getTemplate: getAIAgentTemplate,
 }

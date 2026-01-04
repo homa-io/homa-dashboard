@@ -36,7 +36,8 @@ export interface AIAgent {
   bot_id: string
   bot?: AIAgentBot
   handover_enabled: boolean
-  handover_user_id: string | null
+  handover_user_id: string | null        // Deprecated: use handover_user_ids
+  handover_user_ids: string[] | null     // Array of user IDs for handover
   handover_user?: AIAgentHandoverUser | null
   multi_language: boolean
   internet_access: boolean
@@ -67,7 +68,7 @@ export interface AIAgentCreateRequest {
   name: string
   bot_id: string
   handover_enabled: boolean
-  handover_user_id?: string | null
+  handover_user_ids?: string[]    // Array of user IDs for handover
   multi_language: boolean
   internet_access: boolean
   tone: AIAgentTone

@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ArrowLeft, Bot, Loader2, Save, Eye } from "lucide-react"
+import { MultiSelect } from "@/components/ui/multi-select"
 import { useToast } from "@/hooks/use-toast"
 import type { AIAgent, AIAgentTone } from "@/types/ai-agent.types"
 import { TONE_OPTIONS, MAX_RESPONSE_LENGTH_OPTIONS, CONTEXT_WINDOW_OPTIONS, MAX_TOOL_CALLS_OPTIONS, DEFAULT_BLOCKED_TOPICS, DEFAULT_COLLECT_USER_INFO_FIELDS } from "@/types/ai-agent.types"
@@ -26,8 +27,6 @@ import type { AIAgentTool } from "@/types/ai-agent-tool.types"
 import { aiAgentService } from "@/services/ai-agent.service"
 import { aiAgentToolService } from "@/services/ai-agent-tool.service"
 import { getUsers } from "@/services/users"
-import { getSettingsAction } from "@/actions/settings.actions"
-import { SETTING_KEYS } from "@/services/settings.service"
 import type { User } from "@/types/user"
 import { ToolsManager } from "./ToolsManager"
 import { InstructionPreviewModal } from "./InstructionPreviewModal"
@@ -45,7 +44,7 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
   const [name, setName] = useState("")
   const [botId, setBotId] = useState("")
   const [handoverEnabled, setHandoverEnabled] = useState(false)
-  const [handoverUserId, setHandoverUserId] = useState("")
+  const [handoverUserIds, setHandoverUserIds] = useState<string[]>([])
   const [multiLanguage, setMultiLanguage] = useState(true)
   const [internetAccess, setInternetAccess] = useState(false)
   const [tone, setTone] = useState<AIAgentTone>("casual")
@@ -74,14 +73,12 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
   const [bots, setBots] = useState<User[]>([])
   const [agents, setAgents] = useState<User[]>([])
   const [tools, setTools] = useState<AIAgentTool[]>([])
-  const [projectName, setProjectName] = useState("")
   const [previewOpen, setPreviewOpen] = useState(false)
 
   useEffect(() => {
     loadAgent()
     loadUsers()
     loadTools()
-    loadProjectSettings()
   }, [agentId])
 
   const loadTools = async () => {
@@ -93,15 +90,6 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
     }
   }
 
-  const loadProjectSettings = async () => {
-    try {
-      const settings = await getSettingsAction()
-      setProjectName(settings[SETTING_KEYS.PROJECT_NAME] || "")
-    } catch (err) {
-      console.error("Failed to load project settings:", err)
-    }
-  }
-
   const loadAgent = async () => {
     try {
       setLoading(true)
@@ -110,7 +98,14 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
       setName(agent.name)
       setBotId(agent.bot_id)
       setHandoverEnabled(agent.handover_enabled)
-      setHandoverUserId(agent.handover_user_id || "")
+      // Load handover user IDs - try new field first, fallback to old field
+      if (agent.handover_user_ids && Array.isArray(agent.handover_user_ids) && agent.handover_user_ids.length > 0) {
+        setHandoverUserIds(agent.handover_user_ids)
+      } else if (agent.handover_user_id) {
+        setHandoverUserIds([agent.handover_user_id])
+      } else {
+        setHandoverUserIds([])
+      }
       setMultiLanguage(agent.multi_language)
       setInternetAccess(agent.internet_access)
       setTone(agent.tone)
@@ -178,8 +173,8 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
       setSaveError("Bot selection is required")
       return
     }
-    if (handoverEnabled && !handoverUserId) {
-      setSaveError("Handover user is required when handover is enabled")
+    if (handoverEnabled && handoverUserIds.length === 0) {
+      setSaveError("At least one handover user is required when handover is enabled")
       return
     }
 
@@ -190,7 +185,7 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
         name: name.trim(),
         bot_id: botId,
         handover_enabled: handoverEnabled,
-        handover_user_id: handoverEnabled ? handoverUserId : null,
+        handover_user_ids: handoverEnabled ? handoverUserIds : [],
         multi_language: multiLanguage,
         internet_access: internetAccess,
         tone,
@@ -404,32 +399,31 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
               />
             </div>
 
-            {/* Handover User Selection */}
+            {/* Handover User Selection - Multiple Users */}
             {handoverEnabled && (
               <div className="space-y-2 ml-0 sm:ml-4 p-4 bg-muted/50 rounded-lg">
-                <Label htmlFor="handover-user">Handover To *</Label>
-                <Select
-                  value={handoverUserId}
-                  onValueChange={setHandoverUserId}
-                  disabled={saving || loadingUsers}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an agent..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {agents.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground">
-                        No agents available
-                      </div>
-                    ) : (
-                      agents.map((agent) => (
-                        <SelectItem key={agent.id} value={agent.id}>
-                          {agent.display_name || `${agent.name} ${agent.last_name}`}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <Label>Handover To *</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Select one or more agents to receive handovers
+                </p>
+                {loadingUsers ? (
+                  <div className="flex items-center justify-center h-10 border rounded-md">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <MultiSelect
+                    options={agents.map((agent) => ({
+                      value: agent.id,
+                      label: agent.display_name || `${agent.name} ${agent.last_name}`,
+                    }))}
+                    selected={handoverUserIds}
+                    onChange={setHandoverUserIds}
+                    placeholder="Select agents..."
+                    searchPlaceholder="Search agents..."
+                    emptyMessage="No agents found."
+                    disabled={saving}
+                  />
+                )}
               </div>
             )}
 
@@ -813,36 +807,7 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
       <InstructionPreviewModal
         open={previewOpen}
         onOpenChange={setPreviewOpen}
-        projectName={projectName}
-        agent={{
-          name,
-          bot: bots.find(b => b.id === botId) ? {
-            id: botId,
-            name: bots.find(b => b.id === botId)?.name || "",
-            display_name: bots.find(b => b.id === botId)?.display_name || "",
-          } : null,
-          handover_enabled: handoverEnabled,
-          handover_user_id: handoverEnabled ? handoverUserId : null,
-          multi_language: multiLanguage,
-          internet_access: internetAccess,
-          tone,
-          use_knowledge_base: useKnowledgeBase,
-          unit_conversion: unitConversion,
-          instructions,
-          greeting_message: greetingMessage,
-          max_response_length: maxResponseLength,
-          context_window: contextWindow,
-          blocked_topics: blockedTopics,
-          max_tool_calls: maxToolCalls,
-          collect_user_info: collectUserInfo,
-          collect_user_info_fields: collectUserInfoFields,
-          humor_level: humorLevel,
-          use_emojis: useEmojis,
-          formality_level: formalityLevel,
-          priority_detection: priorityDetection,
-          auto_tagging: autoTagging,
-        }}
-        tools={tools}
+        agentId={agentId}
       />
     </SettingsPageWrapper>
   )

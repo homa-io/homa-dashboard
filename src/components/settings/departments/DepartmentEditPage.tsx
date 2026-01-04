@@ -58,7 +58,7 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [status, setStatus] = useState<DepartmentStatus>("active")
-  const [selectedAIAgentId, setSelectedAIAgentId] = useState<string>("")
+  const [selectedAIAgentId, setSelectedAIAgentId] = useState<string>("none")
   const [assignedUsers, setAssignedUsers] = useState<DepartmentUser[]>([])
   const [availableUsers, setAvailableUsers] = useState<DepartmentUser[]>([])
   const [availableAIAgents, setAvailableAIAgents] = useState<AIAgent[]>([])
@@ -112,7 +112,7 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
       setName(data.name)
       setDescription(data.description || "")
       setStatus(data.status)
-      setSelectedAIAgentId(data.ai_agent_id ? data.ai_agent_id.toString() : "")
+      setSelectedAIAgentId(data.ai_agent_id ? data.ai_agent_id.toString() : "none")
       // Set assigned users in order (they should come with priority from backend)
       const users = data.users || []
       setAssignedUsers(Array.isArray(users) ? users : [])
@@ -166,7 +166,7 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
         description: description.trim(),
         status,
         user_ids: assignedUsers.map(u => u.id),
-        ai_agent_id: selectedAIAgentId ? parseInt(selectedAIAgentId) : null,
+        ai_agent_id: selectedAIAgentId && selectedAIAgentId !== "none" ? parseInt(selectedAIAgentId) : null,
       })
       toast({
         title: "Changes saved",
@@ -352,7 +352,7 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
                     <SelectValue placeholder="No AI agent (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">
+                    <SelectItem value="none">
                       <span className="text-muted-foreground">No AI agent</span>
                     </SelectItem>
                     {availableAIAgents.map((agent) => (

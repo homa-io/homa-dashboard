@@ -46,7 +46,7 @@ export default function ConversationsContent() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [replyText, setReplyText] = useState("")
-  const [isActionsExpanded, setIsActionsExpanded] = useState(false)
+  const [isActionsExpanded, setIsActionsExpanded] = useState(true)
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
 
   // Filter state (single-select for most, multi-select for tags)
@@ -147,7 +147,7 @@ export default function ConversationsContent() {
         const currentSelectedId = selectedConversationIdRef.current
         if (conversationId && currentSelectedId && conversationId === currentSelectedId) {
           // Refetch current conversation messages
-          conversationService.getConversation(currentSelectedId).then(detailData => {
+          conversationService.getConversation(currentSelectedId, 1, 1000, 'asc').then(detailData => {
             const transformedMessages = detailData.messages.map(msg => ({
               id: msg.id,
               message: msg.body,
@@ -297,7 +297,7 @@ export default function ConversationsContent() {
 
       // Refresh the current conversation details and messages
       try {
-        const detailData = await conversationService.getConversation(conversationId)
+        const detailData = await conversationService.getConversation(conversationId, 1, 1000, 'asc')
 
         // Transform messages to match component format
         const transformedMessages = detailData.messages.map(msg => ({
@@ -352,7 +352,7 @@ export default function ConversationsContent() {
 
       // Refresh the current conversation details and messages
       try {
-        const detailData = await conversationService.getConversation(conversationId)
+        const detailData = await conversationService.getConversation(conversationId, 1, 1000, 'asc')
 
         // Transform messages to match component format
         const transformedMessages = detailData.messages.map(msg => ({
@@ -416,12 +416,14 @@ export default function ConversationsContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new': return 'blue'
-      case 'user_reply': return 'green'
-      case 'agent_reply': return 'blue'
-      case 'processing': return 'yellow'
+      case 'wait_for_agent': return 'yellow'
+      case 'in_progress': return 'blue'
+      case 'wait_for_user': return 'green'
+      case 'on_hold': return 'yellow'
+      case 'resolved': return 'green'
       case 'closed': return 'gray'
-      case 'archived': return 'gray'
-      case 'postponed': return 'yellow'
+      case 'unresolved': return 'red'
+      case 'spam': return 'gray'
       default: return 'gray'
     }
   }
@@ -429,12 +431,14 @@ export default function ConversationsContent() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'new': return <Circle className="w-3 h-3" />
-      case 'user_reply': return <ArrowUp className="w-3 h-3" />
-      case 'agent_reply': return <ArrowDown className="w-3 h-3" />
-      case 'processing': return <Loader className="w-3 h-3" />
+      case 'wait_for_agent': return <Clock className="w-3 h-3" />
+      case 'in_progress': return <Loader className="w-3 h-3" />
+      case 'wait_for_user': return <Clock className="w-3 h-3" />
+      case 'on_hold': return <Pause className="w-3 h-3" />
+      case 'resolved': return <CheckCircle className="w-3 h-3" />
       case 'closed': return <XCircle className="w-3 h-3" />
-      case 'archived': return <Archive className="w-3 h-3" />
-      case 'postponed': return <Clock className="w-3 h-3" />
+      case 'unresolved': return <AlertCircle className="w-3 h-3" />
+      case 'spam': return <Archive className="w-3 h-3" />
       default: return <Circle className="w-3 h-3" />
     }
   }
@@ -476,12 +480,14 @@ export default function ConversationsContent() {
   // Available options
   const availableStatuses = [
     { value: "new", label: "New" },
-    { value: "user_reply", label: "User Reply" },
-    { value: "agent_reply", label: "Agent Reply" },
-    { value: "processing", label: "Processing" },
+    { value: "wait_for_agent", label: "Wait for Agent" },
+    { value: "in_progress", label: "In Progress" },
+    { value: "wait_for_user", label: "Wait for User" },
+    { value: "on_hold", label: "On Hold" },
+    { value: "resolved", label: "Resolved" },
     { value: "closed", label: "Closed" },
-    { value: "archived", label: "Archived" },
-    { value: "postponed", label: "Postponed" },
+    { value: "unresolved", label: "Unresolved" },
+    { value: "spam", label: "Spam" },
   ]
 
   const availablePriorities = [
@@ -1294,7 +1300,8 @@ export default function ConversationsContent() {
         setMessagesLoading(true)
         setMessagesError(null)
         // Use optimized endpoint that returns both conversation and messages
-        const detailData = await conversationService.getConversation(selectedConversationId)
+        // Request 1000 messages to get all messages for most conversations
+        const detailData = await conversationService.getConversation(selectedConversationId, 1, 1000, 'asc')
 
         // Transform messages to match component format
         const transformedMessages = detailData.messages.map(msg => ({
@@ -1481,29 +1488,37 @@ export default function ConversationsContent() {
                           <Circle className="mr-2 h-4 w-4 text-blue-500" />
                           New
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="user_reply">
-                          <ArrowUp className="mr-2 h-4 w-4 text-green-500" />
-                          User Reply
+                        <DropdownMenuRadioItem value="wait_for_agent">
+                          <Clock className="mr-2 h-4 w-4 text-yellow-500" />
+                          Wait for Agent
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="agent_reply">
-                          <ArrowDown className="mr-2 h-4 w-4 text-blue-500" />
-                          Agent Reply
+                        <DropdownMenuRadioItem value="in_progress">
+                          <Loader className="mr-2 h-4 w-4 text-blue-500" />
+                          In Progress
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="processing">
-                          <Loader className="mr-2 h-4 w-4 text-yellow-500" />
-                          Processing
+                        <DropdownMenuRadioItem value="wait_for_user">
+                          <Clock className="mr-2 h-4 w-4 text-green-500" />
+                          Wait for User
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="on_hold">
+                          <Pause className="mr-2 h-4 w-4 text-yellow-500" />
+                          On Hold
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="resolved">
+                          <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                          Resolved
                         </DropdownMenuRadioItem>
                         <DropdownMenuRadioItem value="closed">
                           <XCircle className="mr-2 h-4 w-4 text-gray-500" />
                           Closed
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="archived">
-                          <Archive className="mr-2 h-4 w-4 text-gray-500" />
-                          Archived
+                        <DropdownMenuRadioItem value="unresolved">
+                          <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
+                          Unresolved
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="postponed">
-                          <Clock className="mr-2 h-4 w-4 text-yellow-500" />
-                          Postponed
+                        <DropdownMenuRadioItem value="spam">
+                          <Archive className="mr-2 h-4 w-4 text-gray-500" />
+                          Spam
                         </DropdownMenuRadioItem>
                       </DropdownMenuRadioGroup>
                     </DropdownMenuSubContent>

@@ -27,7 +27,7 @@ export function DepartmentForm({ department, isOpen, onClose, onSave }: Departme
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
-  const [selectedAIAgentId, setSelectedAIAgentId] = useState<string>("")
+  const [selectedAIAgentId, setSelectedAIAgentId] = useState<string>("none")
   const [availableUsers, setAvailableUsers] = useState<DepartmentUser[]>([])
   const [availableAIAgents, setAvailableAIAgents] = useState<AIAgent[]>([])
   const [loading, setLoading] = useState(false)
@@ -43,12 +43,12 @@ export function DepartmentForm({ department, isOpen, onClose, onSave }: Departme
         setName(department.name)
         setDescription(department.description || "")
         setSelectedUserIds(department.users?.map(u => u.id) || [])
-        setSelectedAIAgentId(department.ai_agent_id ? department.ai_agent_id.toString() : "")
+        setSelectedAIAgentId(department.ai_agent_id ? department.ai_agent_id.toString() : "none")
       } else {
         setName("")
         setDescription("")
         setSelectedUserIds([])
-        setSelectedAIAgentId("")
+        setSelectedAIAgentId("none")
       }
       setError(null)
     }
@@ -94,7 +94,7 @@ export function DepartmentForm({ department, isOpen, onClose, onSave }: Departme
         name: name.trim(),
         description: description.trim(),
         user_ids: selectedUserIds,
-        ai_agent_id: selectedAIAgentId ? parseInt(selectedAIAgentId) : null,
+        ai_agent_id: selectedAIAgentId && selectedAIAgentId !== "none" ? parseInt(selectedAIAgentId) : null,
       })
       onClose()
     } catch (err) {
@@ -164,7 +164,7 @@ export function DepartmentForm({ department, isOpen, onClose, onSave }: Departme
                     <SelectValue placeholder="No AI agent (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">
+                    <SelectItem value="none">
                       <span className="text-muted-foreground">No AI agent</span>
                     </SelectItem>
                     {availableAIAgents.map((agent) => (

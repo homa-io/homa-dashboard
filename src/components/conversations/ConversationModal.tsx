@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CustomBadge } from "@/components/ui/custom-badge"
@@ -50,7 +50,13 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
   const [isActionsExpanded, setIsActionsExpanded] = useState(true)
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [replyText, setReplyText] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [hasMoreMessages, setHasMoreMessages] = useState(false)
+  const PAGE_SIZE = 100
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [availableDepartments, setAvailableDepartments] = useState<Array<{ id: number; name: string }>>([])
   const [departmentNames, setDepartmentNames] = useState<string[]>([])
   const [availableTags, setAvailableTags] = useState<string[]>([])
@@ -60,19 +66,54 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
   // Fetch messages, departments, tags, and users when modal opens
   useEffect(() => {
     if (isOpen && conversation) {
-      fetchMessages()
+      // Reset state and load latest messages
+      setMessages([])
+      setCurrentPage(1)
+      setTotalPages(1)
+      setHasMoreMessages(false)
+      fetchLatestMessages()
       fetchMetadata()
       // Clear reply text when opening modal
       setReplyText("")
     }
   }, [isOpen, conversation])
 
-  const fetchMessages = async () => {
+  // Scroll to bottom when messages are first loaded
+  useEffect(() => {
+    if (messages.length > 0 && !loadingMore && !loading && messagesContainerRef.current) {
+      // Only scroll to bottom on initial load (when currentPage equals totalPages)
+      if (currentPage === totalPages) {
+        requestAnimationFrame(() => {
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+          }
+        })
+      }
+    }
+  }, [messages.length, loading, loadingMore, currentPage, totalPages])
+
+  // Fetch the last page of messages (latest messages first)
+  const fetchLatestMessages = async () => {
     if (!conversation) return
     setLoading(true)
     try {
-      const data = await conversationService.getConversation(conversation.id)
-      setMessages(data.messages)
+      // First, get page 1 to find out total pages
+      const initialData = await conversationService.getConversation(conversation.id, 1, PAGE_SIZE, 'asc')
+      const lastPage = initialData.total_pages || 1
+
+      // If there's more than 1 page, fetch the last page
+      if (lastPage > 1) {
+        const data = await conversationService.getConversation(conversation.id, lastPage, PAGE_SIZE, 'asc')
+        setMessages(data.messages)
+        setCurrentPage(lastPage)
+        setTotalPages(data.total_pages)
+        setHasMoreMessages(lastPage > 1)
+      } else {
+        setMessages(initialData.messages)
+        setCurrentPage(1)
+        setTotalPages(initialData.total_pages)
+        setHasMoreMessages(false)
+      }
     } catch (error) {
       console.error('Error fetching messages:', error)
       toast({
@@ -84,6 +125,58 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
       setLoading(false)
     }
   }
+
+  // Load older messages when user scrolls to top
+  const loadOlderMessages = useCallback(async () => {
+    if (!conversation || loadingMore || currentPage <= 1) return
+
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    // Save scroll position from bottom before loading
+    const scrollHeightBefore = container.scrollHeight
+    const scrollTopBefore = container.scrollTop
+
+    setLoadingMore(true)
+    try {
+      const prevPage = currentPage - 1
+      const data = await conversationService.getConversation(conversation.id, prevPage, PAGE_SIZE, 'asc')
+
+      // Prepend older messages
+      setMessages(prev => [...data.messages, ...prev])
+      setCurrentPage(prevPage)
+      setHasMoreMessages(prevPage > 1)
+
+      // Restore scroll position after DOM updates
+      requestAnimationFrame(() => {
+        if (container) {
+          const scrollHeightAfter = container.scrollHeight
+          const heightDiff = scrollHeightAfter - scrollHeightBefore
+          container.scrollTop = scrollTopBefore + heightDiff
+        }
+      })
+    } catch (error) {
+      console.error('Error loading older messages:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load older messages"
+      })
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [conversation, loadingMore, currentPage, toast])
+
+  // Handle scroll to detect when user scrolls to top
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current
+    if (!container || loadingMore || !hasMoreMessages) return
+
+    // Load more when scrolled near the top (within 100px)
+    if (container.scrollTop < 100) {
+      loadOlderMessages()
+    }
+  }, [loadingMore, hasMoreMessages, loadOlderMessages])
 
   const fetchMetadata = async () => {
     try {
@@ -208,6 +301,13 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
       // Add the new message to the messages list
       setMessages(prev => [...prev, response.message])
 
+      // Scroll to bottom to show new message
+      requestAnimationFrame(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+        }
+      })
+
       toast({
         title: "Reply sent",
         description: "Your reply has been sent to the customer"
@@ -240,6 +340,13 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
 
       // Add the new message to the messages list
       setMessages(prev => [...prev, response.message])
+
+      // Scroll to bottom to show new message
+      requestAnimationFrame(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+        }
+      })
 
       // Update conversation status to agent_reply
       await conversationService.updateConversationProperties(conversation.id, {
@@ -413,7 +520,26 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
                 <div className="mb-1">
                   <h3 className="text-xs sm:text-sm font-semibold mb-2 px-1">Messages ({messages.length})</h3>
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 mb-3 sm:mb-6 min-h-[200px] sm:min-h-0 bg-muted/10 rounded-lg p-2 sm:p-3">
+                <div
+                  ref={messagesContainerRef}
+                  onScroll={handleScroll}
+                  className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 mb-3 sm:mb-6 min-h-[200px] sm:min-h-0 bg-muted/10 rounded-lg p-2 sm:p-3"
+                >
+                  {/* Loading indicator for older messages at top */}
+                  {loadingMore && (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader className="w-4 h-4 animate-spin text-muted-foreground mr-2" />
+                      <span className="text-xs text-muted-foreground">Loading older messages...</span>
+                    </div>
+                  )}
+
+                  {/* Show "scroll up for more" hint */}
+                  {hasMoreMessages && !loadingMore && (
+                    <div className="flex items-center justify-center py-2">
+                      <span className="text-xs text-muted-foreground">↑ Scroll up for older messages</span>
+                    </div>
+                  )}
+
                   {loading ? (
                     <div className="flex items-center justify-center h-32">
                       <Loader className="w-6 h-6 animate-spin text-muted-foreground" />

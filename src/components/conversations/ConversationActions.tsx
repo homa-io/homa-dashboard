@@ -55,12 +55,14 @@ export function ConversationActions({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'new': return <Circle className="w-3 h-3" />
-      case 'user_reply': return <ArrowUp className="w-3 h-3" />
-      case 'agent_reply': return <ArrowDown className="w-3 h-3" />
-      case 'processing': return <Loader className="w-3 h-3" />
+      case 'wait_for_agent': return <Clock className="w-3 h-3" />
+      case 'in_progress': return <Loader className="w-3 h-3" />
+      case 'wait_for_user': return <Clock className="w-3 h-3" />
+      case 'on_hold': return <Clock className="w-3 h-3" />
+      case 'resolved': return <Check className="w-3 h-3" />
       case 'closed': return <XCircle className="w-3 h-3" />
-      case 'archived': return <Archive className="w-3 h-3" />
-      case 'postponed': return <Clock className="w-3 h-3" />
+      case 'unresolved': return <AlertCircle className="w-3 h-3" />
+      case 'spam': return <Archive className="w-3 h-3" />
       default: return <Circle className="w-3 h-3" />
     }
   }
@@ -85,12 +87,14 @@ export function ConversationActions({
 
   const statuses = [
     { value: "new", label: "New", variant: "blue" },
-    { value: "user_reply", label: "User Reply", variant: "green" },
-    { value: "agent_reply", label: "Agent Reply", variant: "blue" },
-    { value: "processing", label: "Processing", variant: "yellow" },
+    { value: "wait_for_agent", label: "Wait for Agent", variant: "yellow" },
+    { value: "in_progress", label: "In Progress", variant: "blue" },
+    { value: "wait_for_user", label: "Wait for User", variant: "green" },
+    { value: "on_hold", label: "On Hold", variant: "yellow" },
+    { value: "resolved", label: "Resolved", variant: "green" },
     { value: "closed", label: "Closed", variant: "gray" },
-    { value: "archived", label: "Archived", variant: "gray" },
-    { value: "postponed", label: "Postponed", variant: "yellow" },
+    { value: "unresolved", label: "Unresolved", variant: "red" },
+    { value: "spam", label: "Spam", variant: "gray" },
   ]
 
   const toggleTempAssignee = useCallback((userId: string) => {

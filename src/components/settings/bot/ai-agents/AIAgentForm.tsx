@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Loader2, Bot } from "lucide-react"
+import { MultiSelect } from "@/components/ui/multi-select"
 import type {
   AIAgent,
   AIAgentCreateRequest,
@@ -48,7 +49,7 @@ export function AIAgentForm({
   const [name, setName] = useState("")
   const [botId, setBotId] = useState("")
   const [handoverEnabled, setHandoverEnabled] = useState(false)
-  const [handoverUserId, setHandoverUserId] = useState("")
+  const [handoverUserIds, setHandoverUserIds] = useState<string[]>([])
   const [multiLanguage, setMultiLanguage] = useState(true)
   const [internetAccess, setInternetAccess] = useState(false)
   const [tone, setTone] = useState<AIAgentTone>("casual")
@@ -70,7 +71,14 @@ export function AIAgentForm({
         setName(agent.name)
         setBotId(agent.bot_id)
         setHandoverEnabled(agent.handover_enabled)
-        setHandoverUserId(agent.handover_user_id || "")
+        // Load handover user IDs - try new field first, fallback to old field
+        if (agent.handover_user_ids && Array.isArray(agent.handover_user_ids) && agent.handover_user_ids.length > 0) {
+          setHandoverUserIds(agent.handover_user_ids)
+        } else if (agent.handover_user_id) {
+          setHandoverUserIds([agent.handover_user_id])
+        } else {
+          setHandoverUserIds([])
+        }
         setMultiLanguage(agent.multi_language)
         setInternetAccess(agent.internet_access)
         setTone(agent.tone)
@@ -88,7 +96,7 @@ export function AIAgentForm({
     setName("")
     setBotId("")
     setHandoverEnabled(false)
-    setHandoverUserId("")
+    setHandoverUserIds([])
     setMultiLanguage(true)
     setInternetAccess(false)
     setTone("casual")
@@ -142,8 +150,8 @@ export function AIAgentForm({
       setError("Bot selection is required")
       return
     }
-    if (handoverEnabled && !handoverUserId) {
-      setError("Handover user is required when handover is enabled")
+    if (handoverEnabled && handoverUserIds.length === 0) {
+      setError("At least one handover user is required when handover is enabled")
       return
     }
 
@@ -154,7 +162,7 @@ export function AIAgentForm({
         name: name.trim(),
         bot_id: botId,
         handover_enabled: handoverEnabled,
-        handover_user_id: handoverEnabled ? handoverUserId : null,
+        handover_user_ids: handoverEnabled ? handoverUserIds : [],
         multi_language: multiLanguage,
         internet_access: internetAccess,
         tone,
@@ -260,33 +268,31 @@ export function AIAgentForm({
                 />
               </div>
 
-              {/* Handover User Selection */}
+              {/* Handover User Selection - Multiple Users */}
               {handoverEnabled && (
                 <div className="grid gap-2 ml-4">
-                  <Label htmlFor="handover-user">Handover To *</Label>
-                  <Select
-                    value={handoverUserId}
-                    onValueChange={setHandoverUserId}
-                    disabled={loading || loadingUsers}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an agent..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {agents.length === 0 ? (
-                        <div className="p-2 text-sm text-muted-foreground">
-                          No agents available
-                        </div>
-                      ) : (
-                        agents.map((agent) => (
-                          <SelectItem key={agent.id} value={agent.id}>
-                            {agent.display_name ||
-                              `${agent.name} ${agent.last_name}`}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <Label>Handover To *</Label>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Select one or more agents to receive handovers
+                  </p>
+                  {loadingUsers ? (
+                    <div className="flex items-center justify-center h-10 border rounded-md">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <MultiSelect
+                      options={agents.map((agent) => ({
+                        value: agent.id,
+                        label: agent.display_name || `${agent.name} ${agent.last_name}`,
+                      }))}
+                      selected={handoverUserIds}
+                      onChange={setHandoverUserIds}
+                      placeholder="Select agents..."
+                      searchPlaceholder="Search agents..."
+                      emptyMessage="No agents found."
+                      disabled={loading}
+                    />
+                  )}
                 </div>
               )}
 

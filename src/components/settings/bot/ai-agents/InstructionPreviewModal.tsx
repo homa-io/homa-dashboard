@@ -11,95 +11,48 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Copy, Check, FileText, Loader2 } from "lucide-react"
-import { generateAgentPrompt, estimateTokenCount, type TemplateContext } from "@/lib/ai-agent-template"
-import type { AIAgent, AIAgentTone } from "@/types/ai-agent.types"
-import type { AIAgentTool } from "@/types/ai-agent-tool.types"
+import { Copy, Check, FileText, Loader2, AlertCircle } from "lucide-react"
+import { aiAgentService } from "@/services/ai-agent.service"
 import ReactMarkdown from "react-markdown"
 
 interface InstructionPreviewModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  projectName: string
-  agent: {
-    name: string
-    bot?: { id: string; name: string; display_name: string } | null
-    handover_enabled: boolean
-    handover_user_id: string | null
-    multi_language: boolean
-    internet_access: boolean
-    tone: AIAgentTone
-    use_knowledge_base: boolean
-    unit_conversion: boolean
-    instructions: string
-    greeting_message: string
-    max_response_length: number
-    context_window: number
-    blocked_topics: string
-    max_tool_calls: number
-    collect_user_info: boolean
-    collect_user_info_fields: string
-    humor_level: number
-    use_emojis: boolean
-    formality_level: number
-    priority_detection: boolean
-    auto_tagging: boolean
-  }
-  tools: AIAgentTool[]
+  agentId: number
 }
 
 export function InstructionPreviewModal({
   open,
   onOpenChange,
-  projectName,
-  agent,
-  tools,
+  agentId,
 }: InstructionPreviewModalProps) {
   const [copied, setCopied] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("")
+  const [tokenCount, setTokenCount] = useState(0)
 
   useEffect(() => {
-    if (open) {
-      // Build the context for template generation
-      const context: TemplateContext = {
-        projectName: projectName || "Your Project",
-        agent: {
-          id: 0,
-          name: agent.name,
-          bot_id: agent.bot?.id || "",
-          bot: agent.bot || undefined,
-          handover_enabled: agent.handover_enabled,
-          handover_user_id: agent.handover_user_id,
-          multi_language: agent.multi_language,
-          internet_access: agent.internet_access,
-          tone: agent.tone,
-          use_knowledge_base: agent.use_knowledge_base,
-          unit_conversion: agent.unit_conversion,
-          instructions: agent.instructions,
-          greeting_message: agent.greeting_message,
-          max_response_length: agent.max_response_length,
-          context_window: agent.context_window,
-          blocked_topics: agent.blocked_topics,
-          max_tool_calls: agent.max_tool_calls,
-          collect_user_info: agent.collect_user_info,
-          collect_user_info_fields: agent.collect_user_info_fields,
-          humor_level: agent.humor_level,
-          use_emojis: agent.use_emojis,
-          formality_level: agent.formality_level,
-          priority_detection: agent.priority_detection,
-          auto_tagging: agent.auto_tagging,
-          status: "active",
-          created_at: "",
-          updated_at: "",
-        },
-        tools: tools,
-        knowledgeBaseItems: [], // Could be populated from a separate API call
-      }
-
-      const prompt = generateAgentPrompt(context)
-      setGeneratedPrompt(prompt)
+    if (open && agentId > 0) {
+      fetchTemplate()
     }
-  }, [open, projectName, agent, tools])
+  }, [open, agentId])
+
+  const fetchTemplate = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await aiAgentService.getTemplate(agentId)
+      setGeneratedPrompt(response.template)
+      setTokenCount(response.token_count)
+    } catch (err) {
+      const error = err as Error
+      setError(error.message || "Failed to load template")
+      console.error("Error loading template:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleCopy = async () => {
     try {
@@ -111,7 +64,6 @@ export function InstructionPreviewModal({
     }
   }
 
-  const tokenCount = estimateTokenCount(generatedPrompt)
   const charCount = generatedPrompt.length
   const lineCount = generatedPrompt.split("\n").length
 
@@ -124,17 +76,19 @@ export function InstructionPreviewModal({
               <FileText className="h-5 w-5" />
               <DialogTitle>System Prompt Preview</DialogTitle>
             </div>
-            <div className="flex items-center gap-2 mr-8">
-              <Badge variant="outline" className="text-xs">
-                ~{tokenCount.toLocaleString()} tokens
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {charCount.toLocaleString()} chars
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {lineCount} lines
-              </Badge>
-            </div>
+            {!loading && !error && (
+              <div className="flex items-center gap-2 mr-8">
+                <Badge variant="outline" className="text-xs">
+                  ~{tokenCount.toLocaleString()} tokens
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {charCount.toLocaleString()} chars
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {lineCount} lines
+                </Badge>
+              </div>
+            )}
           </div>
           <DialogDescription>
             This is the system prompt that will be sent to the AI model. It combines your agent configuration, tools, and instructions.
@@ -144,7 +98,19 @@ export function InstructionPreviewModal({
         <div className="flex-1 min-h-0 mt-4">
           <ScrollArea className="h-[60vh] rounded-md border bg-muted/30">
             <div className="p-4">
-              {generatedPrompt ? (
+              {loading ? (
+                <div className="flex items-center justify-center h-40">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : error ? (
+                <div className="flex flex-col items-center justify-center h-40 gap-4">
+                  <AlertCircle className="h-8 w-8 text-destructive" />
+                  <p className="text-destructive">{error}</p>
+                  <Button variant="outline" size="sm" onClick={fetchTemplate}>
+                    Retry
+                  </Button>
+                </div>
+              ) : generatedPrompt ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown
                     components={{
@@ -201,8 +167,8 @@ export function InstructionPreviewModal({
                   </ReactMarkdown>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-40">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <div className="flex items-center justify-center h-40 text-muted-foreground">
+                  No template generated
                 </div>
               )}
             </div>
@@ -214,7 +180,7 @@ export function InstructionPreviewModal({
             This prompt will be used as the system message for the AI agent.
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleCopy}>
+            <Button variant="outline" onClick={handleCopy} disabled={loading || !generatedPrompt}>
               {copied ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />

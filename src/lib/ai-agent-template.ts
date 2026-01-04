@@ -90,6 +90,16 @@ export function generateAgentPrompt(context: TemplateContext): string {
   // Rules (compact numbered list)
   const rules: string[] = []
 
+  // CRITICAL: Strict scope limitation - MUST BE FIRST
+  rules.push('**ABSOLUTE RULE**: You can ONLY answer using information returned by your tools. No exceptions.')
+  rules.push('When you have NO information from tools, respond with EXACTLY: "I don\'t have information about that." - then STOP. Say nothing else.')
+  rules.push('FORBIDDEN: Do NOT say "however", "but", "you could try", "I recommend", "common solutions", "you might want to" - NEVER add suggestions')
+  rules.push('FORBIDDEN: Do NOT give tips, advice, troubleshooting steps, or recommendations unless they came from a tool result')
+  rules.push('If a user asks something and the tool returns nothing useful → your ONLY response is: "I don\'t have information about that."')
+  if (agent.handover_enabled) {
+    rules.push('If user asks for more help after you said you don\'t have info → offer handover: "Would you like me to connect you with a human agent?"')
+  }
+
   if (agent.multi_language) {
     rules.push('Your response should match user language exactly')
   }
@@ -127,7 +137,7 @@ export function generateAgentPrompt(context: TemplateContext): string {
     rules.push('Human handover available (warn: slower response)')
   }
 
-  rules.push('Unknown → admit honestly, offer alternatives')
+  // "Unknown" rule removed - covered by scope limitation rules above
 
   // Blocked topics
   if (agent.blocked_topics?.trim()) {
@@ -170,7 +180,11 @@ export function generateAgentPrompt(context: TemplateContext): string {
     // Knowledge base search tool
     if (agent.use_knowledge_base) {
       toolLines.push('`searchKnowledgeBase(query:string)` - Search the knowledge base for information.')
-      toolLines.push('**Use when user asks about:**')
+      toolLines.push('**CRITICAL: ALWAYS search FIRST before answering any question.**')
+      toolLines.push('  - ONLY use information from search results - nothing else')
+      toolLines.push('  - If no results or not relevant → say ONLY "I don\'t have information about that." and STOP')
+      toolLines.push('  - Do NOT add suggestions, tips, or generic advice after saying you don\'t have info')
+      toolLines.push('**Topics covered:**')
       if (knowledgeBaseItems.length > 0) {
         knowledgeBaseItems.forEach(kb => {
           toolLines.push(`  - ${kb.title}`)
