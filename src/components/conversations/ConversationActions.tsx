@@ -9,8 +9,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TagPicker } from "@/components/ui/tag-picker"
 import { CustomBadge } from "@/components/ui/custom-badge"
-import { Check, ChevronsUpDown, Workflow, X, Plus, ChevronDown, ChevronRight, Settings, AlertCircle, CircleDot, Building, Users, Tag, Archive, XCircle, Circle, ArrowUp, ArrowDown, Clock, Loader } from "lucide-react"
+import { Check, ChevronsUpDown, X, Plus, ChevronDown, ChevronRight, Settings, AlertCircle, CircleDot, Building, Users, Tag, Archive, XCircle, Circle, ArrowUp, ArrowDown, Clock, Loader } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getMediaUrl } from "@/services/api-client"
 
 interface ConversationActionsProps {
   currentPriority: string
@@ -48,7 +49,6 @@ export function ConversationActions({
   onTagsChange,
 }: ConversationActionsProps) {
   const [isAssigneeOpen, setIsAssigneeOpen] = useState(false)
-  const [isWorkflowOpen, setIsWorkflowOpen] = useState(false)
   const [tempAssignees, setTempAssignees] = useState<string[]>([])
   const [searchValue, setSearchValue] = useState("")
 
@@ -71,12 +71,6 @@ export function ConversationActions({
     return `${name.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
   }
 
-  const workflows = [
-    { id: "1", name: "Standard Support Flow", description: "Default customer support workflow" },
-    { id: "2", name: "Escalation Process", description: "For high priority issues" },
-    { id: "3", name: "Technical Review", description: "For technical support conversations" },
-    { id: "4", name: "Billing Inquiry", description: "For billing and payment issues" },
-  ]
 
   const priorities = [
     { value: "low", label: "Low Priority", variant: "gray" },
@@ -307,7 +301,7 @@ export function ConversationActions({
                         <div className="flex items-center gap-3 flex-1">
                           {user.avatar ? (
                             <img
-                              src={user.avatar}
+                              src={getMediaUrl(user.avatar)}
                               alt={user.display_name}
                               className="w-8 h-8 rounded-full object-cover"
                             />
@@ -362,47 +356,6 @@ export function ConversationActions({
           />
         </div>
 
-        {/* Actions */}
-        <div className="space-y-3 pt-6 border-t border-border">
-          <Dialog open={isWorkflowOpen} onOpenChange={setIsWorkflowOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 w-full text-sm">
-                <Workflow className="w-4 h-4 mr-2" />
-                Assign to Workflow
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Assign to Workflow</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <Command>
-                  <CommandInput placeholder="Search workflows..." />
-                  <CommandList>
-                    <CommandEmpty>No workflows found.</CommandEmpty>
-                    <CommandGroup>
-                      {workflows.map((workflow) => (
-                        <CommandItem
-                          key={workflow.id}
-                          onSelect={() => {
-                            setIsWorkflowOpen(false)
-                            // Handle workflow assignment
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <div>
-                            <div className="font-medium text-sm">{workflow.name}</div>
-                            <div className="text-xs text-muted-foreground">{workflow.description}</div>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
         </div>
       </div>
     </div>

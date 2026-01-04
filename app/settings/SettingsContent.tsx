@@ -59,11 +59,12 @@ import { ActivityLogList } from "@/components/settings/activity"
 import { IntegrationsSettings } from "@/components/settings/integrations"
 import { RAGSettings } from "@/components/settings/rag"
 import { AIAgentManager } from "@/components/settings/bot/ai-agents"
-import { Building2, Users, Brain, Bot } from "lucide-react"
+import { SDKSettings } from "@/components/settings/sdk/SDKSettings"
+import { Building2, Users, Brain, Bot, Code } from "lucide-react"
 
-export type SettingsTab = 'general' | 'users' | 'departments' | 'bot' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag'
+export type SettingsTab = 'general' | 'users' | 'departments' | 'bot' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag' | 'sdk'
 
-const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'bot', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages', 'activity', 'rag']
+const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'bot', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages', 'activity', 'rag', 'sdk']
 
 export function isValidTab(tab: string): tab is SettingsTab {
   return validTabs.includes(tab as SettingsTab)
@@ -111,6 +112,12 @@ const tabs = [
     label: 'Integrations',
     icon: Zap,
     description: 'Connect with external services and APIs'
+  },
+  {
+    id: 'sdk' as SettingsTab,
+    label: 'SDK',
+    icon: Code,
+    description: 'Configure and customize the chat widget'
   },
   {
     id: 'webhooks' as SettingsTab,
@@ -227,6 +234,7 @@ export default function SettingsContent({ activeTab }: SettingsContentProps) {
             />
           )}
           {activeTab === 'integrations' && <IntegrationsSettings />}
+          {activeTab === 'sdk' && <SDKSettings />}
           {activeTab === 'webhooks' && <WebhookManager />}
           {activeTab === 'plugins' && <PluginsSettings />}
           {activeTab === 'canned-messages' && <CannedMessagesSettings />}

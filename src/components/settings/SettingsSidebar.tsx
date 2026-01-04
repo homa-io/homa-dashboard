@@ -13,10 +13,11 @@ import {
   Building2,
   Users,
   Brain,
-  Bot
+  Bot,
+  Code
 } from "lucide-react"
 
-export type SettingsTab = 'general' | 'users' | 'departments' | 'bot' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag'
+export type SettingsTab = 'general' | 'users' | 'departments' | 'bot' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag' | 'sdk'
 
 const tabs = [
   {
@@ -42,6 +43,12 @@ const tabs = [
     label: 'Integrations',
     icon: Zap,
     path: '/settings/integrations'
+  },
+  {
+    id: 'sdk' as SettingsTab,
+    label: 'SDK',
+    icon: Code,
+    path: '/settings/sdk'
   },
   {
     id: 'rag' as SettingsTab,

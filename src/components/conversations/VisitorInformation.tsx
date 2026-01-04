@@ -529,10 +529,14 @@ Generated: ${timestamp}`
             <User className="w-4 h-4" />
             Customer
           </h3>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-            <Edit3 className="w-3 h-3 mr-1" />
-            Edit
-          </Button>
+          {visitor.clientId && (
+            <Link href={`/customers/${visitor.clientId}`}>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                <Edit3 className="w-3 h-3 mr-1" />
+                Edit
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
       
