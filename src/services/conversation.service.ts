@@ -61,12 +61,27 @@ class ConversationService {
     const queryString = searchParams.toString()
     const endpoint = `${this.baseURL}${this.basePath}/search${queryString ? `?${queryString}` : ''}`
 
+    // Get auth token from cookies
+    const getAccessToken = () => {
+      if (typeof window === 'undefined') return null
+      const cookies = document.cookie.split('; ')
+      const tokenCookie = cookies.find(c => c.startsWith('access_token='))
+      return tokenCookie ? tokenCookie.split('=')[1] : null
+    }
+
+    const token = getAccessToken()
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
     try {
       const response = await fetch(endpoint, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       })
 
       if (!response.ok) {
