@@ -9,11 +9,14 @@ import {
   Circle,
   Clock,
   XCircle,
-  ArrowUp,
+  CheckCircle,
   Loader,
   Mail,
   MessageSquare,
-  Phone
+  Phone,
+  UserCheck,
+  Pause,
+  AlertCircle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -133,10 +136,11 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [conversations, setConversations] = useState<Record<string, Conversation[]>>({
     new: [],
-    user_reply: [],
-    processing: [],
-    postponed: [],
-    closed: []
+    wait_for_agent: [],
+    in_progress: [],
+    wait_for_user: [],
+    on_hold: [],
+    resolved: []
   })
   const [loading, setLoading] = useState(true)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -148,7 +152,7 @@ export default function Dashboard() {
       setLoading(true)
       try {
         // Fetch conversations for each status in parallel
-        const statuses = ['new', 'user_reply', 'processing', 'postponed', 'closed']
+        const statuses = ['new', 'wait_for_agent', 'in_progress', 'wait_for_user', 'on_hold', 'resolved']
         const results = await Promise.all(
           statuses.map(status =>
             conversationService.searchConversations({
@@ -235,10 +239,11 @@ export default function Dashboard() {
 
   const statuses = [
     { key: "new", label: "New", icon: Circle, color: "text-blue-600" },
-    { key: "user_reply", label: "User Reply", icon: ArrowUp, color: "text-green-600" },
-    { key: "processing", label: "Processing", icon: Loader, color: "text-yellow-600" },
-    { key: "postponed", label: "Postponed", icon: Clock, color: "text-orange-600" },
-    { key: "closed", label: "Closed", icon: XCircle, color: "text-gray-600" },
+    { key: "wait_for_agent", label: "Wait for Agent", icon: UserCheck, color: "text-purple-600" },
+    { key: "in_progress", label: "In Progress", icon: Loader, color: "text-yellow-600" },
+    { key: "wait_for_user", label: "Wait for User", icon: Clock, color: "text-orange-600" },
+    { key: "on_hold", label: "On Hold", icon: Pause, color: "text-gray-500" },
+    { key: "resolved", label: "Resolved", icon: CheckCircle, color: "text-green-600" },
   ]
 
   return (
@@ -256,7 +261,7 @@ export default function Dashboard() {
         </div>
       ) : (
         /* Mobile-Responsive Kanban Board */
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {statuses.map((status) => {
             const statusConversations = conversations[status.key] || []
             const StatusIcon = status.icon
