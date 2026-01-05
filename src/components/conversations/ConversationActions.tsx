@@ -177,7 +177,7 @@ export function ConversationActions({
           <div>
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
               <FileText className="w-3 h-3" />
-              Custom Fields
+              Information
             </label>
             <div className="space-y-2">
               {filledAttributes.map(([key, value]) => {
