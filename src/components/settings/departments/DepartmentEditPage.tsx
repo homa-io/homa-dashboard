@@ -203,7 +203,7 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
 
   if (loading) {
     return (
-      <SettingsPageWrapper activeTab="departments" showHeader={false}>
+      <SettingsPageWrapper activeTab="departments">
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-10 w-10 rounded-lg" />
@@ -226,7 +226,7 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
 
   if (error) {
     return (
-      <SettingsPageWrapper activeTab="departments" showHeader={false}>
+      <SettingsPageWrapper activeTab="departments">
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-destructive mb-4">{error}</div>
@@ -246,7 +246,7 @@ export function DepartmentEditPage({ departmentId }: DepartmentEditPageProps) {
   }
 
   return (
-    <SettingsPageWrapper activeTab="departments" showHeader={false}>
+    <SettingsPageWrapper activeTab="departments">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

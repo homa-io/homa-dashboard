@@ -87,6 +87,7 @@ export const SETTING_KEYS = {
   AI_MODEL: 'ai.model',
   AI_CONVERSATION_SUMMARY_ENABLED: 'ai.conversation_summary_enabled',
   AI_CONVERSATION_SUMMARY_DELAY: 'ai.conversation_summary_delay',
+  AI_BOT_PROMPT_TEMPLATE: 'ai.bot_prompt_template',
 
   // Workflow Settings
   DEFAULT_DEPARTMENT: 'workflow.default_department',

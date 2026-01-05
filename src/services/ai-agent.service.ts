@@ -109,8 +109,11 @@ export async function toggleAIAgentStatus(
  * Get the generated system prompt template for an AI agent
  */
 export interface AIAgentTemplateResponse {
-  template: string
-  token_count: number
+  template: string      // Full combined prompt (for backwards compatibility)
+  prompt: string        // Just the Jet template rendered part
+  tool_docs: string     // The tool documentation (not customizable)
+  is_custom: boolean    // Whether a custom template is being used
+  token_count: number   // Approximate token count
 }
 
 export async function getAIAgentTemplate(

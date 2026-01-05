@@ -14,10 +14,11 @@ import {
   Users,
   Brain,
   Bot,
-  Code
+  Code,
+  Timer
 } from "lucide-react"
 
-export type SettingsTab = 'general' | 'users' | 'departments' | 'bot' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag' | 'sdk'
+export type SettingsTab = 'general' | 'users' | 'departments' | 'bot' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag' | 'sdk' | 'jobs'
 
 const tabs = [
   {
@@ -97,6 +98,12 @@ const tabs = [
     label: 'Plugins',
     icon: Plug,
     path: '/settings/plugins'
+  },
+  {
+    id: 'jobs' as SettingsTab,
+    label: 'Jobs',
+    icon: Timer,
+    path: '/settings/jobs'
   }
 ]
 

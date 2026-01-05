@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, RefreshCw, Search, Bot } from "lucide-react"
+import { Plus, RefreshCw, Search, Bot, FileCode, ChevronRight } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +24,7 @@ import {
 import { aiAgentService } from "@/services/ai-agent.service"
 import { AIAgentForm } from "./AIAgentForm"
 import { AIAgentList } from "./AIAgentList"
+import { BotPromptTemplateModal } from "./BotPromptTemplateModal"
 import type {
   AIAgent,
   AIAgentCreateRequest,
@@ -38,6 +39,7 @@ export function AIAgentManager() {
   const [searchQuery, setSearchQuery] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [agentToDelete, setAgentToDelete] = useState<AIAgent | null>(null)
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
 
   const fetchAgents = async () => {
     try {
@@ -123,6 +125,27 @@ export function AIAgentManager() {
           instructions.
         </p>
       </div>
+
+      {/* Bot Prompt Template Card */}
+      <Card
+        className="cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => setIsTemplateModalOpen(true)}
+      >
+        <CardHeader className="flex flex-row items-center justify-between py-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <FileCode className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Bot Prompt Template</CardTitle>
+              <CardDescription className="text-xs">
+                Customize the system prompt template used for all AI agents
+              </CardDescription>
+            </div>
+          </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        </CardHeader>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -212,6 +235,12 @@ export function AIAgentManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bot Prompt Template Modal */}
+      <BotPromptTemplateModal
+        open={isTemplateModalOpen}
+        onOpenChange={setIsTemplateModalOpen}
+      />
     </div>
   )
 }

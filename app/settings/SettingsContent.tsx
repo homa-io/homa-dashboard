@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,14 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
-  Settings,
   User,
   MessageCircle,
-  Zap,
   Plug,
   MessageSquare,
   Plus,
-  X,
   Edit,
   Trash2,
   Save,
@@ -26,8 +22,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Webhook,
-  Activity
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -60,189 +54,51 @@ import { IntegrationsSettings } from "@/components/settings/integrations"
 import { RAGSettings } from "@/components/settings/rag"
 import { AIAgentManager } from "@/components/settings/bot/ai-agents"
 import { SDKSettings } from "@/components/settings/sdk/SDKSettings"
-import { Building2, Users, Brain, Bot, Code } from "lucide-react"
+import { JobsSettings } from "@/components/settings/jobs"
+import { SettingsLayout, SettingsTab } from "@/components/settings/SettingsLayout"
 
-export type SettingsTab = 'general' | 'users' | 'departments' | 'bot' | 'customer-attributes' | 'conversation-attributes' | 'integrations' | 'webhooks' | 'plugins' | 'canned-messages' | 'activity' | 'rag' | 'sdk'
+export type { SettingsTab }
 
-const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'bot', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages', 'activity', 'rag', 'sdk']
+const validTabs: SettingsTab[] = ['general', 'users', 'departments', 'bot', 'customer-attributes', 'conversation-attributes', 'integrations', 'webhooks', 'plugins', 'canned-messages', 'activity', 'rag', 'sdk', 'jobs']
 
 export function isValidTab(tab: string): tab is SettingsTab {
   return validTabs.includes(tab as SettingsTab)
 }
-
-const tabs = [
-  {
-    id: 'general' as SettingsTab,
-    label: 'General',
-    icon: Settings,
-    description: 'Basic application settings and preferences'
-  },
-  {
-    id: 'users' as SettingsTab,
-    label: 'Users',
-    icon: Users,
-    description: 'Manage system users, agents, and bots'
-  },
-  {
-    id: 'departments' as SettingsTab,
-    label: 'Departments',
-    icon: Building2,
-    description: 'Manage departments and team assignments'
-  },
-  {
-    id: 'bot' as SettingsTab,
-    label: 'AI Agents',
-    icon: Bot,
-    description: 'Configure AI bot agents and their behaviors'
-  },
-  {
-    id: 'customer-attributes' as SettingsTab,
-    label: 'Customer Attributes',
-    icon: User,
-    description: 'Manage custom fields and attributes for customers'
-  },
-  {
-    id: 'conversation-attributes' as SettingsTab,
-    label: 'Conversation Attributes',
-    icon: MessageCircle,
-    description: 'Configure conversation fields, statuses, and priorities'
-  },
-  {
-    id: 'integrations' as SettingsTab,
-    label: 'Integrations',
-    icon: Zap,
-    description: 'Connect with external services and APIs'
-  },
-  {
-    id: 'sdk' as SettingsTab,
-    label: 'SDK',
-    icon: Code,
-    description: 'Configure and customize the chat widget'
-  },
-  {
-    id: 'webhooks' as SettingsTab,
-    label: 'Webhooks',
-    icon: Webhook,
-    description: 'Configure webhook endpoints for event notifications'
-  },
-  {
-    id: 'plugins' as SettingsTab,
-    label: 'Plugins',
-    icon: Plug,
-    description: 'Manage installed plugins and extensions'
-  },
-  {
-    id: 'canned-messages' as SettingsTab,
-    label: 'Canned Messages',
-    icon: MessageSquare,
-    description: 'Pre-written responses and message templates'
-  },
-  {
-    id: 'activity' as SettingsTab,
-    label: 'Activity Log',
-    icon: Activity,
-    description: 'Track all changes and actions in the system'
-  },
-  {
-    id: 'rag' as SettingsTab,
-    label: 'RAG',
-    icon: Brain,
-    description: 'Configure vector search and knowledge base indexing'
-  }
-]
 
 interface SettingsContentProps {
   activeTab: SettingsTab
 }
 
 export default function SettingsContent({ activeTab }: SettingsContentProps) {
-  const router = useRouter()
-
-  const handleTabChange = (tabId: SettingsTab) => {
-    router.push(`/settings/${tabId}`)
-  }
-
   return (
-    <div className="flex-1 pl-3 sm:pl-4 pr-4 sm:pr-6 py-3 sm:py-4">
-      <div className="mb-4">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Configure your dashboard preferences and system settings.
-        </p>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-3 lg:gap-3">
-        {/* Horizontal Navigation on Mobile, Vertical on Desktop */}
-        <div className="lg:w-44 lg:flex-shrink-0">
-          {/* Mobile Tabs */}
-          <div className="lg:hidden">
-            <select
-              value={activeTab}
-              onChange={(e) => handleTabChange(e.target.value as SettingsTab)}
-              className="w-full px-3 py-2 border rounded-md text-sm bg-background"
-            >
-              {tabs.map((tab) => (
-                <option key={tab.id} value={tab.id}>
-                  {tab.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:block space-y-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              const isActive = activeTab === tab.id
-
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm font-medium rounded text-left transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">{tab.label}</span>
-                </button>
-              )
-            })}
-          </nav>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 min-w-0 lg:max-w-none">
-          {activeTab === 'general' && <GeneralSettings />}
-          {activeTab === 'users' && <UserManager />}
-          {activeTab === 'departments' && <DepartmentManager />}
-          {activeTab === 'bot' && <AIAgentManager />}
-          {activeTab === 'customer-attributes' && (
-            <AttributeManager
-              title="Customer Attributes"
-              description="Manage custom fields and attributes for customer profiles."
-              scope="client"
-            />
-          )}
-          {activeTab === 'conversation-attributes' && (
-            <AttributeManager
-              title="Conversation Attributes"
-              description="Configure custom fields and attributes for conversations."
-              scope="conversation"
-            />
-          )}
-          {activeTab === 'integrations' && <IntegrationsSettings />}
-          {activeTab === 'sdk' && <SDKSettings />}
-          {activeTab === 'webhooks' && <WebhookManager />}
-          {activeTab === 'plugins' && <PluginsSettings />}
-          {activeTab === 'canned-messages' && <CannedMessagesSettings />}
-          {activeTab === 'activity' && <ActivityLogList />}
-          {activeTab === 'rag' && <RAGSettings />}
-        </div>
-      </div>
-    </div>
+    <SettingsLayout activeTab={activeTab}>
+      {activeTab === 'general' && <GeneralSettings />}
+      {activeTab === 'users' && <UserManager />}
+      {activeTab === 'departments' && <DepartmentManager />}
+      {activeTab === 'bot' && <AIAgentManager />}
+      {activeTab === 'customer-attributes' && (
+        <AttributeManager
+          title="Customer Attributes"
+          description="Manage custom fields and attributes for customer profiles."
+          scope="client"
+        />
+      )}
+      {activeTab === 'conversation-attributes' && (
+        <AttributeManager
+          title="Conversation Attributes"
+          description="Configure custom fields and attributes for conversations."
+          scope="conversation"
+        />
+      )}
+      {activeTab === 'integrations' && <IntegrationsSettings />}
+      {activeTab === 'sdk' && <SDKSettings />}
+      {activeTab === 'webhooks' && <WebhookManager />}
+      {activeTab === 'plugins' && <PluginsSettings />}
+      {activeTab === 'canned-messages' && <CannedMessagesSettings />}
+      {activeTab === 'activity' && <ActivityLogList />}
+      {activeTab === 'rag' && <RAGSettings />}
+      {activeTab === 'jobs' && <JobsSettings />}
+    </SettingsLayout>
   )
 }
 

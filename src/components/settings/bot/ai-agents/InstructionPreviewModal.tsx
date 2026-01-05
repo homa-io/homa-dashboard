@@ -31,6 +31,7 @@ export function InstructionPreviewModal({
   const [error, setError] = useState<string | null>(null)
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("")
   const [tokenCount, setTokenCount] = useState(0)
+  const [isCustomTemplate, setIsCustomTemplate] = useState(false)
 
   useEffect(() => {
     if (open && agentId > 0) {
@@ -45,6 +46,7 @@ export function InstructionPreviewModal({
       const response = await aiAgentService.getTemplate(agentId)
       setGeneratedPrompt(response.template)
       setTokenCount(response.token_count)
+      setIsCustomTemplate(response.is_custom || false)
     } catch (err) {
       const error = err as Error
       setError(error.message || "Failed to load template")
@@ -78,6 +80,11 @@ export function InstructionPreviewModal({
             </div>
             {!loading && !error && (
               <div className="flex items-center gap-2 mr-8">
+                {isCustomTemplate && (
+                  <Badge variant="secondary" className="text-xs">
+                    Custom Template
+                  </Badge>
+                )}
                 <Badge variant="outline" className="text-xs">
                   ~{tokenCount.toLocaleString()} tokens
                 </Badge>

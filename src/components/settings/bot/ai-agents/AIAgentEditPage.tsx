@@ -219,7 +219,7 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
 
   if (loading) {
     return (
-      <SettingsPageWrapper activeTab="bot" showHeader={false}>
+      <SettingsPageWrapper activeTab="bot">
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-10 w-10 rounded-lg" />
@@ -243,7 +243,7 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
 
   if (error) {
     return (
-      <SettingsPageWrapper activeTab="bot" showHeader={false}>
+      <SettingsPageWrapper activeTab="bot">
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-destructive mb-4">{error}</div>
@@ -263,7 +263,7 @@ export function AIAgentEditPage({ agentId }: AIAgentEditPageProps) {
   }
 
   return (
-    <SettingsPageWrapper activeTab="bot" showHeader={false}>
+    <SettingsPageWrapper activeTab="bot">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
