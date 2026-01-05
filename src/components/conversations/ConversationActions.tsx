@@ -9,7 +9,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TagPicker } from "@/components/ui/tag-picker"
 import { CustomBadge } from "@/components/ui/custom-badge"
-import { Check, ChevronsUpDown, X, Plus, ChevronDown, ChevronRight, Settings, AlertCircle, CircleDot, Building, Users, Tag, Archive, XCircle, Circle, ArrowUp, ArrowDown, Clock, Loader } from "lucide-react"
+import { Check, ChevronsUpDown, X, Plus, ChevronDown, ChevronRight, Settings, AlertCircle, CircleDot, Building, Users, Tag, Archive, XCircle, Circle, ArrowUp, ArrowDown, Clock, Loader, MessageSquare, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getMediaUrl } from "@/services/api-client"
 
@@ -29,6 +29,7 @@ interface ConversationActionsProps {
   onDepartmentChange: (department: string) => void
   onAssigneesChange: (assignees: string[]) => void
   onTagsChange: (tags: string[]) => void
+  customAttributes?: Record<string, any>
 }
 
 export function ConversationActions({
@@ -47,6 +48,7 @@ export function ConversationActions({
   onDepartmentChange,
   onAssigneesChange,
   onTagsChange,
+  customAttributes = {},
 }: ConversationActionsProps) {
   const [isAssigneeOpen, setIsAssigneeOpen] = useState(false)
   const [tempAssignees, setTempAssignees] = useState<string[]>([])
@@ -128,13 +130,35 @@ export function ConversationActions({
   }, [currentAssignees, onAssigneesChange])
 
 
+  // Flatten nested objects (like user_info) and filter to only non-empty values
+  const flattenAttributes = (obj: Record<string, any>, prefix = ''): [string, any][] => {
+    const result: [string, any][] = []
+    for (const [key, value] of Object.entries(obj)) {
+      const newKey = prefix ? `${prefix}_${key}` : key
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // Recursively flatten nested objects
+        result.push(...flattenAttributes(value, newKey))
+      } else {
+        result.push([newKey, value])
+      }
+    }
+    return result
+  }
+
+  const filledAttributes = flattenAttributes(customAttributes).filter(([_, value]) => {
+    if (value === null || value === undefined) return false
+    if (typeof value === 'string' && value.trim() === '') return false
+    if (Array.isArray(value) && value.length === 0) return false
+    return true
+  })
+
   return (
     <div className="bg-card border border-border rounded-lg">
       <div className="p-4 border-b border-border cursor-pointer" onClick={onToggle}>
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            Conversation Actions
+            <MessageSquare className="w-4 h-4" />
+            Conversation
           </h3>
           {isExpanded ? (
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -147,6 +171,48 @@ export function ConversationActions({
         isExpanded ? 'max-h-none opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
       }`}>
         <div className="p-4 space-y-6">
+
+        {/* Custom Attributes - Only show filled ones */}
+        {filledAttributes.length > 0 && (
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+              <FileText className="w-3 h-3" />
+              Custom Fields
+            </label>
+            <div className="space-y-2">
+              {filledAttributes.map(([key, value]) => {
+                // Format the key as a label
+                const label = key
+                  .replace(/_/g, ' ')
+                  .replace(/([A-Z])/g, ' $1')
+                  .replace(/^./, str => str.toUpperCase())
+                  .trim()
+
+                // Format the value for display
+                let displayValue: string
+                if (Array.isArray(value)) {
+                  displayValue = value.join(', ')
+                } else if (typeof value === 'boolean') {
+                  displayValue = value ? 'Yes' : 'No'
+                } else if (typeof value === 'object') {
+                  displayValue = JSON.stringify(value)
+                } else {
+                  displayValue = String(value)
+                }
+
+                return (
+                  <div key={key} className="flex items-center justify-between py-1">
+                    <span className="text-xs text-muted-foreground">{label}</span>
+                    <span className="text-xs font-medium truncate max-w-[150px]" title={displayValue}>
+                      {displayValue}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Priority */}
         <div>
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">

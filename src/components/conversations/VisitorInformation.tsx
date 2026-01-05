@@ -42,6 +42,7 @@ interface VisitorInfo {
   externalIDs?: ExternalID[]
   timezone?: string | null
   clientId?: string
+  customAttributes?: Record<string, any>
 }
 
 interface VisitorInformationProps {
@@ -541,60 +542,96 @@ Generated: ${timestamp}`
       </div>
       
       <div className="p-4 space-y-6">
-        {/* Basic Details */}
-        <div>
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Contact Information</h4>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between group">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="w-3 h-3" />
-                <span className="text-xs">Email</span>
+        {/* Custom Attributes - Only show filled ones */}
+        {visitor.customAttributes && Object.keys(visitor.customAttributes).length > 0 && (() => {
+          // Flatten nested objects and filter to only non-empty values
+          const flattenAttributes = (obj: Record<string, any>, prefix = ''): [string, any][] => {
+            const result: [string, any][] = []
+            for (const [key, value] of Object.entries(obj)) {
+              const newKey = prefix ? `${prefix}_${key}` : key
+              if (value && typeof value === 'object' && !Array.isArray(value)) {
+                result.push(...flattenAttributes(value, newKey))
+              } else {
+                result.push([newKey, value])
+              }
+            }
+            return result
+          }
+
+          const filledAttributes = flattenAttributes(visitor.customAttributes || {}).filter(([_, value]) => {
+            if (value === null || value === undefined) return false
+            if (typeof value === 'string' && value.trim() === '') return false
+            if (Array.isArray(value) && value.length === 0) return false
+            return true
+          })
+
+          if (filledAttributes.length === 0) return null
+
+          return (
+            <div>
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Contact Information</h4>
+              <div className="space-y-3">
+                {filledAttributes.map(([key, value]) => {
+                  // Format the key as a label (convert snake_case/camelCase to Title Case)
+                  const label = key
+                    .replace(/_/g, ' ')
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, str => str.toUpperCase())
+                    .trim()
+
+                  // Format the value for display
+                  let displayValue: string
+                  if (Array.isArray(value)) {
+                    displayValue = value.join(', ')
+                  } else if (typeof value === 'boolean') {
+                    displayValue = value ? 'Yes' : 'No'
+                  } else if (typeof value === 'object') {
+                    displayValue = JSON.stringify(value)
+                  } else {
+                    displayValue = String(value)
+                  }
+
+                  // Check if it looks like an email
+                  const isEmail = typeof value === 'string' && value.includes('@') && value.includes('.')
+                  // Check if it looks like a URL
+                  const isUrl = typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))
+
+                  return (
+                    <div key={key} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <User className="w-3 h-3" />
+                        <span className="text-xs">{label}</span>
+                      </div>
+                      {isEmail ? (
+                        <a
+                          href={`mailto:${displayValue}`}
+                          className="text-xs text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-200 hover:underline font-medium truncate max-w-[150px]"
+                          title={displayValue}
+                        >
+                          {displayValue}
+                        </a>
+                      ) : isUrl ? (
+                        <a
+                          href={displayValue}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-200 hover:underline font-medium truncate max-w-[150px]"
+                          title={displayValue}
+                        >
+                          {displayValue}
+                        </a>
+                      ) : (
+                        <span className="text-xs font-medium truncate max-w-[150px]" title={displayValue}>
+                          {displayValue}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
-              <button className="text-xs text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-200 hover:underline font-medium">
-                {visitor.email}
-              </button>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="w-3 h-3" />
-                <span className="text-xs">Phone</span>
-              </div>
-              <span className="text-xs font-medium">{visitor.phone || "Unknown"}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="w-3 h-3" />
-                <span className="text-xs">Location</span>
-              </div>
-              <span className="text-xs font-medium">{visitor.location}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                <span className="text-xs">Timezone</span>
-              </div>
-              <span className="text-xs font-medium">{getTimezoneWithOffset(visitor.timezone)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Globe className="w-3 h-3" />
-                <span className="text-xs">Language</span>
-              </div>
-              <span className="text-xs font-medium">
-                {getLanguageName(visitor.language)}
-              </span>
-            </div>
-            {visitor.country && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Flag className="w-3 h-3" />
-                  <span className="text-xs">Country</span>
-                </div>
-                <span className="text-xs font-medium">{visitor.country}</span>
-              </div>
-            )}
-          </div>
-        </div>
+          )
+        })()}
 
         {/* Previous Conversations */}
         <div>
@@ -743,33 +780,54 @@ Generated: ${timestamp}`
           </Dialog>
         </div>
 
-        {/* Device Info */}
-        <div>
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Device Information</h4>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Monitor className="w-3 h-3" />
-                <span className="text-xs">IP Address</span>
+        {/* Device Info - Only show if at least one field has data */}
+        {(() => {
+          const isEmpty = (val: string | undefined | null) => {
+            if (!val) return true
+            const v = val.trim().toLowerCase()
+            return v === '' || v === 'n/a' || v === 'not available' || v === 'unknown' || v === 'not provided'
+          }
+          const hasIp = !isEmpty(visitor.ip)
+          const hasOs = !isEmpty(visitor.os)
+          const hasBrowser = !isEmpty(visitor.browser)
+
+          if (!hasIp && !hasOs && !hasBrowser) return null
+
+          return (
+            <div>
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Device Information</h4>
+              <div className="space-y-3">
+                {hasIp && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Monitor className="w-3 h-3" />
+                      <span className="text-xs">IP Address</span>
+                    </div>
+                    <CountryFlagBadge ip={visitor.ip} />
+                  </div>
+                )}
+                {hasOs && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      {React.createElement(getOSIcon(visitor.os), { className: "w-3 h-3" })}
+                      <span className="text-xs">Operating System</span>
+                    </div>
+                    <span className="text-xs font-medium">{visitor.os}</span>
+                  </div>
+                )}
+                {hasBrowser && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      {React.createElement(getBrowserIcon(visitor.browser), { className: "w-3 h-3" })}
+                      <span className="text-xs">Browser</span>
+                    </div>
+                    <span className="text-xs font-medium">{visitor.browser}</span>
+                  </div>
+                )}
               </div>
-              <CountryFlagBadge ip={visitor.ip} />
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                {React.createElement(getOSIcon(visitor.os), { className: "w-3 h-3" })}
-                <span className="text-xs">Operating System</span>
-              </div>
-              <span className="text-xs font-medium">{visitor.os}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                {React.createElement(getBrowserIcon(visitor.browser), { className: "w-3 h-3" })}
-                <span className="text-xs">Browser</span>
-              </div>
-              <span className="text-xs font-medium">{visitor.browser}</span>
-            </div>
-          </div>
-        </div>
+          )
+        })()}
       </div>
     </div>
   )

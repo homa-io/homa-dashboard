@@ -2074,6 +2074,7 @@ export default function ConversationsContent() {
               onDepartmentChange={handleActionsDepartmentChange}
               onAssigneesChange={handleActionsAssigneesChange}
               onTagsChange={handleActionsTagsChange}
+              customAttributes={selectedConversation?.data || {}}
             />
             {selectedConversation?.customer && (
               <VisitorInformation
@@ -2090,7 +2091,8 @@ export default function ConversationsContent() {
                   country: undefined,
                   externalIDs: selectedConversation.customer.external_ids || [],
                   timezone: selectedConversation.customer.timezone,
-                  clientId: selectedConversation.customer.id
+                  clientId: selectedConversation.customer.id,
+                  customAttributes: selectedConversation.customer.data || {}
                 }}
                 currentConversationId={selectedConversation.id}
               />

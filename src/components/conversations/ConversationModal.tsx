@@ -400,6 +400,8 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
   ]
 
   // Format visitor information from conversation data
+  const customerData = conversation.customer.data
+
   const visitorInfo = {
     name: conversation.customer.name,
     email: conversation.customer.email,
@@ -413,7 +415,8 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
     country: "Not specified",
     clientId: conversation.customer.id,
     externalIDs: conversation.customer.external_ids || [],
-    timezone: conversation.customer.timezone
+    timezone: conversation.customer.timezone,
+    customAttributes: customerData || {}
   }
 
   const formatTime = (dateString: string) => {
@@ -620,6 +623,7 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
                   onPriorityChange={(priority) => handleTicketHeaderChange('priority', priority)}
                   onStatusChange={(status) => handleTicketHeaderChange('status', status)}
                   onDepartmentChange={(department) => handleTicketHeaderChange('department', department)}
+                  customAttributes={conversation.data || {}}
                   onAssigneesChange={async (assignees) => {
                     try {
                       await conversationService.assignUsersToConversation(conversation.id, assignees)

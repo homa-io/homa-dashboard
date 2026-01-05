@@ -19,6 +19,7 @@ export interface Customer {
   external_ids: ExternalID[]
   language: string | null
   timezone: string | null
+  data?: Record<string, any> // Custom attributes
 }
 
 export interface Agent {
@@ -60,6 +61,7 @@ export interface Conversation {
   ip: string | null
   browser: string | null
   operating_system: string | null
+  data?: Record<string, any> // Custom attributes
 }
 
 // Search and filter parameters
