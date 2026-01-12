@@ -1376,6 +1376,16 @@ export default function ConversationsContent() {
         // Request 1000 messages to get all messages for most conversations
         const detailData = await conversationService.getConversation(selectedConversationId, 1, 1000, 'asc')
 
+        // If the conversation is not in the current list (e.g., filtered out), add it
+        // This ensures conversations opened via URL are always visible
+        setApiConversations(prev => {
+          const exists = prev.some(c => c.id === selectedConversationId)
+          if (!exists && detailData.conversation) {
+            return [detailData.conversation, ...prev]
+          }
+          return prev
+        })
+
         // Transform messages to match component format
         const transformedMessages = detailData.messages.map(msg => ({
           id: msg.id,
