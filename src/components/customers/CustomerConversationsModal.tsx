@@ -131,7 +131,7 @@ export function CustomerConversationsModal({
               {conversations.map((conversation) => (
                 <Link
                   key={conversation.id}
-                  href={`/conversations?ticket_id=${conversation.id}`}
+                  href={`/conversations?id=${conversation.id}`}
                   className="block p-4 border rounded-lg hover:bg-accent transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">

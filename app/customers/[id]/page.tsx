@@ -660,7 +660,7 @@ export default function CustomerDetailPage() {
                   {conversations.slice(0, 10).map((conversation) => (
                     <Link
                       key={conversation.id}
-                      href={`/conversations?ticket_id=${conversation.id}`}
+                      href={`/conversations?id=${conversation.id}`}
                       className="block p-3 border rounded-lg hover:bg-accent transition-colors"
                     >
                       <div className="flex items-start justify-between gap-2">

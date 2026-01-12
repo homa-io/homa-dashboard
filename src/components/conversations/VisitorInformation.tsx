@@ -689,7 +689,7 @@ Generated: ${timestamp}`
                           return (
                             <Link
                               key={conversation.id}
-                              href={`/conversations?ticket_id=${conversation.id}`}
+                              href={`/conversations?id=${conversation.id}`}
                               target="_blank"
                               className="flex items-center justify-between w-full p-3 text-left hover:bg-muted/50 rounded-md transition-colors group border border-border block"
                               onClick={() => setShowPreviousTickets(false)}
