@@ -1,6 +1,12 @@
 /**
  * Hook for handling message translations in conversations
  * Uses per-message language detection
+ *
+ * LOGIC:
+ * - Customer messages (incoming): Show TRANSLATED by default so agent can read them
+ * - Agent messages (outgoing): Only show translation toggle if message was auto-translated
+ *   - If auto-translated: show what agent typed (original) by default
+ *   - If NOT auto-translated: show as-is, no toggle
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
@@ -15,6 +21,7 @@ interface TranslationState {
     isTranslated: boolean
     fromLang?: string
     toLang?: string
+    isOutgoing?: boolean // Track if this is an outgoing translation
   }
 }
 
@@ -28,7 +35,7 @@ interface UseMessageTranslationResult {
   translations: TranslationState
   isLoading: boolean
   needsTranslation: boolean
-  getTranslation: (messageId: number, originalContent: string, messageLanguage?: string, isAgentMessage?: boolean) => {
+  getTranslation: (messageId: number, originalContent: string, messageLanguage?: string, isAgentMessage?: boolean, authorType?: string) => {
     content: string
     isLoading: boolean
     isTranslated: boolean
@@ -52,12 +59,15 @@ export function useMessageTranslation({
   const outgoingBatchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pendingBatchRef = useRef<number[]>([])
   const outgoingBatchRef = useRef<number[]>([])
+  // Track messages that have no outgoing translation record (don't retry)
+  const noOutgoingRecordRef = useRef<Set<number>>(new Set())
 
   // Fetch language info when conversation changes
   useEffect(() => {
     if (!conversationId || !enabled) {
       setLanguageInfo(null)
       setTranslations({})
+      noOutgoingRecordRef.current.clear()
       return
     }
 
@@ -78,7 +88,7 @@ export function useMessageTranslation({
   // Check if translation is needed (based on language info)
   const needsTranslation = languageInfo?.needs_translation && languageInfo?.auto_translate_incoming || false
 
-  // Request translations for messages (incoming - messages not in agent's language)
+  // Request translations for INCOMING messages (customer messages not in agent's language)
   const requestTranslations = useCallback(async (messageIds: number[]) => {
     if (!conversationId || !needsTranslation || messageIds.length === 0) {
       return
@@ -103,8 +113,9 @@ export function useMessageTranslation({
           original: updated[id]?.original || '',
           translated: updated[id]?.translated || '',
           isLoading: true,
-          showOriginal: false, // Show translated by default for incoming
+          showOriginal: false, // Show TRANSLATED by default for incoming
           isTranslated: false,
+          isOutgoing: false,
         }
       })
       return updated
@@ -122,10 +133,11 @@ export function useMessageTranslation({
               original: t.original_content,
               translated: t.translated_content,
               isLoading: false,
-              showOriginal: false, // Show translated by default for incoming
+              showOriginal: false, // Show TRANSLATED by default for incoming
               isTranslated: t.is_translated,
               fromLang: t.from_lang,
               toLang: t.to_lang,
+              isOutgoing: false,
             }
             pendingRequestsRef.current.delete(t.message_id)
           })
@@ -156,9 +168,11 @@ export function useMessageTranslation({
       return
     }
 
-    // Filter out messages that are already loaded or being loaded
+    // Filter out messages that are already loaded, being loaded, or known to have no record
     const newMessageIds = messageIds.filter(
-      id => !translations[id]?.isTranslated && !pendingRequestsRef.current.has(id)
+      id => !translations[id]?.isTranslated &&
+            !pendingRequestsRef.current.has(id) &&
+            !noOutgoingRecordRef.current.has(id)
     )
 
     if (newMessageIds.length === 0) {
@@ -175,8 +189,12 @@ export function useMessageTranslation({
         // Track which messages have outgoing records
         const foundIds = new Set(response.data.translations.map((t: TranslationResponse) => t.message_id))
 
-        // Messages without outgoing records (e.g., AI bot messages) need regular translation
+        // Messages without outgoing records - mark them so we don't retry
         const messagesWithoutRecords = newMessageIds.filter(id => !foundIds.has(id))
+        messagesWithoutRecords.forEach(id => {
+          noOutgoingRecordRef.current.add(id)
+          pendingRequestsRef.current.delete(id)
+        })
 
         setTranslations(prev => {
           const updated = { ...prev }
@@ -185,41 +203,22 @@ export function useMessageTranslation({
               original: t.original_content, // What agent typed
               translated: t.translated_content, // What customer sees (message.body)
               isLoading: false,
-              showOriginal: true, // Show original (what agent typed) by default
+              showOriginal: true, // Show ORIGINAL (what agent typed) by default
               isTranslated: t.is_translated,
               fromLang: t.from_lang,
               toLang: t.to_lang,
+              isOutgoing: true,
             }
             pendingRequestsRef.current.delete(t.message_id)
           })
           return updated
         })
-
-        // For messages without outgoing records, use regular translation
-        if (messagesWithoutRecords.length > 0) {
-          messagesWithoutRecords.forEach(id => pendingRequestsRef.current.delete(id))
-          // Queue for regular translation
-          messagesWithoutRecords.forEach(id => {
-            pendingBatchRef.current.push(id)
-          })
-          // Trigger the batch
-          if (incomingBatchTimeoutRef.current) {
-            clearTimeout(incomingBatchTimeoutRef.current)
-          }
-          incomingBatchTimeoutRef.current = setTimeout(() => {
-            const batch = [...new Set(pendingBatchRef.current)]
-            pendingBatchRef.current = []
-            if (batch.length > 0) {
-              requestTranslations(batch)
-            }
-          }, 50)
-        }
       }
     } catch (error) {
       console.error('Failed to get outgoing translations:', error)
       newMessageIds.forEach(id => pendingRequestsRef.current.delete(id))
     }
-  }, [conversationId, translations, requestTranslations])
+  }, [conversationId, translations])
 
   // Debounced batch request for incoming translations
   const queueTranslation = useCallback((messageId: number) => {
@@ -242,6 +241,9 @@ export function useMessageTranslation({
 
   // Queue outgoing translations
   const queueOutgoingTranslation = useCallback((messageId: number) => {
+    // Don't queue if we know there's no outgoing record
+    if (noOutgoingRecordRef.current.has(messageId)) return
+
     outgoingBatchRef.current.push(messageId)
 
     if (outgoingBatchTimeoutRef.current) {
@@ -260,20 +262,134 @@ export function useMessageTranslation({
   // Get translation for a specific message
   // messageLanguage: the detected language of the message (e.g., 'fa', 'en')
   // isAgentMessage: true if this is an agent/bot message
+  // authorType: 'customer' | 'agent' | 'bot' | 'system' - distinguishes human agents from bots
+  //
+  // LOGIC:
+  // - Customer messages: translate to agent's language, show translated by default
+  // - Human agent messages: show original (what they typed) - check outgoing record if auto_translate_outgoing enabled
+  // - Bot messages: translate like customer messages (bot writes in customer's language)
   const getTranslation = useCallback((
     messageId: number,
     originalContent: string,
     messageLanguage?: string,
-    isAgentMessage: boolean = false
+    isAgentMessage: boolean = false,
+    authorType?: string
   ) => {
     const state = translations[messageId]
     const agentLang = languageInfo?.agent_language || 'en'
+    const hasAutoTranslateOutgoing = languageInfo?.auto_translate_outgoing || false
+    const messageInForeignLang = messageLanguage && messageLanguage !== agentLang
+    const isBot = authorType === 'bot'
 
-    // Check if translation is needed for this message
-    // A message needs translation if its language differs from agent's language
-    const messageNeedsTranslation = messageLanguage && messageLanguage !== agentLang
+    // === BOT MESSAGES ===
+    // Bots write in customer's language, so treat like customer messages (translate for agent)
+    if (isAgentMessage && isBot) {
+      if (!needsTranslation || !messageInForeignLang) {
+        return {
+          content: originalContent,
+          isLoading: false,
+          isTranslated: false,
+          showOriginal: true,
+        }
+      }
 
-    if (!needsTranslation || !messageNeedsTranslation) {
+      if (!state) {
+        queueTranslation(messageId)
+        return {
+          content: originalContent,
+          isLoading: true,
+          isTranslated: false,
+          showOriginal: false,
+        }
+      }
+
+      if (state.isLoading) {
+        return {
+          content: originalContent,
+          isLoading: true,
+          isTranslated: false,
+          showOriginal: false,
+        }
+      }
+
+      // Show translated by default for bot messages
+      return {
+        content: state.showOriginal ? (state.original || originalContent) : (state.translated || originalContent),
+        isLoading: false,
+        isTranslated: state.isTranslated,
+        showOriginal: state.showOriginal,
+      }
+    }
+
+    // === HUMAN AGENT MESSAGES ===
+    if (isAgentMessage) {
+      // Check if we already know there's no outgoing record for this message
+      const knownNoOutgoingRecord = noOutgoingRecordRef.current.has(messageId)
+
+      // CASE 1: We have state with outgoing translation record (agent message that was translated)
+      if (state?.isTranslated && state?.isOutgoing) {
+        // Show what agent originally typed
+        return {
+          content: state.showOriginal ? state.original : (state.translated || originalContent),
+          isLoading: false,
+          isTranslated: true,
+          showOriginal: state.showOriginal,
+        }
+      }
+
+      // CASE 2: Known no outgoing record - agent typed in this language (show as-is)
+      if (knownNoOutgoingRecord) {
+        return {
+          content: originalContent,
+          isLoading: false,
+          isTranslated: false,
+          showOriginal: true,
+        }
+      }
+
+      // CASE 3: auto_translate_outgoing is disabled - no translation happened, show as-is
+      if (!hasAutoTranslateOutgoing) {
+        return {
+          content: originalContent,
+          isLoading: false,
+          isTranslated: false,
+          showOriginal: true,
+        }
+      }
+
+      // CASE 5: Need to check for outgoing translation record
+      if (!state) {
+        queueOutgoingTranslation(messageId)
+        return {
+          content: originalContent,
+          isLoading: true,
+          isTranslated: false,
+          showOriginal: true,
+        }
+      }
+
+      // Still loading
+      if (state.isLoading) {
+        return {
+          content: originalContent,
+          isLoading: true,
+          isTranslated: false,
+          showOriginal: true,
+        }
+      }
+
+      // Fallback - show as-is
+      return {
+        content: originalContent,
+        isLoading: false,
+        isTranslated: false,
+        showOriginal: true,
+      }
+    }
+
+    // === CUSTOMER MESSAGES ===
+    // Translate to agent's language if needed
+    if (!needsTranslation || !messageInForeignLang) {
       return {
         content: originalContent,
         isLoading: false,
@@ -283,40 +399,28 @@ export function useMessageTranslation({
     }
 
     if (!state) {
-      // Queue this message for translation
-      if (isAgentMessage) {
-        // For agent messages: fetch original from outgoing translation record
-        queueOutgoingTranslation(messageId)
-      } else {
-        // For customer messages: translate to agent's language
-        queueTranslation(messageId)
-      }
+      queueTranslation(messageId)
       return {
         content: originalContent,
         isLoading: true,
         isTranslated: false,
-        showOriginal: true,
+        showOriginal: false,
       }
     }
 
-    if (isAgentMessage && state.original) {
-      // For agent messages with outgoing translation record:
-      // - Default: show what agent typed (original)
-      // - Toggle: show what customer sees (translated/message.body)
+    if (state.isLoading) {
       return {
-        content: state.showOriginal ? state.original : (state.translated || originalContent),
-        isLoading: false,
-        isTranslated: true,
-        showOriginal: state.showOriginal,
+        content: originalContent,
+        isLoading: true,
+        isTranslated: false,
+        showOriginal: false,
       }
     }
 
-    // For customer messages:
-    // - Show translated by default (translated to agent's language)
-    // - Toggle shows original (what customer typed)
+    // Show TRANSLATED by default for customer messages
     return {
       content: state.showOriginal ? (state.original || originalContent) : (state.translated || originalContent),
-      isLoading: state.isLoading,
+      isLoading: false,
       isTranslated: state.isTranslated,
       showOriginal: state.showOriginal,
     }

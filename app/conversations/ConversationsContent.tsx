@@ -163,6 +163,7 @@ export default function ConversationsContent() {
               message: msg.body,
               language: msg.language,
               isAgent: msg.is_agent,
+              authorType: msg.author.type,
               time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               author: msg.author.name,
               avatarUrl: getMediaUrl(msg.author.avatar_url),
@@ -308,6 +309,12 @@ export default function ConversationsContent() {
       })
       setReplyText("")
 
+      // Immediately update handle_by_bot to false (agent sent message = bot off)
+      // This reflects what the backend does automatically
+      setApiConversations(prev => prev.map(conv =>
+        conv.id === conversationId ? { ...conv, handle_by_bot: false } : conv
+      ))
+
       // Refresh conversations list
       setRefreshTrigger(prev => prev + 1)
 
@@ -321,6 +328,7 @@ export default function ConversationsContent() {
           message: msg.body,
           language: msg.language,
           isAgent: msg.is_agent,
+          authorType: msg.author.type,
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           author: msg.author.name,
           avatarUrl: getMediaUrl(msg.author.avatar_url),
@@ -364,6 +372,11 @@ export default function ConversationsContent() {
       })
       setReplyText("")
 
+      // Immediately update handle_by_bot to false and status to agent_reply
+      setApiConversations(prev => prev.map(conv =>
+        conv.id === conversationId ? { ...conv, handle_by_bot: false, status: 'agent_reply' as const } : conv
+      ))
+
       // Refresh conversations list
       setRefreshTrigger(prev => prev + 1)
 
@@ -377,6 +390,7 @@ export default function ConversationsContent() {
           message: msg.body,
           language: msg.language,
           isAgent: msg.is_agent,
+          authorType: msg.author.type,
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           author: msg.author.name,
           avatarUrl: getMediaUrl(msg.author.avatar_url),
@@ -1368,6 +1382,7 @@ export default function ConversationsContent() {
           message: msg.body,
           language: msg.language,
           isAgent: msg.is_agent,
+          authorType: msg.author.type,
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           author: msg.author.name,
           avatarUrl: getMediaUrl(msg.author.avatar_url),
@@ -2020,12 +2035,15 @@ export default function ConversationsContent() {
                 ) : conversationMessages.map((message) => {
                   const isChat = selectedConversation?.channel === 'whatsapp' || selectedConversation?.channel === 'telegram'
 
-                  // Get translation for messages not in agent's language
-                  // Uses per-message language detection
-                  const translation = needsTranslation && message.language
-                    ? getTranslation(message.id, message.message, message.language, message.isAgent)
+                  // Get translation for messages
+                  // - Customer messages: translate if language differs from agent's language
+                  // - Bot messages: translate like customer messages
+                  // - Human agent messages: show original (what they typed)
+                  const translation = message.language
+                    ? getTranslation(message.id, message.message, message.language, message.isAgent, message.authorType)
                     : undefined
-                  // Use translation.content when translation is available
+                  // Use translation.content when available, otherwise fall back to message
+                  // For agent messages during loading, we'll show skeleton (handled below)
                   const displayContent = translation?.isTranslated
                     ? translation.content
                     : message.message

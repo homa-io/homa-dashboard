@@ -128,7 +128,7 @@ export interface ConversationDetailResponse {
 export interface MessageAuthor {
   id: string
   name: string
-  type: 'customer' | 'agent' | 'system'
+  type: 'customer' | 'agent' | 'bot' | 'system'
   avatar_url: string | null
   initials: string
 }
