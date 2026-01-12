@@ -1,5 +1,5 @@
 // Backend API types matching http://127.0.0.1:8033/api/agent/conversations/search
-export type ConversationStatus = 'new' | 'open' | 'assigned' | 'pending' | 'closed'
+export type ConversationStatus = 'new' | 'wait_for_agent' | 'in_progress' | 'wait_for_user' | 'on_hold' | 'resolved' | 'closed' | 'unresolved' | 'spam'
 export type ConversationPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type ConversationChannel = 'web' | 'email' | 'whatsapp' | 'telegram' | 'slack'
 
