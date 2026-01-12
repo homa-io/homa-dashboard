@@ -646,11 +646,16 @@ export interface UpdateConversationPropertiesRequest {
   priority?: 'low' | 'medium' | 'high' | 'urgent'
   status?: 'new' | 'user_reply' | 'agent_reply' | 'processing' | 'closed' | 'archived' | 'postponed'
   department_id?: number
+  handle_by_bot?: boolean
 }
 
 export interface UpdateConversationPropertiesResponse {
-  message: string
-  updated_fields: string[]
+  id: number
+  priority: string
+  status: string
+  department_id: number | null
+  handle_by_bot: boolean
+  updated_at: string
 }
 
 // Types for updating conversation tags

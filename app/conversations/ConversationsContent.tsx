@@ -24,7 +24,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Search, Filter, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Link, Download, FileText, Image as ImageIcon, ChevronDown, Reply, Mail, Globe, MessageCircle, Phone, Monitor, ChevronUp, Sparkles, Check, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, CircleDot, X, Tag, Building, Minus, AlertTriangle, Zap, Circle, Clock, CheckCircle, XCircle, Pause, Loader, Archive, UserCheck } from 'lucide-react'
+import { Search, Filter, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Link, Download, FileText, Image as ImageIcon, ChevronDown, Reply, Mail, Globe, MessageCircle, Phone, Monitor, ChevronUp, Sparkles, Check, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, CircleDot, X, Tag, Building, Minus, AlertTriangle, Zap, Circle, Clock, CheckCircle, XCircle, Pause, Loader, Archive, UserCheck, Languages, Bot } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { VisitorInformation } from '@/components/conversations/VisitorInformation'
 import { ConversationActions } from '@/components/conversations/ConversationActions'
 import { WysiwygEditor } from '@/components/conversations/WysiwygEditor'
@@ -35,6 +42,8 @@ import { conversationService } from '@/services'
 import { getMediaUrl } from '@/services/api-client'
 import type { Conversation } from '@/types/conversation.types'
 import { useToast } from '@/hooks/use-toast'
+import { useMessageTranslation } from '@/hooks/useMessageTranslation'
+import { MessageBubble } from '@/components/conversations/MessageBubble'
 
 export default function ConversationsContent() {
   const { toast } = useToast()
@@ -152,6 +161,7 @@ export default function ConversationsContent() {
             const transformedMessages = detailData.messages.map(msg => ({
               id: msg.id,
               message: msg.body,
+              language: msg.language,
               isAgent: msg.is_agent,
               time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               author: msg.author.name,
@@ -309,6 +319,7 @@ export default function ConversationsContent() {
         const transformedMessages = detailData.messages.map(msg => ({
           id: msg.id,
           message: msg.body,
+          language: msg.language,
           isAgent: msg.is_agent,
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           author: msg.author.name,
@@ -364,6 +375,7 @@ export default function ConversationsContent() {
         const transformedMessages = detailData.messages.map(msg => ({
           id: msg.id,
           message: msg.body,
+          language: msg.language,
           isAgent: msg.is_agent,
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           author: msg.author.name,
@@ -469,7 +481,8 @@ export default function ConversationsContent() {
   const [loadingStates, setLoadingStates] = useState({
     status: false,
     priority: false,
-    department: false
+    department: false,
+    handleByBot: false
   })
 
   // Modal handlers
@@ -631,6 +644,33 @@ export default function ConversationsContent() {
         title: "Error",
         description: "Failed to update department. Please try again.",
       })
+    }
+  }
+
+  // Handler for handle_by_bot toggle
+  const handleToggleHandleByBot = async () => {
+    if (!selectedConversation) return
+
+    const newValue = !selectedConversation.handle_by_bot
+    setLoadingStates(prev => ({ ...prev, handleByBot: true }))
+
+    try {
+      await conversationService.updateConversationProperties(selectedConversation.id, {
+        handle_by_bot: newValue
+      })
+      toast({
+        title: "Success",
+        description: newValue ? "Bot will now handle this conversation" : "Bot handling disabled",
+      })
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update bot handling. Please try again.",
+      })
+    } finally {
+      setLoadingStates(prev => ({ ...prev, handleByBot: false }))
     }
   }
 
@@ -1295,6 +1335,18 @@ export default function ConversationsContent() {
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [messagesError, setMessagesError] = useState<string | null>(null)
 
+  // Translation hook for multilingual support
+  const {
+    needsTranslation,
+    getTranslation,
+    toggleTranslation,
+    languageInfo,
+    translations, // Need this to trigger re-render when translations are fetched
+  } = useMessageTranslation({
+    conversationId: selectedConversationId,
+    enabled: !!selectedConversationId,
+  })
+
   // Fetch conversation details and messages in a single optimized API call
   useEffect(() => {
     const fetchConversationDetail = async () => {
@@ -1314,6 +1366,7 @@ export default function ConversationsContent() {
         const transformedMessages = detailData.messages.map(msg => ({
           id: msg.id,
           message: msg.body,
+          language: msg.language,
           isAgent: msg.is_agent,
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           author: msg.author.name,
@@ -1915,6 +1968,32 @@ export default function ConversationsContent() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
+
+                  {/* Handle by Bot Toggle - Only visible when department has AI agent */}
+                  {/* Debug: department={JSON.stringify(selectedConversation.department)} */}
+                  {selectedConversation.department?.ai_agent_id != null && (
+                    <button
+                      onClick={handleToggleHandleByBot}
+                      disabled={loadingStates.handleByBot}
+                      className="focus:outline-none"
+                    >
+                      <CustomBadge
+                        variant={selectedConversation.handle_by_bot ? "green" : "gray"}
+                        className="text-xs h-6 px-3 cursor-pointer hover:opacity-80 disabled:opacity-60"
+                      >
+                        {loadingStates.handleByBot ? (
+                          <Loader className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <Bot className="w-3 h-3 mr-1" />
+                        )}
+                        {loadingStates.handleByBot
+                          ? 'Updating...'
+                          : selectedConversation.handle_by_bot
+                            ? 'Bot: On'
+                            : 'Bot: Off'}
+                      </CustomBadge>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1941,19 +2020,58 @@ export default function ConversationsContent() {
                 ) : conversationMessages.map((message) => {
                   const isChat = selectedConversation?.channel === 'whatsapp' || selectedConversation?.channel === 'telegram'
 
+                  // Get translation for messages not in agent's language
+                  // Uses per-message language detection
+                  const translation = needsTranslation && message.language
+                    ? getTranslation(message.id, message.message, message.language, message.isAgent)
+                    : undefined
+                  // Use translation.content when translation is available
+                  const displayContent = translation?.isTranslated
+                    ? translation.content
+                    : message.message
+
                   if (isChat) {
                     return (
                       <div key={message.id} className={`flex ${message.isAgent ? 'justify-end' : 'justify-start'} mb-2`}>
-                        <div className={`max-w-[70%] p-3 rounded-2xl ${
+                        <div className={`max-w-[70%] p-3 rounded-2xl relative ${
                           message.isAgent
                             ? 'bg-primary text-primary-foreground rounded-br-sm'
                             : 'bg-muted dark:bg-slate-700 border border-border rounded-bl-sm'
                         }`}>
-                          <div className="text-sm font-medium leading-relaxed whitespace-pre-line">
-                            {message.message}
-                          </div>
-                          <div className={`text-xs mt-1 ${message.isAgent ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                            {message.time}
+                          {/* Translation loading */}
+                          {translation?.isLoading ? (
+                            <div className="space-y-2">
+                              <Skeleton className="h-4 w-full" />
+                              <Skeleton className="h-4 w-3/4" />
+                            </div>
+                          ) : (
+                            <div className="text-sm font-medium leading-relaxed whitespace-pre-line">
+                              {displayContent}
+                            </div>
+                          )}
+                          <div className={`flex items-center gap-2 mt-1 ${message.isAgent ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                            <span className="text-xs">{message.time}</span>
+                            {/* Translation toggle button */}
+                            {translation?.isTranslated && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        toggleTranslation(message.id)
+                                      }}
+                                      className="p-0.5 rounded hover:bg-black/10 transition-colors"
+                                    >
+                                      <Languages className="h-3 w-3" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    {translation.showOriginal ? "Show translated" : "Show original"}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1977,15 +2095,42 @@ export default function ConversationsContent() {
                             {getInitials(message.author)}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
-                          <h3 className="text-sm font-medium">{message.author}</h3>
-                          <p className="text-xs text-muted-foreground">{message.time}</p>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <h3 className="text-sm font-medium">{message.author}</h3>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              {message.time}
+                              {translation?.isTranslated && (
+                                <>
+                                  <span className="text-muted-foreground/50">•</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      toggleTranslation(message.id)
+                                    }}
+                                    className="text-blue-500 hover:text-blue-600 hover:underline"
+                                  >
+                                    {translation.showOriginal ? "Show Translated" : "Translated - Show Original"}
+                                  </button>
+                                </>
+                              )}
+                            </p>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="mb-3 text-sm leading-relaxed whitespace-pre-line font-medium">
-                        {message.message}
-                      </div>
+                      {/* Message content with translation loading */}
+                      {translation?.isLoading ? (
+                        <div className="mb-3 space-y-2">
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-5/6" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed whitespace-pre-line font-medium">
+                          {displayContent}
+                        </p>
+                      )}
 
                       {/* Attachments */}
                       {message.attachments && message.attachments.length > 0 && (

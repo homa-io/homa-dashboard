@@ -31,6 +31,7 @@ export interface Agent {
 export interface Department {
   id: number
   name: string
+  ai_agent_id: number | null
 }
 
 export interface Tag {
@@ -45,6 +46,7 @@ export interface Conversation {
   title: string
   status: ConversationStatus
   priority: ConversationPriority
+  handle_by_bot: boolean
   channel: ConversationChannel
   created_at: string
   updated_at: string
@@ -145,6 +147,7 @@ export interface MessageAttachment {
 export interface Message {
   id: number
   body: string
+  language: string | null // Detected language code (e.g., 'en', 'fa', 'es')
   is_agent: boolean
   is_system_message: boolean
   created_at: string

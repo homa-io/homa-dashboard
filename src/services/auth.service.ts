@@ -28,6 +28,8 @@ export interface User {
   avatar?: string | null
   type: string
   language?: string
+  auto_translate_incoming?: boolean
+  auto_translate_outgoing?: boolean
   created_at: string
   updated_at: string
   // Optional fields for backwards compatibility
@@ -67,6 +69,8 @@ export interface UpdateProfileRequest {
   name?: string
   avatar?: string
   language?: string
+  auto_translate_incoming?: boolean
+  auto_translate_outgoing?: boolean
   preferences?: Partial<UserPreferences>
 }
 

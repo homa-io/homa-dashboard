@@ -10,7 +10,9 @@ import { VisitorInformation } from "./VisitorInformation"
 import { ConversationActions } from "./ConversationActions"
 import { WysiwygEditor } from "./WysiwygEditor"
 import { ConversationSummary } from "./ConversationSummary"
+import { MessageBubble } from "./MessageBubble"
 import { conversationService } from "@/services/conversation.service"
+import { useMessageTranslation } from "@/hooks/useMessageTranslation"
 import { useToast } from "@/hooks/use-toast"
 import type { Conversation, Message } from "@/types/conversation.types"
 import {
@@ -62,6 +64,18 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
   const [availableTags, setAvailableTags] = useState<string[]>([])
   const [availableUsers, setAvailableUsers] = useState<Array<{ id: string; name: string; last_name: string; display_name: string; email: string; avatar: string | null }>>([])
   const { toast } = useToast()
+
+  // Translation hook for multilingual support
+  const {
+    needsTranslation,
+    getTranslation,
+    toggleTranslation,
+    translateOutgoing,
+    languageInfo,
+  } = useMessageTranslation({
+    conversationId: conversation?.id ?? null,
+    enabled: isOpen,
+  })
 
   // Fetch messages, departments, tags, and users when modal opens
   useEffect(() => {
@@ -548,28 +562,23 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
                       <Loader className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
                   ) : messages.length > 0 ? (
-                    messages.map((message) => (
-                      <div key={message.id} className={`flex gap-2 sm:gap-3 ${message.is_agent ? "flex-row-reverse" : ""}`}>
-                        <Avatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0">
-                          <AvatarFallback
-                            className="text-xs font-medium text-white"
-                            style={{ backgroundColor: getAvatarColor(message.author?.name || "Unknown") }}
-                          >
-                            {message.author?.initials || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className={`flex-1 max-w-[80%] sm:max-w-[70%] ${message.is_agent ? "text-right" : ""}`}>
-                          <div className={`inline-block p-2 sm:p-4 rounded-lg ${message.is_agent ? "bg-primary text-primary-foreground" : "bg-muted"
-                            }`}>
-                            <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-                              <span className="font-medium text-xs sm:text-sm">{message.author?.name || "Unknown"}</span>
-                              <span className="text-[10px] sm:text-xs opacity-70">{formatTime(message.created_at)}</span>
-                            </div>
-                            <p className="text-xs sm:text-sm whitespace-pre-wrap">{message.body}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
+                    messages.map((message) => {
+                      // Get translation info for client messages
+                      const isClientMessage = !message.is_agent
+                      const translation = isClientMessage && needsTranslation
+                        ? getTranslation(message.id, message.body)
+                        : undefined
+
+                      return (
+                        <MessageBubble
+                          key={message.id}
+                          message={message}
+                          translation={translation}
+                          onToggleTranslation={() => toggleTranslation(message.id)}
+                          needsTranslation={needsTranslation}
+                        />
+                      )
+                    })
                   ) : (
                     <div className="flex items-center justify-center h-32 text-muted-foreground">
                       <p className="text-sm">No messages yet</p>

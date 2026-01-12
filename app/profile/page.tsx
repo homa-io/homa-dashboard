@@ -40,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useDarkMode } from "@/hooks/useDarkMode"
 import { sessionsService, DailyActivity, UserSession } from "@/services/sessions.service"
 import { departmentService } from "@/services/department.service"
@@ -174,6 +175,8 @@ export default function ProfilePage() {
   const [sessions, setSessions] = useState<UserSession[]>([])
   const [isLoadingSessions, setIsLoadingSessions] = useState(true)
   const [isSavingLanguage, setIsSavingLanguage] = useState(false)
+  const [isSavingTranslateIncoming, setIsSavingTranslateIncoming] = useState(false)
+  const [isSavingTranslateOutgoing, setIsSavingTranslateOutgoing] = useState(false)
   const currentSessionId = typeof window !== 'undefined' ? localStorage.getItem('homa_session_id') : null
 
   const [formData, setFormData] = useState<ProfileFormData>({
@@ -290,6 +293,40 @@ export default function ProfilePage() {
       })
     } finally {
       setIsSavingLanguage(false)
+    }
+  }
+
+  const handleTranslateIncomingChange = async (checked: boolean) => {
+    setIsSavingTranslateIncoming(true)
+    try {
+      await authService.updateProfile({ auto_translate_incoming: checked })
+      await refreshUser()
+      toast({ title: checked ? "Auto translate incoming enabled" : "Auto translate incoming disabled" })
+    } catch (error: any) {
+      toast({
+        title: "Failed to update setting",
+        description: error?.message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSavingTranslateIncoming(false)
+    }
+  }
+
+  const handleTranslateOutgoingChange = async (checked: boolean) => {
+    setIsSavingTranslateOutgoing(true)
+    try {
+      await authService.updateProfile({ auto_translate_outgoing: checked })
+      await refreshUser()
+      toast({ title: checked ? "Auto translate outgoing enabled" : "Auto translate outgoing disabled" })
+    } catch (error: any) {
+      toast({
+        title: "Failed to update setting",
+        description: error?.message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSavingTranslateOutgoing(false)
     }
   }
 
@@ -611,6 +648,52 @@ export default function ProfilePage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Auto Translate Incoming */}
+            <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Languages className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Auto Translate Incoming Messages</p>
+                  <p className="text-xs text-muted-foreground">
+                    Auto translate user messages to my language
+                  </p>
+                </div>
+              </div>
+              {isSavingTranslateIncoming ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Switch
+                  checked={user?.auto_translate_incoming ?? false}
+                  onCheckedChange={handleTranslateIncomingChange}
+                />
+              )}
+            </div>
+
+            {/* Auto Translate Outgoing */}
+            <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Languages className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Auto Translate Outgoing Messages</p>
+                  <p className="text-xs text-muted-foreground">
+                    Auto translate all of my outgoing messages to customer language
+                  </p>
+                </div>
+              </div>
+              {isSavingTranslateOutgoing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Switch
+                  checked={user?.auto_translate_outgoing ?? false}
+                  onCheckedChange={handleTranslateOutgoingChange}
+                />
+              )}
             </div>
 
             {/* Password Setting */}
