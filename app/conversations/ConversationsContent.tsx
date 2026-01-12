@@ -1843,7 +1843,7 @@ export default function ConversationsContent() {
                 <Avatar className="h-10 w-10">
                   {conversation.customer.avatar_url && (
                     <AvatarImage
-                      src={conversation.customer.avatar_url}
+                      src={getMediaUrl(conversation.customer.avatar_url)}
                       alt={conversation.customer.name}
                     />
                   )}
@@ -2198,7 +2198,7 @@ export default function ConversationsContent() {
                     <div className="flex items-center gap-2 mb-3">
                       <Avatar className="h-6 w-6">
                         <AvatarImage
-                          src={selectedConversation.customer.avatar_url || undefined}
+                          src={getMediaUrl(selectedConversation.customer.avatar_url)}
                           alt={selectedConversation.customer.name}
                         />
                         <AvatarFallback
