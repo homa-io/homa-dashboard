@@ -44,20 +44,23 @@ export default function OAuthCallbackPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const handleCallback = () => {
+    const handleCallback = async () => {
       try {
         const response = authService.handleOAuthCallback()
 
         if (response) {
-          // Successfully authenticated, redirect to dashboard
+          // Show loading screen for a moment before redirecting
+          await new Promise(resolve => setTimeout(resolve, 2500))
           router.push('/')
         } else {
           // No OAuth response, redirect to login
+          await new Promise(resolve => setTimeout(resolve, 1000))
           router.push('/login')
         }
       } catch (error) {
         console.error('OAuth callback error:', error)
         // Redirect to login with error
+        await new Promise(resolve => setTimeout(resolve, 1000))
         router.push('/login?error=oauth_failed')
       }
     }
@@ -102,8 +105,8 @@ export default function OAuthCallbackPage() {
         <div className="w-12 h-12 border-4 border-white/20 border-t-primary rounded-full animate-spin mx-auto mb-6" />
 
         {/* Text */}
-        <h1 className="text-white text-xl font-semibold mb-2">Completing authentication...</h1>
-        <p className="text-white/50 text-sm">Please wait while we sign you in</p>
+        <h1 className="text-white text-xl font-semibold mb-2">Crafting your dashboard...</h1>
+        <p className="text-white/50 text-sm">Please wait a moment</p>
       </div>
 
       {/* Copyright */}
