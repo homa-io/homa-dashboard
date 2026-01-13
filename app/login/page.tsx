@@ -42,6 +42,50 @@ const customStyles = `
   100% { background-position: 0% 50%; }
 }
 
+@keyframes border-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes aurora-drift {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translate(10%, -10%) scale(1.1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-5%, 5%) scale(0.95);
+    opacity: 0.5;
+  }
+  75% {
+    transform: translate(-10%, -5%) scale(1.05);
+    opacity: 0.7;
+  }
+}
+
+@keyframes aurora-drift-2 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1) rotate(0deg);
+    opacity: 0.5;
+  }
+  33% {
+    transform: translate(-15%, 10%) scale(1.15) rotate(60deg);
+    opacity: 0.7;
+  }
+  66% {
+    transform: translate(10%, -10%) scale(0.9) rotate(120deg);
+    opacity: 0.4;
+  }
+}
+
+@keyframes soft-pulse {
+  0%, 100% { opacity: 0.4; filter: blur(40px); }
+  50% { opacity: 0.6; filter: blur(50px); }
+}
+
 .message-glow {
   animation: slide-up-fade 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -707,17 +751,73 @@ export default function LoginPage() {
         {/* Top gradient overlay with branding */}
         <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-slate-950 via-slate-950/98 to-transparent z-10">
           <div className="flex flex-col items-center justify-center h-full px-8 pt-6">
+            {/* Logo with rotating gradient border */}
             <div className="relative mb-5">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/50 to-violet-500/50 rounded-2xl blur-xl opacity-50 animate-pulse" />
-              <div className="relative w-16 h-16 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-2xl border border-white/20">
-                <Logo variant="white" size="lg" className="scale-150" />
+              {/* Aurora blobs - soft organic background glow */}
+              <div
+                className="absolute -inset-12 rounded-full"
+                style={{
+                  background: 'radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.4), transparent 50%)',
+                  animation: 'aurora-drift 8s ease-in-out infinite',
+                  filter: 'blur(30px)',
+                }}
+              />
+              <div
+                className="absolute -inset-12 rounded-full"
+                style={{
+                  background: 'radial-gradient(circle at 70% 70%, rgba(139, 92, 246, 0.35), transparent 50%)',
+                  animation: 'aurora-drift-2 10s ease-in-out infinite',
+                  filter: 'blur(35px)',
+                }}
+              />
+              <div
+                className="absolute -inset-10 rounded-full"
+                style={{
+                  background: 'radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.2), transparent 60%)',
+                  animation: 'soft-pulse 6s ease-in-out infinite',
+                }}
+              />
+
+              {/* Rotating gradient border container */}
+              <div className="relative w-20 h-20 rounded-2xl overflow-hidden p-[2px]">
+                {/* Spinning gradient border */}
+                <div
+                  className="absolute inset-[-50%] w-[200%] h-[200%]"
+                  style={{
+                    background: 'conic-gradient(from 0deg, #3b82f6, #8b5cf6, #ec4899, #f59e0b, #10b981, #3b82f6)',
+                    animation: 'border-spin 4s linear infinite',
+                  }}
+                />
+
+                {/* Inner container with logo */}
+                <div className="relative w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center z-10">
+                  {/* Subtle inner glow */}
+                  <div className="absolute inset-0 rounded-[14px] bg-gradient-to-br from-white/10 via-transparent to-white/5" />
+
+                  {/* Logo */}
+                  <Logo
+                    variant="white"
+                    size="lg"
+                    className="relative z-10 scale-[1.6] drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                  />
+                </div>
               </div>
+
+              {/* Soft glow underneath the border */}
+              <div
+                className="absolute inset-0 rounded-2xl"
+                style={{
+                  boxShadow: '0 0 40px 8px rgba(139, 92, 246, 0.3), 0 0 80px 20px rgba(59, 130, 246, 0.2)',
+                  animation: 'soft-pulse 4s ease-in-out infinite',
+                }}
+              />
             </div>
+
             <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">
-              Homa Dashboard
+              Homa Customer Support
             </h1>
             <p className="text-sm text-white/50 text-center max-w-xs leading-relaxed">
-              AI-powered customer support that delights
+              AI-powered conversations that delight
             </p>
           </div>
         </div>
@@ -744,10 +844,10 @@ export default function LoginPage() {
           {/* Header */}
           <div className="space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">
-              Welcome back
+              Good to see you
             </h2>
             <p className="text-muted-foreground">
-              Sign in to your account to continue
+              Sign in to continue to your dashboard
             </p>
           </div>
 

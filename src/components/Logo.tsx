@@ -4,6 +4,7 @@ interface LogoProps {
   className?: string
   variant?: 'light' | 'dark' | 'white' | 'primary'
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  style?: React.CSSProperties
 }
 
 const sizeClasses = {
@@ -20,18 +21,19 @@ const colorClasses = {
   primary: 'text-primary'
 }
 
-export function Logo({ className = "", variant = 'dark', size = 'md' }: LogoProps) {
-  const fillColor = variant === 'white' ? '#ffffff' : 
+export function Logo({ className = "", variant = 'dark', size = 'md', style }: LogoProps) {
+  const fillColor = variant === 'white' ? '#ffffff' :
                    variant === 'light' ? '#374151' :
-                   variant === 'primary' ? '#3b82f6' : 
+                   variant === 'primary' ? '#3b82f6' :
                    '#000000'
 
   return (
-    <svg 
+    <svg
       className={`${sizeClasses[size]} ${className}`}
       viewBox="0 0 1024 1024"
       xmlns="http://www.w3.org/2000/svg"
       xmlSpace="preserve"
+      style={style}
     >
       <path 
         fill={fillColor}
