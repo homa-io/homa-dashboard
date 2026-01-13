@@ -45,22 +45,23 @@ export default function OAuthCallbackPage() {
 
   useEffect(() => {
     const handleCallback = async () => {
+      // Always show loading screen for at least 3 seconds
+      const minDelay = new Promise(resolve => setTimeout(resolve, 3000))
+
       try {
         const response = authService.handleOAuthCallback()
 
+        // Wait for minimum delay
+        await minDelay
+
         if (response) {
-          // Show loading screen for a moment before redirecting
-          await new Promise(resolve => setTimeout(resolve, 2500))
           router.push('/')
         } else {
-          // No OAuth response, redirect to login
-          await new Promise(resolve => setTimeout(resolve, 1000))
           router.push('/login')
         }
       } catch (error) {
         console.error('OAuth callback error:', error)
-        // Redirect to login with error
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await minDelay
         router.push('/login?error=oauth_failed')
       }
     }
