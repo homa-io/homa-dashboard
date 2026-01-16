@@ -16,7 +16,10 @@ import {
   Phone,
   UserCheck,
   Pause,
-  AlertCircle
+  AlertCircle,
+  ArrowUp,
+  ArrowDown,
+  Archive
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -136,11 +139,12 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [conversations, setConversations] = useState<Record<string, Conversation[]>>({
     new: [],
-    wait_for_agent: [],
-    in_progress: [],
-    wait_for_user: [],
-    on_hold: [],
-    resolved: []
+    user_reply: [],
+    agent_reply: [],
+    processing: [],
+    closed: [],
+    archived: [],
+    postponed: []
   })
   const [loading, setLoading] = useState(true)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -152,7 +156,7 @@ export default function Dashboard() {
       setLoading(true)
       try {
         // Fetch conversations for each status in parallel
-        const statuses = ['new', 'wait_for_agent', 'in_progress', 'wait_for_user', 'on_hold', 'resolved']
+        const statuses = ['new', 'user_reply', 'agent_reply', 'processing', 'closed', 'archived', 'postponed']
         const results = await Promise.all(
           statuses.map(status =>
             conversationService.searchConversations({
@@ -240,11 +244,12 @@ export default function Dashboard() {
 
   const statuses = [
     { key: "new", label: "New", icon: Circle, color: "text-blue-600" },
-    { key: "wait_for_agent", label: "Wait for Agent", icon: UserCheck, color: "text-purple-600" },
-    { key: "in_progress", label: "In Progress", icon: Loader, color: "text-yellow-600" },
-    { key: "wait_for_user", label: "Wait for User", icon: Clock, color: "text-orange-600" },
-    { key: "on_hold", label: "On Hold", icon: Pause, color: "text-gray-500" },
-    { key: "resolved", label: "Resolved", icon: CheckCircle, color: "text-green-600" },
+    { key: "user_reply", label: "User Reply", icon: ArrowUp, color: "text-green-600" },
+    { key: "agent_reply", label: "Agent Reply", icon: ArrowDown, color: "text-blue-600" },
+    { key: "processing", label: "Processing", icon: Loader, color: "text-yellow-600" },
+    { key: "closed", label: "Closed", icon: XCircle, color: "text-gray-500" },
+    { key: "archived", label: "Archived", icon: Archive, color: "text-gray-500" },
+    { key: "postponed", label: "Postponed", icon: Clock, color: "text-orange-600" },
   ]
 
   return (

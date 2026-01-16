@@ -700,14 +700,14 @@ Generated: ${timestamp}`
                                   <Badge
                                     variant="outline"
                                     className={`text-xs h-5 px-2 ${
-                                      conversation.status === 'resolved' ? 'border-green-200 text-green-700 bg-green-50' :
-                                      conversation.status === 'pending' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' :
-                                      conversation.status === 'open' ? 'border-blue-200 text-blue-700 bg-blue-50' :
-                                      conversation.status === 'closed' ? 'border-gray-200 text-gray-700 bg-gray-50' :
+                                      conversation.status === 'user_reply' ? 'border-green-200 text-green-700 bg-green-50' :
+                                      conversation.status === 'processing' || conversation.status === 'postponed' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' :
+                                      conversation.status === 'new' || conversation.status === 'agent_reply' ? 'border-blue-200 text-blue-700 bg-blue-50' :
+                                      conversation.status === 'closed' || conversation.status === 'archived' ? 'border-gray-200 text-gray-700 bg-gray-50' :
                                       'border-gray-200 text-gray-700 bg-gray-50'
                                     }`}
                                   >
-                                    {conversation.status}
+                                    {conversation.status.replace(/_/g, ' ')}
                                   </Badge>
                                   <Badge
                                     variant="outline"

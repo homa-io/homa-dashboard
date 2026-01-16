@@ -161,6 +161,7 @@ export default function ConversationsContent() {
             const transformedMessages = detailData.messages.map(msg => ({
               id: msg.id,
               message: msg.body,
+              type: msg.type,
               language: msg.language,
               isAgent: msg.is_agent,
               authorType: msg.author.type,
@@ -326,6 +327,7 @@ export default function ConversationsContent() {
         const transformedMessages = detailData.messages.map(msg => ({
           id: msg.id,
           message: msg.body,
+          type: msg.type,
           language: msg.language,
           isAgent: msg.is_agent,
           authorType: msg.author.type,
@@ -368,7 +370,7 @@ export default function ConversationsContent() {
 
       toast({
         title: "Fast reply sent",
-        description: "Your reply has been sent and status changed to Agent Reply"
+        description: "Your reply has been sent"
       })
       setReplyText("")
 
@@ -388,6 +390,7 @@ export default function ConversationsContent() {
         const transformedMessages = detailData.messages.map(msg => ({
           id: msg.id,
           message: msg.body,
+          type: msg.type,
           language: msg.language,
           isAgent: msg.is_agent,
           authorType: msg.author.type,
@@ -448,14 +451,12 @@ export default function ConversationsContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new': return 'blue'
-      case 'wait_for_agent': return 'yellow'
-      case 'in_progress': return 'blue'
-      case 'wait_for_user': return 'green'
-      case 'on_hold': return 'yellow'
-      case 'resolved': return 'green'
+      case 'user_reply': return 'green'
+      case 'agent_reply': return 'blue'
+      case 'processing': return 'yellow'
       case 'closed': return 'gray'
-      case 'unresolved': return 'red'
-      case 'spam': return 'gray'
+      case 'archived': return 'gray'
+      case 'postponed': return 'yellow'
       default: return 'gray'
     }
   }
@@ -463,14 +464,12 @@ export default function ConversationsContent() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'new': return <Circle className="w-3 h-3" />
-      case 'wait_for_agent': return <Clock className="w-3 h-3" />
-      case 'in_progress': return <Loader className="w-3 h-3" />
-      case 'wait_for_user': return <Clock className="w-3 h-3" />
-      case 'on_hold': return <Pause className="w-3 h-3" />
-      case 'resolved': return <CheckCircle className="w-3 h-3" />
+      case 'user_reply': return <ArrowUp className="w-3 h-3" />
+      case 'agent_reply': return <ArrowDown className="w-3 h-3" />
+      case 'processing': return <Loader className="w-3 h-3" />
       case 'closed': return <XCircle className="w-3 h-3" />
-      case 'unresolved': return <AlertCircle className="w-3 h-3" />
-      case 'spam': return <Archive className="w-3 h-3" />
+      case 'archived': return <Archive className="w-3 h-3" />
+      case 'postponed': return <Clock className="w-3 h-3" />
       default: return <Circle className="w-3 h-3" />
     }
   }
@@ -510,17 +509,15 @@ export default function ConversationsContent() {
     console.log(`Conversation ${ticketId} status changed to ${newStatus}`)
   }
 
-  // Available options
+  // Available options (must match backend accepted values)
   const availableStatuses = [
     { value: "new", label: "New" },
-    { value: "wait_for_agent", label: "Wait for Agent" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "wait_for_user", label: "Wait for User" },
-    { value: "on_hold", label: "On Hold" },
-    { value: "resolved", label: "Resolved" },
+    { value: "user_reply", label: "User Reply" },
+    { value: "agent_reply", label: "Agent Reply" },
+    { value: "processing", label: "Processing" },
     { value: "closed", label: "Closed" },
-    { value: "unresolved", label: "Unresolved" },
-    { value: "spam", label: "Spam" },
+    { value: "archived", label: "Archived" },
+    { value: "postponed", label: "Postponed" },
   ]
 
   const availablePriorities = [
@@ -1390,6 +1387,7 @@ export default function ConversationsContent() {
         const transformedMessages = detailData.messages.map(msg => ({
           id: msg.id,
           message: msg.body,
+          type: msg.type,
           language: msg.language,
           isAgent: msg.is_agent,
           authorType: msg.author.type,
@@ -1583,37 +1581,29 @@ export default function ConversationsContent() {
                           <Circle className="mr-2 h-4 w-4 text-blue-500" />
                           New
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="wait_for_agent">
-                          <Clock className="mr-2 h-4 w-4 text-yellow-500" />
-                          Wait for Agent
+                        <DropdownMenuRadioItem value="user_reply">
+                          <ArrowUp className="mr-2 h-4 w-4 text-green-500" />
+                          User Reply
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="in_progress">
-                          <Loader className="mr-2 h-4 w-4 text-blue-500" />
-                          In Progress
+                        <DropdownMenuRadioItem value="agent_reply">
+                          <ArrowDown className="mr-2 h-4 w-4 text-blue-500" />
+                          Agent Reply
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="wait_for_user">
-                          <Clock className="mr-2 h-4 w-4 text-green-500" />
-                          Wait for User
-                        </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="on_hold">
-                          <Pause className="mr-2 h-4 w-4 text-yellow-500" />
-                          On Hold
-                        </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="resolved">
-                          <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                          Resolved
+                        <DropdownMenuRadioItem value="processing">
+                          <Loader className="mr-2 h-4 w-4 text-yellow-500" />
+                          Processing
                         </DropdownMenuRadioItem>
                         <DropdownMenuRadioItem value="closed">
                           <XCircle className="mr-2 h-4 w-4 text-gray-500" />
                           Closed
                         </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="unresolved">
-                          <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
-                          Unresolved
-                        </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="spam">
+                        <DropdownMenuRadioItem value="archived">
                           <Archive className="mr-2 h-4 w-4 text-gray-500" />
-                          Spam
+                          Archived
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="postponed">
+                          <Clock className="mr-2 h-4 w-4 text-yellow-500" />
+                          Postponed
                         </DropdownMenuRadioItem>
                       </DropdownMenuRadioGroup>
                     </DropdownMenuSubContent>
@@ -2043,6 +2033,26 @@ export default function ConversationsContent() {
                     <div className="text-sm text-red-600">Error: {messagesError}</div>
                   </div>
                 ) : conversationMessages.map((message) => {
+                  // Render action messages (centered, minimal, gray pill)
+                  if (message.type === 'action') {
+                    return (
+                      <div key={message.id} className="flex justify-center py-1">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-muted/60 hover:bg-muted/80 rounded-full text-[11px] text-muted-foreground cursor-default transition-colors">
+                                <span>{message.message}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                              {message.time}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    )
+                  }
+
                   const isChat = selectedConversation?.channel === 'whatsapp' || selectedConversation?.channel === 'telegram'
 
                   // Get translation for messages

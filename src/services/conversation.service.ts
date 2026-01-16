@@ -39,6 +39,26 @@ class ConversationService {
   }
 
   /**
+   * Get authorization headers with access token
+   */
+  private getAuthHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    if (typeof window !== 'undefined') {
+      const cookies = document.cookie.split('; ')
+      const tokenCookie = cookies.find(c => c.startsWith('access_token='))
+      const token = tokenCookie ? tokenCookie.split('=')[1] : null
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    }
+
+    return headers
+  }
+
+  /**
    * Search and filter conversations with comprehensive options
    */
   async searchConversations(params: ConversationSearchParams = {}): Promise<PaginatedConversationsResponse> {
@@ -235,9 +255,7 @@ class ConversationService {
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({ user_ids: userIds }),
       })
 
@@ -458,9 +476,7 @@ class ConversationService {
     try {
       const response = await fetch(endpoint, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify(updates),
       })
 
@@ -490,9 +506,7 @@ class ConversationService {
     try {
       const response = await fetch(endpoint, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({ tag_ids: tagIds }),
       })
 

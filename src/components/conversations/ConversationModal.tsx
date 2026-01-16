@@ -362,14 +362,14 @@ export function ConversationModal({ conversation, isOpen, onClose, onStatusChang
         }
       })
 
-      // Update conversation status to agent_reply
+      // Update conversation status to agent_reply (agent has responded)
       await conversationService.updateConversationProperties(conversation.id, {
         status: 'agent_reply'
       })
 
       toast({
         title: "Fast reply sent",
-        description: "Your reply has been sent and status changed to Agent Reply"
+        description: "Your reply has been sent"
       })
       setReplyText("")
 

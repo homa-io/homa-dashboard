@@ -1,5 +1,5 @@
 // Backend API types matching http://127.0.0.1:8033/api/agent/conversations/search
-export type ConversationStatus = 'new' | 'wait_for_agent' | 'in_progress' | 'wait_for_user' | 'on_hold' | 'resolved' | 'closed' | 'unresolved' | 'spam'
+export type ConversationStatus = 'new' | 'user_reply' | 'agent_reply' | 'processing' | 'closed' | 'archived' | 'postponed'
 export type ConversationPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type ConversationChannel = 'web' | 'email' | 'whatsapp' | 'telegram' | 'slack'
 
@@ -124,6 +124,9 @@ export interface ConversationDetailResponse {
   total_pages: number
 }
 
+// Message type enum
+export type MessageType = 'message' | 'action'
+
 // Message author
 export interface MessageAuthor {
   id: string
@@ -147,6 +150,7 @@ export interface MessageAttachment {
 export interface Message {
   id: number
   body: string
+  type: MessageType // 'message' for regular messages, 'action' for activity logs
   language: string | null // Detected language code (e.g., 'en', 'fa', 'es')
   is_agent: boolean
   is_system_message: boolean

@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Languages, Eye, EyeOff } from "lucide-react"
+import { Languages, Eye, Activity } from "lucide-react"
 import { getAvatarColor } from "@/lib/avatar-colors"
 import type { Message } from "@/types/conversation.types"
 
@@ -36,7 +36,30 @@ export function MessageBubble({
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
-  // Determine what content to show
+  // Check if this is an action message
+  const isActionMessage = message.type === 'action'
+
+  // Render action message (centered, minimal, gray pill)
+  if (isActionMessage) {
+    return (
+      <div className="flex justify-center py-1">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-muted/60 hover:bg-muted/80 rounded-full text-[11px] text-muted-foreground cursor-default transition-colors">
+                <span>{message.body}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              {formatTime(message.created_at)}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    )
+  }
+
+  // Determine what content to show for regular messages
   const isClientMessage = !message.is_agent
   const shouldShowTranslation = needsTranslation && isClientMessage && translation
   const displayContent = shouldShowTranslation && !translation.showOriginal
