@@ -44,6 +44,13 @@ import type { Conversation } from '@/types/conversation.types'
 import { useToast } from '@/hooks/use-toast'
 import { useMessageTranslation } from '@/hooks/useMessageTranslation'
 import { MessageBubble } from '@/components/conversations/MessageBubble'
+import {
+  getSourceIcon,
+  getSourceColor,
+  getStatusIcon,
+  getStatusColor,
+  getPriorityColor
+} from './components'
 
 export default function ConversationsContent() {
   const { toast } = useToast()
@@ -413,64 +420,6 @@ export default function ConversationsContent() {
       })
     } finally {
       setIsSending(false)
-    }
-  }
-
-  const getSourceIcon = (source: string) => {
-    switch (source) {
-      case 'email': return <Mail className="w-3 h-3" />
-      case 'webform': return <Globe className="w-3 h-3" />
-      case 'whatsapp': return <MessageCircle className="w-3 h-3" />
-      case 'phone_call': return <Phone className="w-3 h-3" />
-      case 'webchat': return <Monitor className="w-3 h-3" />
-      default: return <Mail className="w-3 h-3" />
-    }
-  }
-
-  const getSourceColor = (source: string) => {
-    switch (source) {
-      case 'email': return 'blue'
-      case 'webform': return 'green'
-      case 'whatsapp': return 'green'
-      case 'phone_call': return 'yellow'
-      case 'webchat': return 'purple'
-      default: return 'gray'
-    }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'low': return 'gray'
-      case 'medium': return 'yellow'
-      case 'high': return 'red'
-      case 'urgent': return 'red-dot'
-      default: return 'gray'
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new': return 'blue'
-      case 'user_reply': return 'green'
-      case 'agent_reply': return 'blue'
-      case 'processing': return 'yellow'
-      case 'closed': return 'gray'
-      case 'archived': return 'gray'
-      case 'postponed': return 'yellow'
-      default: return 'gray'
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'new': return <Circle className="w-3 h-3" />
-      case 'user_reply': return <ArrowUp className="w-3 h-3" />
-      case 'agent_reply': return <ArrowDown className="w-3 h-3" />
-      case 'processing': return <Loader className="w-3 h-3" />
-      case 'closed': return <XCircle className="w-3 h-3" />
-      case 'archived': return <Archive className="w-3 h-3" />
-      case 'postponed': return <Clock className="w-3 h-3" />
-      default: return <Circle className="w-3 h-3" />
     }
   }
 
