@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef, useMemo, useEffect } from "react"
+import DOMPurify from "dompurify"
 import "@/styles/editor.css"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -1097,8 +1098,8 @@ export function ArticleEditor({ article, categories, tags, onClose, onSave }: Ar
                 prose-img:rounded-lg prose-img:max-w-full
                 prose-pre:text-xs sm:prose-pre:text-sm
                 prose-code:text-xs sm:prose-code:text-sm"
-              dangerouslySetInnerHTML={{ 
-                __html: editor?.getHTML() || '<p>No content yet...</p>' 
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(editor?.getHTML() || '<p>No content yet...</p>')
               }}
             />
           </div>

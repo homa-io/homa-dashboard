@@ -20,7 +20,7 @@ import {
   Calendar
 } from "lucide-react"
 import Link from "next/link"
-import { mockKnowledgeBaseCategories, mockKnowledgeBaseArticles, mockKnowledgeBaseTags, mockKnowledgeBaseStats } from "@/data/mockKnowledgeBase.working"
+import { mockKnowledgeBaseCategories, mockKnowledgeBaseArticles, mockKnowledgeBaseTags, mockKnowledgeBaseStats } from "@/data/mockKnowledgeBase"
 
 export default function KnowledgeBasePage() {
   const [searchQuery, setSearchQuery] = useState('')

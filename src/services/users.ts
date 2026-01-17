@@ -14,6 +14,17 @@ import type {
  */
 
 /**
+ * Generate cryptographically secure random string
+ * Uses Web Crypto API for secure random values
+ */
+function generateSecureRandomString(length: number): string {
+  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const randomValues = new Uint8Array(length);
+  crypto.getRandomValues(randomValues);
+  return Array.from(randomValues, (byte) => charset[byte % charset.length]).join('');
+}
+
+/**
  * Fetch paginated list of users
  */
 export async function getUsers(params?: UsersListParams) {
@@ -50,14 +61,14 @@ export async function createUser(data: CreateUserRequest) {
  * Bots don't require password, email, or username - they are auto-generated
  */
 export async function createBot(data: CreateBotRequest) {
-  // Generate random email and password for bot (not visible to user)
-  const randomId = Math.random().toString(36).substring(2, 10);
+  // Generate secure random email and password for bot (not visible to user)
+  const randomId = generateSecureRandomString(8);
   const botData: CreateUserRequest = {
     name: data.name,
     last_name: data.last_name,
     display_name: data.display_name || `${data.name} ${data.last_name}`,
     email: `bot-${randomId}@bot.local`,
-    password: Math.random().toString(36).substring(2, 18) + Math.random().toString(36).substring(2, 18),
+    password: generateSecureRandomString(32), // Cryptographically secure password
     type: 'bot',
     avatar: data.avatar,
   };

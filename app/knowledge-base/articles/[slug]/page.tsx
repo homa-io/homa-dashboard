@@ -26,7 +26,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { mockKnowledgeBaseArticles, mockKnowledgeBaseCategories, mockKnowledgeBaseTags } from "@/data/mockKnowledgeBase.working"
+import { mockKnowledgeBaseArticles, mockKnowledgeBaseCategories, mockKnowledgeBaseTags } from "@/data/mockKnowledgeBase"
 // Simple breadcrumb type
 type BreadcrumbItem = {
   label: string

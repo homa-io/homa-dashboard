@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
-import { mockKnowledgeBaseArticles, mockKnowledgeBaseCategories, mockKnowledgeBaseStats } from "@/data/mockKnowledgeBase.working"
+import { mockKnowledgeBaseArticles, mockKnowledgeBaseCategories, mockKnowledgeBaseStats } from "@/data/mockKnowledgeBase"
 
 export default function KnowledgeBaseAdminPage() {
   const [searchTerm, setSearchTerm] = useState('')

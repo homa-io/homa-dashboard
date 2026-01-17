@@ -15,6 +15,7 @@ import type {
   MessagesResponse,
   ConversationDetailResponse
 } from '@/types/conversation.types'
+import { getAccessToken } from '@/lib/cookies'
 
 // API response wrapper
 interface ApiResponse<T = any> {
@@ -46,13 +47,9 @@ class ConversationService {
       'Content-Type': 'application/json',
     }
 
-    if (typeof window !== 'undefined') {
-      const cookies = document.cookie.split('; ')
-      const tokenCookie = cookies.find(c => c.startsWith('access_token='))
-      const token = tokenCookie ? tokenCookie.split('=')[1] : null
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
+    const token = getAccessToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
     }
 
     return headers
@@ -80,14 +77,6 @@ class ConversationService {
 
     const queryString = searchParams.toString()
     const endpoint = `${this.baseURL}${this.basePath}/search${queryString ? `?${queryString}` : ''}`
-
-    // Get auth token from cookies
-    const getAccessToken = () => {
-      if (typeof window === 'undefined') return null
-      const cookies = document.cookie.split('; ')
-      const tokenCookie = cookies.find(c => c.startsWith('access_token='))
-      return tokenCookie ? tokenCookie.split('=')[1] : null
-    }
 
     const token = getAccessToken()
     const headers: Record<string, string> = {
@@ -344,14 +333,6 @@ class ConversationService {
   async getConversation(id: number, page = 1, limit = 50, order: 'asc' | 'desc' = 'asc'): Promise<ConversationDetailResponse> {
     const endpoint = `${this.baseURL}${this.basePath}/${id}?page=${page}&limit=${limit}&order=${order}`
 
-    // Get auth token from cookies
-    const getAccessToken = () => {
-      if (typeof window === 'undefined') return null
-      const cookies = document.cookie.split('; ')
-      const tokenCookie = cookies.find(c => c.startsWith('access_token='))
-      return tokenCookie ? tokenCookie.split('=')[1] : null
-    }
-
     const token = getAccessToken()
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -426,14 +407,6 @@ class ConversationService {
     }
 
     const endpoint = `${this.baseURL}/api/agent/clients/${clientId}/conversations?${params.toString()}`
-
-    // Get auth token from cookies
-    const getAccessToken = () => {
-      if (typeof window === 'undefined') return null
-      const cookies = document.cookie.split('; ')
-      const tokenCookie = cookies.find(c => c.startsWith('access_token='))
-      return tokenCookie ? tokenCookie.split('=')[1] : null
-    }
 
     const token = getAccessToken()
     const headers: Record<string, string> = {
@@ -593,14 +566,6 @@ class ConversationService {
    */
   async sendMessage(conversationId: number, body: string): Promise<SendMessageResponse> {
     const endpoint = `${this.baseURL}${this.basePath}/${conversationId}/messages`
-
-    // Get auth token from cookies
-    const getAccessToken = () => {
-      if (typeof window === 'undefined') return null
-      const cookies = document.cookie.split('; ')
-      const tokenCookie = cookies.find(c => c.startsWith('access_token='))
-      return tokenCookie ? tokenCookie.split('=')[1] : null
-    }
 
     const token = getAccessToken()
     const headers: Record<string, string> = {
